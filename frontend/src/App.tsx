@@ -11,6 +11,7 @@ import ReviewRequestsPage from '@/pages/ReviewRequests';
 import MonitoringHSEPage from '@/pages/MonitoringHSE';
 import ProfilePage from '@/pages/Profile';
 import MasterDataPage from '@/pages/MasterData';
+import PublicQrVerifyPage from '@/pages/PublicQrVerify';
 
 function ProtectedRoute() {
   const role = sessionStorage.getItem('userRole');
@@ -40,6 +41,7 @@ export default function App() {
     <Router>
       <Routes>
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/verify-permit/:token" element={<PublicQrVerifyPage />} />
         
         <Route path="/" element={<ProtectedRoute />}>
           <Route index element={<Navigate to="/dashboard" replace />} />

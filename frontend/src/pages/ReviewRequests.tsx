@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
 import { Header } from "@/components/Header";
-import { CheckCircle, XCircle, Clock, Eye, CheckSquare, Search, Briefcase, AlertTriangle, Users, FileCheck, X, Shield, FileText } from "lucide-react";
+import { CheckCircle, XCircle, Clock, Eye, CheckSquare, Search, Briefcase, AlertTriangle, Users, FileCheck, X, Shield, FileText, Printer } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { api } from "@/services/api";
+import { PrintPermitModal } from "@/components/PrintPermitModal";
 
 const INITIAL_REQUESTS = [
   {
@@ -104,6 +105,7 @@ function mapApiToReview(item: any) {
       pengendalian: j.mitigation_control || j.pengendalian,
       tanggapDarurat: j.emergency_response || j.tanggapDarurat,
     })) : (item.jsa || []),
+    qrToken: item.qr_code_token || item.qrToken,
   };
 }
 
@@ -114,6 +116,8 @@ export default function ReviewRequestsPage() {
   const [rejectModal, setRejectModal] = useState<{isOpen: boolean, id: string | null, rawId?: any}>({isOpen: false, id: null});
   const [approveModal, setApproveModal] = useState<{isOpen: boolean, id: string | null}>({isOpen: false, id: null});
   const [rejectReason, setRejectReason] = useState("");
+  const [printPermit, setPrintPermit] = useState<any | null>(null);
+  const [closeModal, setCloseModal] = useState<{isOpen: boolean, id: string | null, rawId?: any, notes: string}>({isOpen: false, id: null, notes: ""});
   const role = sessionStorage.getItem('userRole'); // 'pic_vendor', 'hse', 'ga_dept_head', 'ga_div_head', 'admin'
 
   const fetchQueue = async () => {
@@ -206,6 +210,20 @@ export default function ReviewRequestsPage() {
     fetchQueue();
   };
 
+  const handleClosePermit = async () => {
+    if (!closeModal.id) return;
+    try {
+      const targetId = closeModal.rawId || closeModal.id;
+      await api.closePermit(targetId, closeModal.notes || "Pekerjaan telah selesai dan area kerja telah bersih (Housekeeping OK)");
+      setRequests(prev => prev.map(req => req.id === closeModal.id ? { ...req, status: "Selesai" } : req));
+      setCloseModal({ isOpen: false, id: null, rawId: undefined, notes: "" });
+      setSelectedRequest(null);
+      fetchQueue();
+    } catch (err: any) {
+      alert(err.response?.data?.message || err.message || "Gagal menutup ijin kerja.");
+    }
+  };
+
   return (
     <div className="flex-1 flex flex-col h-full bg-background overflow-hidden relative">
       <Header title={role === 'hse' ? "Review Ijin (HSE)" : role === 'ga_dept_head' ? "Persetujuan (Dept Head)" : role === 'ga_div_head' ? "Persetujuan Akhir (Div Head)" : "Review PIC Vendor"} />
@@ -269,12 +287,23 @@ export default function ReviewRequestsPage() {
                           </span>
                         </td>
                         <td className="px-6 py-4 text-right">
-                          <button 
-                            onClick={() => setSelectedRequest(req)}
-                            className="inline-flex items-center gap-2 px-4 py-2 bg-primary-container/20 text-primary hover:bg-primary hover:text-on-primary rounded-lg text-sm font-semibold transition-colors"
-                          >
-                            <Eye size={16} /> Buka & Review
-                          </button>
+                          <div className="flex items-center justify-end gap-2">
+                            {req.status === 'Disetujui' && (
+                              <button
+                                onClick={() => setPrintPermit(req)}
+                                title="Cetak Dokumen Permit"
+                                className="p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors cursor-pointer"
+                              >
+                                <Printer size={16} />
+                              </button>
+                            )}
+                            <button 
+                              onClick={() => setSelectedRequest(req)}
+                              className="inline-flex items-center gap-2 px-4 py-2 bg-primary-container/20 text-primary hover:bg-primary hover:text-on-primary rounded-lg text-sm font-semibold transition-colors cursor-pointer"
+                            >
+                              <Eye size={16} /> Buka & Review
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     ))
@@ -468,25 +497,48 @@ export default function ReviewRequestsPage() {
             </div>
 
             {/* Footer Modal - Action Buttons */}
-            <div className="p-4 sm:p-6 border-t border-gray-100 bg-white flex justify-end gap-3 shrink-0">
-              <button 
-                onClick={() => setSelectedRequest(null)} 
-                className="px-6 py-2.5 text-sm font-bold text-gray-700 bg-white border border-gray-200 hover:border-gray-300 rounded-lg transition-colors"
-              >
-                Tutup
-              </button>
-              <button 
-                onClick={() => setRejectModal({ isOpen: true, id: selectedRequest.id, rawId: selectedRequest.rawId })}
-                className="px-6 py-2.5 text-sm font-bold text-error bg-white border border-error-container hover:bg-error-container/20 rounded-lg flex items-center gap-2 transition-colors"
-              >
-                <XCircle size={18} /> Tolak
-              </button>
-              <button 
-                onClick={() => handleApprove(selectedRequest.id, selectedRequest.rawId)}
-                className="px-6 py-2.5 text-sm font-bold text-white bg-success rounded-lg hover:opacity-90 flex items-center gap-2 transition-colors shadow-sm"
-              >
-                <CheckCircle size={18} /> Setujui Dokumen
-              </button>
+            <div className="p-4 sm:p-6 border-t border-gray-100 bg-white flex flex-wrap justify-between items-center gap-3 shrink-0">
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setPrintPermit(selectedRequest)}
+                  className="px-4 py-2.5 text-sm font-bold text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg flex items-center gap-2 transition-colors cursor-pointer"
+                >
+                  <Printer size={16} /> Cetak Lembar Ijin Kerja
+                </button>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <button 
+                  onClick={() => setSelectedRequest(null)} 
+                  className="px-5 py-2.5 text-sm font-bold text-gray-700 bg-white border border-gray-200 hover:border-gray-300 rounded-lg transition-colors cursor-pointer"
+                >
+                  Tutup
+                </button>
+                {selectedRequest.status === 'Disetujui' && (role === 'hse' || role === 'admin' || role === 'pic_vendor') ? (
+                  <button 
+                    onClick={() => setCloseModal({ isOpen: true, id: selectedRequest.id, rawId: selectedRequest.rawId, notes: '' })}
+                    className="px-5 py-2.5 text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-lg flex items-center gap-2 transition-colors shadow-sm cursor-pointer"
+                  >
+                    <CheckCircle size={18} /> Tutup Permit (Safety Close-Out)
+                  </button>
+                ) : selectedRequest.status !== 'Disetujui' && selectedRequest.status !== 'Selesai' && selectedRequest.status !== 'Ditolak' ? (
+                  <>
+                    <button 
+                      onClick={() => setRejectModal({ isOpen: true, id: selectedRequest.id, rawId: selectedRequest.rawId })}
+                      className="px-5 py-2.5 text-sm font-bold text-error bg-white border border-error-container hover:bg-error-container/20 rounded-lg flex items-center gap-2 transition-colors cursor-pointer"
+                    >
+                      <XCircle size={18} /> Tolak
+                    </button>
+                    <button 
+                      onClick={() => handleApprove(selectedRequest.id, selectedRequest.rawId)}
+                      className="px-5 py-2.5 text-sm font-bold text-white bg-success rounded-lg hover:opacity-90 flex items-center gap-2 transition-colors shadow-sm cursor-pointer"
+                    >
+                      <CheckCircle size={18} /> Setujui Dokumen
+                    </button>
+                  </>
+                ) : null}
+              </div>
             </div>
           </div>
         </div>
@@ -553,13 +605,65 @@ export default function ReviewRequestsPage() {
               
               <button 
                 onClick={confirmApprove}
-                className="w-full py-3 text-sm font-bold text-white bg-success hover:bg-success/90 rounded-xl transition-colors shadow-sm"
+                className="w-full py-3 text-sm font-bold text-white bg-success hover:bg-success/90 rounded-xl transition-colors shadow-sm cursor-pointer"
               >
                 Tutup & Lanjutkan
               </button>
             </div>
           </div>
         </div>
+      )}
+
+      {/* Safety Close-Out Modal */}
+      {closeModal.isOpen && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200">
+            <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-blue-50">
+              <h3 className="text-lg font-bold text-blue-900 flex items-center gap-2">
+                <CheckCircle size={20} className="text-blue-600" /> Tutup Ijin Kerja (Safety Close-Out)
+              </h3>
+              <button 
+                onClick={() => setCloseModal({ isOpen: false, id: null, rawId: undefined, notes: "" })}
+                className="text-gray-400 hover:text-gray-600 transition-colors cursor-pointer"
+              >
+                <X size={20} />
+              </button>
+            </div>
+            <div className="p-6 space-y-4">
+              <div className="p-3 bg-amber-50 rounded-lg border border-amber-200 text-xs text-amber-800 leading-relaxed">
+                <strong>Verifikasi Housekeeping:</strong> Pastikan seluruh pekerja vendor telah meninggalkan area kerja, peralatan telah dirapikan, sisa material dibersihkan, dan tidak ada bahaya yang tertinggal.
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-900 mb-1.5">Catatan Serah Terima / Housekeeping</label>
+                <textarea 
+                  value={closeModal.notes}
+                  onChange={(e) => setCloseModal(prev => ({ ...prev, notes: e.target.value }))}
+                  placeholder="Area kerja telah bersih, aman, dan pekerjaan selesai 100%..."
+                  className="w-full p-3 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all resize-none h-24"
+                ></textarea>
+              </div>
+            </div>
+            <div className="p-4 bg-gray-50 flex justify-end gap-3 border-t border-gray-100">
+              <button 
+                onClick={() => setCloseModal({ isOpen: false, id: null, rawId: undefined, notes: "" })}
+                className="px-4 py-2 text-sm font-bold text-gray-600 hover:bg-gray-200 bg-gray-100 rounded-lg transition-colors cursor-pointer"
+              >
+                Batal
+              </button>
+              <button 
+                onClick={handleClosePermit}
+                className="px-4 py-2 text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors cursor-pointer"
+              >
+                Selesaikan Permit (Close-Out)
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Printable Sheet Modal */}
+      {printPermit && (
+        <PrintPermitModal permit={printPermit} onClose={() => setPrintPermit(null)} />
       )}
     </div>
   );

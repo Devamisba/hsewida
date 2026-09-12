@@ -116,4 +116,34 @@ class RolePermissionController extends Controller
             'data' => $role->load('permissions'),
         ]);
     }
+
+    /**
+     * Delete a custom role (protected against default system roles).
+     */
+    public function destroyRole($id)
+    {
+        $role = Role::withCount('users')->findOrFail($id);
+
+        $systemRoles = ['pemohon', 'pic_vendor', 'hse', 'ga_dept_head', 'ga_div_head', 'admin'];
+        if (in_array($role->code, $systemRoles)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Role bawaan sistem (' . $role->name . ') tidak dapat dihapus.',
+            ], 422);
+        }
+
+        if ($role->users_count > 0) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Role tidak dapat dihapus karena masih digunakan oleh ' . $role->users_count . ' pengguna aktif.',
+            ], 422);
+        }
+
+        $role->delete();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Role ' . $role->name . ' berhasil dihapus.',
+        ]);
+    }
 }

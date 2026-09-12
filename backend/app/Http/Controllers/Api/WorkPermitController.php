@@ -343,6 +343,23 @@ class WorkPermitController extends Controller
         $roleCode = $user->role ? $user->role->code : '';
         $permit = WorkPermit::findOrFail($id);
 
+        // Role verification (admin can override)
+        if ($roleCode !== 'admin') {
+            $requiredRole = match ($permit->status) {
+                'Menunggu PIC Vendor' => 'pic_vendor',
+                'Menunggu HSE' => 'hse',
+                'Menunggu GA Dept Head' => 'ga_dept_head',
+                'Menunggu GA Div Head' => 'ga_div_head',
+                default => null,
+            };
+            if ($requiredRole && $roleCode !== $requiredRole) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Wewenang tidak sesuai: Tahap ini hanya dapat disetujui oleh role ' . $requiredRole . ' (Role Anda: ' . $roleCode . ').',
+                ], 403);
+            }
+        }
+
         $nextStatus = match ($permit->status) {
             'Menunggu PIC Vendor' => 'Menunggu HSE',
             'Menunggu HSE' => 'Menunggu GA Dept Head',
@@ -463,6 +480,47 @@ class WorkPermitController extends Controller
                 'suggested_start_date' => $endDate->copy()->addDay()->toDateString(),
                 'suggested_end_date' => $endDate->copy()->addDays(6)->toDateString(),
             ]
+        ]);
+    }
+
+    /**
+     * Safety close-out / Housekeeping sign-off after work completion.
+     */
+    public function closePermit(Request $request, $id)
+    {
+        $user = $request->user();
+        $roleCode = $user->role ? $user->role->code : '';
+        $permit = WorkPermit::findOrFail($id);
+
+        if ($permit->status !== 'Disetujui') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Hanya ijin kerja berstatus Disetujui yang dapat ditutup/diselesaikan.'
+            ], 422);
+        }
+
+        $permit->status = 'Selesai';
+        $permit->save();
+
+        $permit->approvals()->create([
+            'user_id' => $user->id,
+            'role_at_action' => $roleCode,
+            'action' => 'Close',
+            'note' => $request->note ?? 'Penutupan ijin kerja resmi & verifikasi safety housekeeping selesai.',
+            'action_date' => now(),
+        ]);
+
+        Notification::create([
+            'user_id' => $permit->user_id,
+            'type' => 'permit_closed',
+            'reference_id' => $permit->id,
+            'message' => 'Ijin kerja ' . $permit->permit_number . ' telah resmi diselesaikan & ditutup oleh Tim K3 (HSE).',
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Ijin kerja berhasil ditutup dengan status Selesai.',
+            'data' => $permit,
         ]);
     }
 

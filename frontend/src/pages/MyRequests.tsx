@@ -3,6 +3,7 @@ import { Header } from "@/components/Header";
 import { Eye, Printer, FileText, X, Shield, Users, AlertTriangle, Briefcase, FileCheck, CheckCircle2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { api } from "@/services/api";
+import { PrintPermitModal } from "@/components/PrintPermitModal";
 
 const DUMMY_REQUESTS = [
   {
@@ -127,6 +128,7 @@ export default function MyRequestsPage() {
   const [requests, setRequests] = useState<any[]>(DUMMY_REQUESTS);
   const [loading, setLoading] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState<any>(null);
+  const [printModalPermit, setPrintModalPermit] = useState<any>(null);
 
   useEffect(() => {
     const fetchRequests = async () => {
@@ -194,7 +196,11 @@ export default function MyRequestsPage() {
                           >
                             <Eye size={18} />
                           </button>
-                          <button className="p-2 text-gray-400 hover:text-primary hover:bg-primary-container/50 rounded-lg transition-colors" title="Cetak Permit">
+                          <button 
+                            onClick={() => setPrintModalPermit(req)} 
+                            className="p-2 text-gray-400 hover:text-primary hover:bg-primary-container/50 rounded-lg transition-colors cursor-pointer" 
+                            title="Cetak Permit"
+                          >
                             <Printer size={18} />
                           </button>
                         </div>
@@ -234,7 +240,11 @@ export default function MyRequestsPage() {
                     >
                       <Eye size={16} />
                     </button>
-                    <button className="p-2 text-gray-500 hover:text-primary bg-gray-50 hover:bg-primary-container/30 rounded-lg transition-colors">
+                    <button 
+                      onClick={() => setPrintModalPermit(req)}
+                      className="p-2 text-gray-500 hover:text-primary bg-gray-50 hover:bg-primary-container/30 rounded-lg transition-colors cursor-pointer"
+                      title="Cetak Permit"
+                    >
                       <Printer size={16} />
                     </button>
                   </div>
@@ -408,12 +418,19 @@ export default function MyRequestsPage() {
               >
                 Tutup
               </button>
-              <button className="px-6 py-2.5 text-sm font-medium text-on-primary bg-primary rounded-lg hover:opacity-90 flex items-center gap-2 transition-colors shadow-sm">
+              <button 
+                onClick={() => setPrintModalPermit(selectedRequest)}
+                className="px-6 py-2.5 text-sm font-medium text-on-primary bg-primary rounded-lg hover:opacity-90 flex items-center gap-2 transition-colors shadow-sm cursor-pointer"
+              >
                 <Printer size={18} /> Cetak & Unduh Permit
               </button>
             </div>
           </div>
         </div>
+      )}
+
+      {printModalPermit && (
+        <PrintPermitModal permit={printModalPermit} onClose={() => setPrintModalPermit(null)} />
       )}
 
     </div>
