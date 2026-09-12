@@ -1,98 +1,52 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Header } from "@/components/Header";
 import { Eye, Printer, FileText, X, Shield, Users, AlertTriangle, Briefcase, FileCheck, CheckCircle2, CalendarPlus, XCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { api } from "@/services/api";
+import { PrintPermitModal } from "@/components/PrintPermitModal";
 
-const DUMMY_HISTORY = [
-  {
-    id: "WP-2608-050",
-    status: "Disetujui",
-    requestType: "Baru",
-    namaKontraktor: "PT Maju Terus",
-    jenisPekerjaan: "Pembersihan Silo",
-    lokasi: "Area Pabrik 1",
-    // Ends 2 days from now (Eligible for extension: H-3 already passed)
-    mulaiKerja: "2026-08-15",
-    selesaiKerja: "2026-08-22",
-    jamKerjaMulai: "08:00",
-    jamKerjaAkhir: "16:00",
-    penanggungJawab: "Heri Susanto",
-    noHpPJ: "081223344556",
-    pengawasPekerjaan: "Denny Caknan",
-    noHpPengawas: "085566778899",
-    pengawasHse: "Sinta Maharani",
-    noHpHse: "089911223344",
-    totalTenagaKerja: "3",
-    permitTypes: ["Ijin Kerja Ruang Terbatas"],
-    ppe: ["Helm Safety", "Sepatu Safety", "Full Body Harness", "Breathing Apparatus"],
-    workEquipment: ["Blower", "Gas Detector", "Tali Keselamatan"],
-    pekerja: [
-      { id: 1, nama: "Tono", jabatan: "Teknisi", alamat: "-" }
-    ],
-    jsa: [
-      { id: 1, tahapan: "Masuk ruang terbatas", peralatan: "Gas Detector", potensi: "Kekurangan oksigen", pengendalian: "Cek gas sebelum masuk, nyalakan blower", tanggapDarurat: "Tarik tali keselamatan" }
-    ]
-  },
-  {
-    id: "WP-2608-055",
-    status: "Disetujui",
-    requestType: "Baru",
-    namaKontraktor: "CV Konstruksi Jaya",
-    jenisPekerjaan: "Perbaikan Atap Gudang",
-    lokasi: "Gudang Utama",
-    // Ends 7 days from now (Not eligible yet, H-7)
-    mulaiKerja: "2026-08-20",
-    selesaiKerja: "2026-08-27",
-    jamKerjaMulai: "08:00",
-    jamKerjaAkhir: "16:00",
-    penanggungJawab: "Budi Santoso",
-    noHpPJ: "081233445566",
-    pengawasPekerjaan: "Agus",
-    noHpPengawas: "081122334455",
-    pengawasHse: "Dina",
-    noHpHse: "087788990011",
-    totalTenagaKerja: "2",
-    permitTypes: ["Ijin Kerja Ketinggian"],
-    ppe: ["Helm Safety", "Sepatu Safety", "Full Body Harness"],
-    workEquipment: ["Scaffolding", "Material Atap"],
-    pekerja: [
-      { id: 1, nama: "Rudi", jabatan: "Tukang", alamat: "-" }
-    ],
-    jsa: [
-      { id: 1, tahapan: "Naik ke atap", peralatan: "Tangga", potensi: "Terjatuh", pengendalian: "Gunakan harness", tanggapDarurat: "P3K" }
-    ]
-  },
-  {
-    id: "WP-2607-020",
-    status: "Ditolak",
-    alasanPenolakan: "JSA kurang detail pada bagian mitigasi risiko kebakaran. Harap sebutkan jenis APAR yang digunakan dan prosedur tanggap darurat yang lebih spesifik.",
-    requestType: "Baru",
-    namaKontraktor: "CV Pipa Mas",
-    jenisPekerjaan: "Perbaikan Pipa Hydrant Bocor",
-    lokasi: "Area Parkir Basement 2",
-    mulaiKerja: "2026-07-18",
-    selesaiKerja: "2026-07-19",
-    jamKerjaMulai: "22:00",
-    jamKerjaAkhir: "04:00",
-    penanggungJawab: "Alex Wibowo",
-    noHpPJ: "081122223333",
-    pengawasPekerjaan: "Samsudin",
-    noHpPengawas: "082233334444",
-    pengawasHse: "Rian D'Masiv",
-    noHpHse: "083344445555",
-    totalTenagaKerja: "2",
-    permitTypes: ["Ijin Kerja Malam", "Ijin Kerja Penggalian"],
-    ppe: ["Helm Safety", "Sepatu Boots", "Rompi Reflektif"],
-    workEquipment: ["Mesin Las", "Gerinda", "Palu"],
-    pekerja: [
-      { id: 1, nama: "Supri", jabatan: "Welder", alamat: "-" }
-    ],
-    jsa: [
-      { id: 1, tahapan: "Pengelasan pipa", peralatan: "Mesin Las", potensi: "Kebakaran", pengendalian: "Sediakan APAR", tanggapDarurat: "Gunakan APAR" }
-    ]
-  }
-];
+function mapApiToHistory(item: any) {
+  return {
+    id: item.permit_number || `WP-${item.id}`,
+    rawId: item.id,
+    status: item.status,
+    requestType: item.request_type || "Baru",
+    namaKontraktor: item.vendor?.company_name || item.user?.company_name || "PT Vendor",
+    jenisPekerjaan: item.job_title || item.jenisPekerjaan || "Pekerjaan Vendor",
+    lokasi: item.location?.name || item.lokasi || "Area Pabrik",
+    mulaiKerja: item.start_date ? item.start_date.substring(0, 10) : item.mulaiKerja,
+    selesaiKerja: item.end_date ? item.end_date.substring(0, 10) : item.selesaiKerja,
+    jamKerjaMulai: item.daily_start_time || item.jamKerjaMulai || "08:00",
+    jamKerjaAkhir: item.daily_end_time || item.jamKerjaAkhir || "17:00",
+    penanggungJawab: item.pic_name || item.penanggungJawab || "-",
+    noHpPJ: item.pic_phone || item.noHpPJ || "-",
+    pengawasPekerjaan: item.supervisor_name || item.pengawasPekerjaan || "-",
+    noHpPengawas: item.supervisor_phone || item.noHpPengawas || "-",
+    pengawasHse: item.hse_officer_name || item.pengawasHse || "-",
+    noHpHse: item.hse_officer_phone || item.noHpHse || "-",
+    totalTenagaKerja: item.total_workers || item.workers?.length || 0,
+    permitTypes: item.permit_types ? item.permit_types.map((p: any) => p.name) : (item.permitTypes || []),
+    ppe: item.ppes ? item.ppes.map((p: any) => p.name) : (item.ppe || []),
+    workEquipment: item.equipments ? item.equipments.map((e: any) => e.equipment_name) : (item.workEquipment || []),
+    pekerja: item.workers ? item.workers.map((w: any) => ({
+      id: w.id,
+      nama: w.worker_name || w.nama,
+      jabatan: w.position || w.jabatan,
+      alamat: w.address || w.alamat,
+    })) : (item.pekerja || []),
+    jsa: item.jsas ? item.jsas.map((j: any) => ({
+      id: j.id,
+      tahapan: j.work_step || j.tahapan,
+      peralatan: j.equipment_used || j.peralatan,
+      potensi: j.hazard_potential || j.potensi,
+      pengendalian: j.mitigation_control || j.pengendalian,
+      tanggapDarurat: j.emergency_response || j.tanggapDarurat,
+    })) : (item.jsa || []),
+    alasanPenolakan: item.reject_reason,
+    qrToken: item.qr_code_token,
+  };
+}
 
 const getStatusBadge = (status: string) => {
   switch (status) {
@@ -103,34 +57,53 @@ const getStatusBadge = (status: string) => {
       return "bg-warning-container text-on-warning-container";
     case "Disetujui": return "bg-success-container text-on-success-container";
     case "Ditolak": return "bg-error-container text-on-error-container";
+    case "Selesai": return "bg-blue-100 text-blue-800";
     default: return "bg-gray-100 text-gray-700";
   }
 };
 
 const isEligibleForExtension = (selesaiKerja: string, status: string) => {
-  if (status === "Rejected") return false;
+  if (status !== "Disetujui") return false;
   
   const endDate = new Date(selesaiKerja);
-  // Set time to end of day to be generous
   endDate.setHours(23, 59, 59, 999); 
   
   const today = new Date();
-  
-  // Hitung H-3
   const h3Date = new Date(endDate);
   h3Date.setDate(h3Date.getDate() - 3);
-  h3Date.setHours(0, 0, 0, 0); // Start of day for H-3
+  h3Date.setHours(0, 0, 0, 0);
   
-  // Bisa diperpanjang jika hari ini >= H-3
   return today >= h3Date;
 };
 
 export default function HistoryPage() {
+  const [requests, setRequests] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
   const [selectedRequest, setSelectedRequest] = useState<any>(null);
+  const [printModalPermit, setPrintModalPermit] = useState<any>(null);
   const navigate = useNavigate();
 
+  useEffect(() => {
+    const fetchHistory = async () => {
+      setLoading(true);
+      try {
+        const res = await api.getPermitHistory();
+        if (res.success && res.data) {
+          setRequests(res.data.map(mapApiToHistory));
+        } else {
+          setRequests([]);
+        }
+      } catch (err: any) {
+        console.warn("Could not fetch history:", err.message);
+        setRequests([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchHistory();
+  }, []);
+
   const handleExtend = (req: any) => {
-    // Navigate ke form Create Request dengan membawa state/data ijin yang lama
     navigate("/create-request", { state: { extendMode: true, originalId: req.id, ...req } });
   };
 
@@ -145,6 +118,7 @@ export default function HistoryPage() {
               <h2 className="text-2xl font-bold text-gray-900">Riwayat Ijin Kerja</h2>
               <p className="text-sm text-gray-500 mt-1">Arsip seluruh ijin kerja. Anda dapat memperpanjang ijin kerja (maksimal H-3 sebelum selesai).</p>
             </div>
+            {loading && <span className="text-xs text-primary font-medium animate-pulse">Memuat riwayat...</span>}
           </div>
 
           {/* Desktop Table (Boxed Data Table style) */}
@@ -162,91 +136,116 @@ export default function HistoryPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
-                  {DUMMY_HISTORY.map((req) => (
-                    <tr key={req.id} className="hover:bg-gray-50/50 transition-colors">
-                      <td className="px-5 py-4 text-sm font-bold text-gray-900 whitespace-nowrap">{req.id}</td>
-                      <td className="px-5 py-4 text-sm font-medium text-gray-700">{req.jenisPekerjaan}</td>
-                      <td className="px-5 py-4 text-sm text-gray-500">{req.lokasi}</td>
-                      <td className="px-5 py-4 text-sm text-gray-500 whitespace-nowrap">{req.mulaiKerja} s.d {req.selesaiKerja}</td>
-                      <td className="px-5 py-4 whitespace-nowrap">
-                        <span className={cn("px-2.5 py-1 rounded-full text-xs font-bold tracking-wide uppercase", getStatusBadge(req.status))}>
-                          {req.status}
-                        </span>
-                      </td>
-                      <td className="px-5 py-4 text-right whitespace-nowrap">
-                        <div className="flex items-center justify-end gap-2">
-                          {isEligibleForExtension(req.selesaiKerja, req.status) && (
+                  {requests.length > 0 ? (
+                    requests.map((req) => (
+                      <tr key={req.id} className="hover:bg-gray-50/50 transition-colors">
+                        <td className="px-5 py-4 text-sm font-bold text-gray-900 whitespace-nowrap">{req.id}</td>
+                        <td className="px-5 py-4 text-sm font-medium text-gray-700">{req.jenisPekerjaan}</td>
+                        <td className="px-5 py-4 text-sm text-gray-500">{req.lokasi}</td>
+                        <td className="px-5 py-4 text-sm text-gray-500 whitespace-nowrap">{req.mulaiKerja} s.d {req.selesaiKerja}</td>
+                        <td className="px-5 py-4 whitespace-nowrap">
+                          <span className={cn("px-2.5 py-1 rounded-full text-xs font-bold tracking-wide uppercase", getStatusBadge(req.status))}>
+                            {req.status}
+                          </span>
+                        </td>
+                        <td className="px-5 py-4 text-right whitespace-nowrap">
+                          <div className="flex items-center justify-end gap-2">
+                            {isEligibleForExtension(req.selesaiKerja, req.status) && (
+                              <button 
+                                onClick={() => handleExtend(req)}
+                                className="p-2 text-warning hover:text-warning-container hover:bg-warning/10 rounded-lg transition-colors cursor-pointer" 
+                                title="Perpanjang Ijin (Maksimal H-3)"
+                              >
+                                <CalendarPlus size={18} />
+                              </button>
+                            )}
                             <button 
-                              onClick={() => handleExtend(req)}
-                              className="p-2 text-warning hover:text-warning-container hover:bg-warning/10 rounded-lg transition-colors" 
-                              title="Perpanjang Ijin (Maksimal H-3)"
+                              onClick={() => setSelectedRequest(req)}
+                              className="p-2 text-gray-400 hover:text-primary hover:bg-primary-container/50 rounded-lg transition-colors cursor-pointer" 
+                              title="Lihat Detail"
                             >
-                              <CalendarPlus size={18} />
+                              <Eye size={18} />
                             </button>
-                          )}
-                          <button 
-                            onClick={() => setSelectedRequest(req)}
-                            className="p-2 text-gray-400 hover:text-primary hover:bg-primary-container/50 rounded-lg transition-colors" 
-                            title="Lihat Detail"
-                          >
-                            <Eye size={18} />
-                          </button>
-                          <button className="p-2 text-gray-400 hover:text-primary hover:bg-primary-container/50 rounded-lg transition-colors" title="Cetak Permit">
-                            <Printer size={18} />
-                          </button>
-                        </div>
+                            <button 
+                              onClick={() => setPrintModalPermit(req)}
+                              className="p-2 text-gray-400 hover:text-primary hover:bg-primary-container/50 rounded-lg transition-colors cursor-pointer" 
+                              title="Cetak Permit"
+                            >
+                              <Printer size={18} />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan={6} className="px-6 py-12 text-center text-gray-500">
+                        <FileText size={40} className="mx-auto mb-3 opacity-20" />
+                        <p className="text-base font-medium text-gray-800">Belum Ada Riwayat Ijin Kerja</p>
+                        <p className="text-xs text-gray-500 mt-1">Data arsip dan riwayat izin kerja akan tercatat di sini setelah pengajuan diproses.</p>
                       </td>
                     </tr>
-                  ))}
+                  )}
                 </tbody>
               </table>
             </div>
           </div>
 
-          {/* Mobile Card Layout Fallback */}
+          {/* Mobile Card Layout */}
           <div className="sm:hidden space-y-4">
-            {DUMMY_HISTORY.map((req) => (
-              <div key={req.id} className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm relative space-y-4">
-                <div className="flex justify-between items-start">
-                  <div className="flex items-center gap-2">
-                    <FileText size={16} className="text-gray-400" />
-                    <span className="text-sm font-bold text-gray-900">{req.id}</span>
+            {requests.length > 0 ? (
+              requests.map((req) => (
+                <div key={req.id} className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm relative space-y-4">
+                  <div className="flex justify-between items-start">
+                    <div className="flex items-center gap-2">
+                      <FileText size={16} className="text-gray-400" />
+                      <span className="text-sm font-bold text-gray-900">{req.id}</span>
+                    </div>
+                    <span className={cn("px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider", getStatusBadge(req.status))}>
+                      {req.status}
+                    </span>
                   </div>
-                  <span className={cn("px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider", getStatusBadge(req.status))}>
-                    {req.status}
-                  </span>
-                </div>
-                
-                <div>
-                  <h4 className="text-sm font-semibold text-gray-800 leading-tight">{req.jenisPekerjaan}</h4>
-                  <p className="text-xs text-gray-500 mt-1">{req.lokasi}</p>
-                </div>
-                
-                <div className="pt-3 border-t border-gray-100 flex items-center justify-between">
-                  <span className="text-xs font-medium text-gray-500">{req.mulaiKerja}</span>
-                  <div className="flex gap-2">
-                    {isEligibleForExtension(req.selesaiKerja, req.status) && (
+                  
+                  <div>
+                    <h4 className="text-sm font-semibold text-gray-800 leading-tight">{req.jenisPekerjaan}</h4>
+                    <p className="text-xs text-gray-500 mt-1">{req.lokasi}</p>
+                  </div>
+                  
+                  <div className="pt-3 border-t border-gray-100 flex items-center justify-between">
+                    <span className="text-xs font-medium text-gray-500">{req.mulaiKerja}</span>
+                    <div className="flex gap-2">
+                      {isEligibleForExtension(req.selesaiKerja, req.status) && (
+                        <button 
+                          onClick={() => handleExtend(req)}
+                          className="p-2 text-warning hover:text-warning-container bg-warning/5 hover:bg-warning/10 rounded-lg transition-colors cursor-pointer"
+                          title="Perpanjang Ijin (Maksimal H-3)"
+                        >
+                          <CalendarPlus size={16} />
+                        </button>
+                      )}
                       <button 
-                        onClick={() => handleExtend(req)}
-                        className="p-2 text-warning hover:text-warning-container bg-warning/5 hover:bg-warning/10 rounded-lg transition-colors"
-                        title="Perpanjang Ijin (Maksimal H-3)"
+                        onClick={() => setSelectedRequest(req)}
+                        className="p-2 text-gray-500 hover:text-primary bg-gray-50 hover:bg-primary-container/30 rounded-lg transition-colors cursor-pointer"
                       >
-                        <CalendarPlus size={16} />
+                        <Eye size={16} />
                       </button>
-                    )}
-                    <button 
-                      onClick={() => setSelectedRequest(req)}
-                      className="p-2 text-gray-500 hover:text-primary bg-gray-50 hover:bg-primary-container/30 rounded-lg transition-colors"
-                    >
-                      <Eye size={16} />
-                    </button>
-                    <button className="p-2 text-gray-500 hover:text-primary bg-gray-50 hover:bg-primary-container/30 rounded-lg transition-colors">
-                      <Printer size={16} />
-                    </button>
+                      <button 
+                        onClick={() => setPrintModalPermit(req)}
+                        className="p-2 text-gray-500 hover:text-primary bg-gray-50 hover:bg-primary-container/30 rounded-lg transition-colors cursor-pointer"
+                      >
+                        <Printer size={16} />
+                      </button>
+                    </div>
                   </div>
                 </div>
+              ))
+            ) : (
+              <div className="bg-white p-8 rounded-xl border border-gray-200 text-center text-gray-500">
+                <FileText size={32} className="mx-auto mb-2 opacity-20" />
+                <p className="text-sm font-semibold text-gray-700">Belum Ada Riwayat Ijin Kerja</p>
+                <p className="text-xs text-gray-400 mt-1">Data arsip dan riwayat izin kerja akan tampil di sini.</p>
               </div>
-            ))}
+            )}
           </div>
 
         </div>
@@ -433,12 +432,20 @@ export default function HistoryPage() {
                   <CalendarPlus size={18} /> Perpanjang Ijin
                 </button>
               )}
-              <button className="px-6 py-2.5 text-sm font-medium text-on-primary bg-primary rounded-lg hover:opacity-90 flex items-center gap-2 transition-colors shadow-sm">
+              <button 
+                onClick={() => setPrintModalPermit(selectedRequest)}
+                className="px-6 py-2.5 text-sm font-medium text-on-primary bg-primary rounded-lg hover:opacity-90 flex items-center gap-2 transition-colors shadow-sm cursor-pointer"
+              >
                 <Printer size={18} /> Cetak & Unduh Permit
               </button>
             </div>
           </div>
         </div>
+      )}
+
+      {/* Printable Permit Sheet Modal */}
+      {printModalPermit && (
+        <PrintPermitModal permit={printModalPermit} onClose={() => setPrintModalPermit(null)} />
       )}
 
     </div>

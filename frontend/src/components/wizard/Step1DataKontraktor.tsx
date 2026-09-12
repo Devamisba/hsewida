@@ -2,13 +2,33 @@ import { useState, useEffect } from "react";
 import { format, addDays, isBefore, startOfToday } from "date-fns";
 import { ClipboardList } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { api } from "@/services/api";
 
 export function Step1DataKontraktor({ data, updateData }: { data: any, updateData: any }) {
   const [minStartDate, setMinStartDate] = useState("");
+  const [locations, setLocations] = useState<string[]>([]);
 
   useEffect(() => {
     const today = startOfToday();
     setMinStartDate(format(addDays(today, 3), 'yyyy-MM-dd')); // H-3 rule
+
+    // Pre-fill vendor name if available in session
+    try {
+      const stored = sessionStorage.getItem("userData");
+      if (stored) {
+        const user = JSON.parse(stored);
+        if (user.company_name && !data.namaKontraktor) {
+          updateData({ namaKontraktor: user.company_name });
+        }
+      }
+    } catch {}
+
+    // Load locations from master data
+    api.getLocations().then(res => {
+      if (res.success && Array.isArray(res.data)) {
+        setLocations(res.data.filter((l: any) => l.is_active !== false).map((l: any) => l.name));
+      }
+    }).catch(err => console.error("Error fetching locations:", err));
   }, []);
   
   const handleStartDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -171,10 +191,17 @@ export function Step1DataKontraktor({ data, updateData }: { data: any, updateDat
             <label className="block text-sm font-medium text-gray-700">Lokasi Pekerjaan <span className="text-red-500">*</span></label>
             <input 
               type="text" 
+              list="master-locations-list"
               value={data.lokasi}
               onChange={(e) => updateData({ lokasi: e.target.value })}
               className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+              placeholder="Pilih atau ketik lokasi kerja..."
             />
+            <datalist id="master-locations-list">
+              {locations.map((loc) => (
+                <option key={loc} value={loc} />
+              ))}
+            </datalist>
           </div>
           <div className="space-y-1.5">
             <label className="block text-sm font-medium text-gray-700">Total Tenaga Kerja</label>

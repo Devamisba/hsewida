@@ -4,34 +4,36 @@ import { Header } from "@/components/Header";
 import { Clock, ShieldAlert, Users, CheckCircle2, ChevronRight, FileCheck, ScanLine, AlertTriangle } from "lucide-react";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from "recharts";
 import { cn } from "@/lib/utils";
-
-// Dummy Data untuk HSE
-const DUMMY_PENDING_REVIEW = [
-  { id: "WP-2608-058", kontraktor: "PT Bangun Karya", jenis: "Pengelasan Pipa", lokasi: "Area Tangki A", mulai: "2026-08-21", risiko: "Tinggi" },
-  { id: "WP-2608-059", kontraktor: "CV Berkah Jaya", jenis: "Pemasangan CCTV", lokasi: "Gudang B", mulai: "2026-08-21", risiko: "Rendah" },
-];
-
-const DUMMY_ACTIVE_HIGH_RISK = [
-  { id: "WP-2608-050", jenis: "Pembersihan Silo", lokasi: "Area Pabrik 1", permitTypes: ["Ruang Terbatas"] },
-  { id: "WP-2608-055", jenis: "Perbaikan Atap", lokasi: "Gudang Utama", permitTypes: ["Ketinggian"] },
-];
-
-const PIE_DATA = [
-  { name: 'Ketinggian', value: 30, color: '#f59e0b' },
-  { name: 'Panas', value: 40, color: '#ef4444' },
-  { name: 'Ruang Terbatas', value: 15, color: '#6366f1' },
-  { name: 'Umum', value: 15, color: '#10b981' },
-];
+import { api } from "@/services/api";
 
 export default function DashboardHSEPage() {
   const [loading, setLoading] = useState(true);
+  const [dashboardData, setDashboardData] = useState<any>({
+    pendingReviewCount: 0,
+    pendingReview: [],
+    activeTotal: 0,
+    activeHighRiskCount: 0,
+    activeHighRisk: [],
+    activeVendorsCount: 0,
+    pieData: [],
+  });
   const navigate = useNavigate();
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setLoading(false);
-    }, 500);
-    return () => clearTimeout(timer);
+    const fetchDashboard = async () => {
+      setLoading(true);
+      try {
+        const res = await api.getHseDashboard();
+        if (res.success && res.data) {
+          setDashboardData(res.data);
+        }
+      } catch (err: any) {
+        console.warn("Could not fetch HSE dashboard:", err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchDashboard();
   }, []);
 
   if (loading) {
@@ -58,13 +60,16 @@ export default function DashboardHSEPage() {
           
           <div className="flex flex-col lg:flex-row gap-4 justify-between items-start lg:items-center">
             <div>
-              <h2 className="text-2xl font-bold text-gray-900">Portal PIC HSE</h2>
+              <h2 className="text-2xl font-bold text-gray-900">Portal Keselamatan Kerja (HSE)</h2>
               <p className="text-sm text-gray-500 mt-1">Pantau kepatuhan, review JSA, dan amankan area kerja hari ini.</p>
             </div>
             
             <div className="flex gap-2 w-full lg:w-auto">
-              <button className="flex-1 lg:flex-none flex items-center justify-center gap-2 bg-success-container/30 text-success border border-success/30 px-4 py-2.5 rounded-lg hover:bg-success-container/50 transition-colors text-sm font-semibold">
-                <ScanLine size={18} /> Scan Permit (QR)
+              <button 
+                onClick={() => navigate('/review')}
+                className="flex-1 lg:flex-none flex items-center justify-center gap-2 bg-success-container/30 text-success border border-success/30 px-4 py-2.5 rounded-lg hover:bg-success-container/50 transition-colors text-sm font-semibold cursor-pointer"
+              >
+                <ScanLine size={18} /> Antrean Review Ijin
               </button>
             </div>
           </div>
@@ -73,25 +78,25 @@ export default function DashboardHSEPage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <MetricCard 
               title="Menunggu Review" 
-              value={DUMMY_PENDING_REVIEW.length} 
+              value={dashboardData.pendingReviewCount || 0} 
               icon={Clock} 
-              color="error" // Red indicates action needed urgently
+              color="error"
             />
             <MetricCard 
               title="Pekerjaan Aktif (Total)" 
-              value="12" 
+              value={dashboardData.activeTotal || 0} 
               icon={CheckCircle2} 
               color="success"
             />
             <MetricCard 
               title="Aktif (Risiko Tinggi)" 
-              value="5" 
+              value={dashboardData.activeHighRiskCount || 0} 
               icon={ShieldAlert} 
               color="warning" 
             />
             <MetricCard 
               title="Vendor Aktif" 
-              value="8" 
+              value={dashboardData.activeVendorsCount || 0} 
               icon={Users} 
               color="info"
             />
@@ -119,25 +124,34 @@ export default function DashboardHSEPage() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-100">
-                      {DUMMY_PENDING_REVIEW.map((req) => (
-                        <tr key={req.id} className="hover:bg-gray-50/50">
-                          <td className="px-4 py-3">
-                            <div className="font-bold text-gray-900">{req.id}</div>
-                            <div className="text-gray-500 mt-0.5">{req.jenis}</div>
-
-                          </td>
-                          <td className="px-4 py-3 text-gray-700">{req.kontraktor}</td>
-                          <td className="px-4 py-3 text-gray-700">{req.mulai}</td>
-                          <td className="px-4 py-3 text-right">
-                            <button 
-                              onClick={() => navigate('/review')}
-                              className="inline-flex items-center gap-1 bg-primary text-on-primary px-3 py-1.5 rounded-lg text-xs font-semibold hover:opacity-90 transition-opacity"
-                            >
-                              Review <ChevronRight size={14} />
-                            </button>
+                      {dashboardData.pendingReview && dashboardData.pendingReview.length > 0 ? (
+                        dashboardData.pendingReview.map((req: any) => (
+                          <tr key={req.id} className="hover:bg-gray-50/50">
+                            <td className="px-4 py-3">
+                              <div className="font-bold text-gray-900">{req.id}</div>
+                              <div className="text-gray-500 mt-0.5">{req.jenis}</div>
+                            </td>
+                            <td className="px-4 py-3 text-gray-700">{req.kontraktor}</td>
+                            <td className="px-4 py-3 text-gray-700">{req.mulai}</td>
+                            <td className="px-4 py-3 text-right">
+                              <button 
+                                onClick={() => navigate('/review')}
+                                className="inline-flex items-center gap-1 bg-primary text-on-primary px-3 py-1.5 rounded-lg text-xs font-semibold hover:opacity-90 transition-opacity cursor-pointer"
+                              >
+                                Review <ChevronRight size={14} />
+                              </button>
+                            </td>
+                          </tr>
+                        ))
+                      ) : (
+                        <tr>
+                          <td colSpan={4} className="px-4 py-8 text-center text-gray-500">
+                            <CheckCircle2 size={28} className="mx-auto mb-1 text-emerald-500 opacity-60" />
+                            <p className="text-xs font-semibold text-gray-700">Tidak ada antrean pending</p>
+                            <p className="text-[11px] text-gray-400">Seluruh dokumen telah diperiksa.</p>
                           </td>
                         </tr>
-                      ))}
+                      )}
                     </tbody>
                   </table>
                 </div>
@@ -152,23 +166,31 @@ export default function DashboardHSEPage() {
                   </h3>
                 </div>
                 <div className="p-0">
-                  <ul className="divide-y divide-gray-100">
-                    {DUMMY_ACTIVE_HIGH_RISK.map((job) => (
-                      <li key={job.id} className="p-4 hover:bg-gray-50/50 transition-colors flex justify-between items-center">
-                        <div>
-                          <p className="text-sm font-bold text-gray-900">{job.id} • {job.jenis}</p>
-                          <p className="text-xs text-gray-500 mt-1">Lokasi: {job.lokasi}</p>
-                        </div>
-                        <div className="text-right flex flex-col items-end gap-2">
-                          <div className="flex gap-1">
-                            {job.permitTypes.map(pt => (
-                              <span key={pt} className="inline-flex w-max items-center justify-center bg-gray-100 text-gray-600 border border-gray-200 px-3 py-0.5 rounded-full text-xs font-bold">{pt}</span>
-                            ))}
+                  {dashboardData.activeHighRisk && dashboardData.activeHighRisk.length > 0 ? (
+                    <ul className="divide-y divide-gray-100">
+                      {dashboardData.activeHighRisk.map((job: any) => (
+                        <li key={job.id} className="p-4 hover:bg-gray-50/50 transition-colors flex justify-between items-center">
+                          <div>
+                            <p className="text-sm font-bold text-gray-900">{job.id} • {job.jenis}</p>
+                            <p className="text-xs text-gray-500 mt-1">Lokasi: {job.lokasi}</p>
                           </div>
-                        </div>
-                      </li>
-                    ))}
-                  </ul>
+                          <div className="text-right flex flex-col items-end gap-2">
+                            <div className="flex gap-1">
+                              {job.permitTypes && job.permitTypes.map((pt: string) => (
+                                <span key={pt} className="inline-flex w-max items-center justify-center bg-rose-50 text-rose-700 border border-rose-200 px-3 py-0.5 rounded-full text-xs font-bold">{pt}</span>
+                              ))}
+                            </div>
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <div className="p-8 text-center text-gray-500">
+                      <ShieldAlert size={32} className="mx-auto mb-2 text-emerald-500 opacity-60" />
+                      <p className="text-sm font-medium text-gray-800">Tidak ada pekerjaan risiko tinggi aktif</p>
+                      <p className="text-xs text-gray-400 mt-0.5">Seluruh pekerjaan saat ini berada pada klasifikasi aman / risiko umum.</p>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -184,7 +206,7 @@ export default function DashboardHSEPage() {
                 <ResponsiveContainer width="100%" height={250}>
                   <PieChart>
                     <Pie
-                      data={PIE_DATA}
+                      data={dashboardData.pieData && dashboardData.pieData.length > 0 ? dashboardData.pieData : [{ name: 'Umum', value: 100, color: '#3b82f6' }]}
                       cx="50%"
                       cy="50%"
                       innerRadius={60}
@@ -192,8 +214,8 @@ export default function DashboardHSEPage() {
                       paddingAngle={5}
                       dataKey="value"
                     >
-                      {PIE_DATA.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      {(dashboardData.pieData && dashboardData.pieData.length > 0 ? dashboardData.pieData : [{ color: '#3b82f6' }]).map((entry: any, index: number) => (
+                        <Cell key={`cell-${index}`} fill={entry.color || '#3b82f6'} />
                       ))}
                     </Pie>
                     <Tooltip 

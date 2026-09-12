@@ -5,70 +5,6 @@ import { cn } from "@/lib/utils";
 import { api } from "@/services/api";
 import { PrintPermitModal } from "@/components/PrintPermitModal";
 
-const INITIAL_REQUESTS = [
-  {
-    id: "WP-2608-058",
-    kontraktor: "PT Bangun Karya",
-    jenisPekerjaan: "Pengelasan Pipa",
-    lokasi: "Area Tangki A",
-    mulaiKerja: "2026-08-21",
-    selesaiKerja: "2026-08-25",
-    jamKerjaMulai: "08:00",
-    jamKerjaAkhir: "16:00",
-    penanggungJawab: "Budi Santoso",
-    noHpPJ: "081233445566",
-    pengawasPekerjaan: "Agus",
-    noHpPengawas: "081122334455",
-    pengawasHse: "Dina",
-    noHpHse: "087788990011",
-    risiko: "Tinggi",
-    status: "Menunggu HSE",
-    permitTypes: ["Ijin Kerja Panas (Hot Work)"],
-    ppe: ["Helm Safety", "Sepatu Safety", "Kacamata Las", "Sarung Tangan Kulit", "Masker Fume"],
-    workEquipment: ["Mesin Las", "Tabung Gas", "APAR", "Gerinda"],
-    pekerja: [
-      { id: 1, nama: "Tono", jabatan: "Welder", alamat: "Jl. Pahlawan No 45" },
-      { id: 2, nama: "Budi", jabatan: "Fitter", alamat: "Perum Indah Blok C2" },
-      { id: 3, nama: "Andi", jabatan: "Helper", alamat: "Jl. Melati Raya No 8" }
-    ],
-    jsa: [
-      { id: 1, tahapan: "Persiapan Las", peralatan: "Mesin Las", potensi: "Kebocoran gas, korsleting", pengendalian: "Cek selang gas, pastikan kabel tidak terkelupas", tanggapDarurat: "Sediakan APAR" },
-      { id: 2, tahapan: "Proses Pengelasan", peralatan: "Welding Torch", potensi: "Percikan api mengenai bahan mudah terbakar", pengendalian: "Pasang fire blanket, bersihkan area 10m dari bahan mudah terbakar", tanggapDarurat: "Gunakan APAR, hubungi pemadam" }
-    ]
-  },
-  {
-    id: "WP-2608-062",
-    kontraktor: "PT Amanah Karya",
-    jenisPekerjaan: "Instalasi AC",
-    lokasi: "Gedung B Lantai 2",
-    mulaiKerja: "2026-08-22",
-    selesaiKerja: "2026-08-23",
-    jamKerjaMulai: "09:00",
-    jamKerjaAkhir: "17:00",
-    penanggungJawab: "Rudi Hartono",
-    noHpPJ: "085566778899",
-    pengawasPekerjaan: "Samsul",
-    noHpPengawas: "082233445566",
-    pengawasHse: "Rian",
-    noHpHse: "083344556677",
-    risiko: "Rendah",
-    status: "Menunggu GA Dept Head", 
-    permitTypes: ["Ijin Kerja Umum"],
-    ppe: ["Helm Safety", "Sepatu Safety", "Sarung Tangan Katun"],
-    workEquipment: ["Tangga Aluminum", "Bor Listrik", "Toolbox"],
-    pekerja: [
-      { id: 1, nama: "Doni", jabatan: "Teknisi AC", alamat: "Jl. Anggrek No 12" },
-      { id: 2, nama: "Feri", jabatan: "Teknisi AC", alamat: "Jl. Mawar Indah 3" },
-      { id: 3, nama: "Joko", jabatan: "Helper", alamat: "Kp. Rambutan RT 01" },
-      { id: 4, nama: "Dika", jabatan: "Helper", alamat: "Kp. Rambutan RT 02" }
-    ],
-    jsa: [
-      { id: 1, tahapan: "Pasang Bracket Indoor", peralatan: "Bor Listrik", potensi: "Tersengat listrik, debu", pengendalian: "Pastikan kabel bor aman, gunakan masker", tanggapDarurat: "Matikan panel listrik" },
-      { id: 2, tahapan: "Naik Tangga", peralatan: "Tangga", potensi: "Terjatuh", pengendalian: "Pegang tangga oleh helper, pastikan lantai rata", tanggapDarurat: "P3K" }
-    ]
-  }
-];
-
 function mapApiToReview(item: any) {
   return {
     id: item.permit_number || `WP-${item.id}`,
@@ -110,8 +46,8 @@ function mapApiToReview(item: any) {
 }
 
 export default function ReviewRequestsPage() {
-  const [requests, setRequests] = useState<any[]>(INITIAL_REQUESTS);
-  const [loading, setLoading] = useState(false);
+  const [requests, setRequests] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
   const [selectedRequest, setSelectedRequest] = useState<any>(null);
   const [rejectModal, setRejectModal] = useState<{isOpen: boolean, id: string | null, rawId?: any}>({isOpen: false, id: null});
   const [approveModal, setApproveModal] = useState<{isOpen: boolean, id: string | null}>({isOpen: false, id: null});
@@ -124,11 +60,14 @@ export default function ReviewRequestsPage() {
     setLoading(true);
     try {
       const res = await api.getReviewQueue();
-      if (res.success && res.data && res.data.length > 0) {
+      if (res.success && res.data) {
         setRequests(res.data.map(mapApiToReview));
+      } else {
+        setRequests([]);
       }
-    } catch (err) {
-      console.warn("Could not fetch review queue from API, keeping initial fallback:", err);
+    } catch (err: any) {
+      console.warn("Could not fetch review queue from API:", err.message);
+      setRequests([]);
     } finally {
       setLoading(false);
     }

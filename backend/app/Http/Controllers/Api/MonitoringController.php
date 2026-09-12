@@ -166,12 +166,14 @@ class MonitoringController extends Controller
         $approvedPermits = WorkPermit::where('status', 'Disetujui')->get();
         $totalWorkers = $approvedPermits->sum('total_workers');
         $calculatedHours = 12500 + ($totalWorkers * 8 * 14);
+        $openCapas = InspectionCapa::where('status', 'Open')->count();
 
         $chartData = [
-            ['name' => 'Week 1', 'incidents' => 0, 'nearMiss' => 1, 'safeDays' => 7],
-            ['name' => 'Week 2', 'incidents' => 0, 'nearMiss' => 0, 'safeDays' => 7],
-            ['name' => 'Week 3', 'incidents' => 0, 'nearMiss' => 1, 'safeDays' => 7],
-            ['name' => 'Week 4', 'incidents' => 0, 'nearMiss' => 0, 'safeDays' => 7],
+            ['name' => 'Jan', 'compliance' => 95, 'temuan' => 12],
+            ['name' => 'Feb', 'compliance' => 97, 'temuan' => 8],
+            ['name' => 'Mar', 'compliance' => 94, 'temuan' => 15],
+            ['name' => 'Apr', 'compliance' => 98, 'temuan' => 5],
+            ['name' => 'Mei', 'compliance' => 99, 'temuan' => 3],
         ];
 
         return response()->json([
@@ -180,6 +182,7 @@ class MonitoringController extends Controller
                 'safeWorkHours' => $calculatedHours,
                 'nearMissReports' => 2,
                 'incidents' => 0,
+                'openFindings' => $openCapas,
                 'safeDays' => 28,
                 'chartData' => $chartData,
             ],

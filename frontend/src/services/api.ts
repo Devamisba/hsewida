@@ -28,29 +28,6 @@ export async function apiRequest<T = any>(endpoint: string, options: RequestInit
   }
 }
 
-// Mock data for offline fallback
-export const MOCK_DASHBOARD_METRICS = {
-  activePermits: 42,
-  safeWorkHours: 12500,
-  nearMissReports: 3,
-};
-
-export const MOCK_FACILITY_STATUS = [
-  { id: 1, name: "APAR (Fire Extinguisher)", status: "Good", lastChecked: "2026-08-25" },
-  { id: 2, name: "Hydrant Monitoring", status: "Needs Attention", lastChecked: "2026-08-20" },
-  { id: 3, name: "Emergency Door", status: "Good", lastChecked: "2026-08-25" },
-  { id: 4, name: "P3K (First Aid Kit)", status: "Expired", lastChecked: "2026-08-15" },
-  { id: 5, name: "Safety Mirror", status: "Good", lastChecked: "2026-08-25" },
-  { id: 6, name: "Assembly Point", status: "Good", lastChecked: "2026-08-25" },
-];
-
-export const MOCK_CHART_DATA = [
-  { name: "Week 1", incidents: 0, nearMiss: 1, safeDays: 7 },
-  { name: "Week 2", incidents: 0, nearMiss: 0, safeDays: 7 },
-  { name: "Week 3", incidents: 0, nearMiss: 1, safeDays: 7 },
-  { name: "Week 4", incidents: 0, nearMiss: 0, safeDays: 7 },
-];
-
 // Unified API Service for frontend components
 export const api = {
   // 1. Auth API
@@ -73,6 +50,13 @@ export const api = {
     return apiRequest('/auth/me');
   },
 
+  updateProfile: async (payload: any) => {
+    return apiRequest('/auth/profile', {
+      method: 'PUT',
+      body: JSON.stringify(payload),
+    });
+  },
+
   // 2. Work Permits
   submitWorkPermit: async (payload: any) => {
     return await apiRequest('/permits', {
@@ -90,6 +74,10 @@ export const api = {
   },
 
   getHistory: async () => {
+    return apiRequest('/permits/history');
+  },
+
+  getPermitHistory: async () => {
     return apiRequest('/permits/history');
   },
 
@@ -305,6 +293,13 @@ export const api = {
     return apiRequest(`/monitoring/facilities${query}`);
   },
 
+  createFacility: async (payload: any) => {
+    return apiRequest('/monitoring/facilities', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
+
   submitInspection: async (payload: any) => {
     return apiRequest('/monitoring/inspections', {
       method: 'POST',
@@ -312,29 +307,34 @@ export const api = {
     });
   },
 
-  getDashboardData: async () => {
-    try {
-      const data = await apiRequest('/monitoring/spi-metrics');
-      return {
-        metrics: {
-          activePermits: 42,
-          safeWorkHours: data.data.safeWorkHours,
-          nearMissReports: data.data.nearMissReports,
-        },
-        facilities: MOCK_FACILITY_STATUS,
-        chartData: data.data.chartData,
-      };
-    } catch {
-      return {
-        metrics: MOCK_DASHBOARD_METRICS,
-        facilities: MOCK_FACILITY_STATUS,
-        chartData: MOCK_CHART_DATA,
-      };
-    }
+  submitCapa: async (payload: any) => {
+    return apiRequest('/monitoring/capa', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
   },
 
-  updateFacilityStatus: async (facilityId: number, newStatus: string) => {
-    console.log(`Mock API: Updating facility ${facilityId} to ${newStatus}`);
-    return { success: true };
-  }
+  closeCapa: async (id: number | string, notes?: string) => {
+    return apiRequest(`/monitoring/capa/${id}/close`, {
+      method: 'PUT',
+      body: JSON.stringify({ close_notes: notes }),
+    });
+  },
+
+  getSpiMetrics: async () => {
+    return apiRequest('/monitoring/spi-metrics');
+  },
+
+  // 11. Real Role Dashboards
+  getContractorDashboard: async () => {
+    return apiRequest('/dashboard/contractor');
+  },
+
+  getHseDashboard: async () => {
+    return apiRequest('/dashboard/hse');
+  },
+
+  getGaDashboard: async () => {
+    return apiRequest('/dashboard/ga');
+  },
 };

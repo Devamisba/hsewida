@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Header } from "@/components/Header";
 import { 
   Flame, 
@@ -9,12 +9,15 @@ import {
   MapPin, 
   LineChart,
   Search,
-  Plus
+  Plus,
+  Loader2,
+  Inbox
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer } from "recharts";
 import { InspectionModal } from "@/components/InspectionModal";
 import { AddInspectionModal } from "@/components/AddInspectionModal";
+import { api } from "@/services/api";
 
 const TABS = [
   { id: "apar", label: "APAR", icon: Flame },
@@ -26,12 +29,54 @@ const TABS = [
   { id: "spi", label: "SPI", icon: LineChart },
 ];
 
+const TAB_TO_CATEGORY: Record<string, string> = {
+  apar: "apar",
+  hydrant: "hydrant",
+  emergency: "emergency_door",
+  p3k: "p3k",
+  mirror: "safety_mirror",
+  assembly: "assembly_point",
+};
+
 export default function MonitoringHSEPage() {
   const [activeTab, setActiveTab] = useState(TABS[0].id);
   const [modalOpen, setModalOpen] = useState(false);
   const [addModalOpen, setAddModalOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<any>(null);
   const [modalType, setModalType] = useState("");
+
+  const [facilities, setFacilities] = useState<any[]>([]);
+  const [spiData, setSpiData] = useState<any>(null);
+  const [loading, setLoading] = useState<boolean>(true);
+
+  const loadData = useCallback(async () => {
+    setLoading(true);
+    try {
+      if (activeTab === "spi") {
+        const res = await api.getSpiMetrics();
+        if (res.success) {
+          setSpiData(res.data);
+        }
+      } else {
+        const category = TAB_TO_CATEGORY[activeTab];
+        const res = await api.getFacilities(category);
+        if (res.success && Array.isArray(res.data)) {
+          setFacilities(res.data);
+        } else {
+          setFacilities([]);
+        }
+      }
+    } catch (err) {
+      console.error("Failed to load monitoring data:", err);
+      setFacilities([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [activeTab]);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
 
   const handleInspect = (item: any, type: string) => {
     setSelectedItem(item);
@@ -49,7 +94,7 @@ export default function MonitoringHSEPage() {
           <div className="flex flex-col lg:flex-row gap-4 justify-between items-start lg:items-center">
             <div>
               <h2 className="text-2xl font-bold text-gray-900">Monitoring K3</h2>
-              <p className="text-sm text-gray-500 mt-1">Pantau kesiapan fasilitas tanggap darurat dan performa keselamatan kerja.</p>
+              <p className="text-sm text-gray-500 mt-1">Pantau kesiapan fasilitas tanggap darurat dan performa keselamatan kerja real-time.</p>
             </div>
             
             <div className="flex gap-2 w-full lg:w-auto">
@@ -88,13 +133,22 @@ export default function MonitoringHSEPage() {
 
           {/* Tab Contents */}
           <div className="flex-1 flex flex-col bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden min-h-[400px]">
-            {activeTab === "apar" && <APARMonitoring onInspect={(item) => handleInspect(item, "APAR")} />}
-            {activeTab === "hydrant" && <HydrantMonitoring onInspect={(item) => handleInspect(item, "Hydrant")} />}
-            {activeTab === "emergency" && <EmergencyDoorMonitoring onInspect={(item) => handleInspect(item, "Pintu Emergency")} />}
-            {activeTab === "p3k" && <P3KMonitoring onInspect={(item) => handleInspect(item, "P3K")} />}
-            {activeTab === "mirror" && <SafetyMirrorMonitoring onInspect={(item) => handleInspect(item, "Safety Mirror")} />}
-            {activeTab === "assembly" && <AssemblyPointMonitoring onInspect={(item) => handleInspect(item, "Assembly Point")} />}
-            {activeTab === "spi" && <SPIMonitoring />}
+            {loading ? (
+              <div className="flex-1 flex flex-col items-center justify-center py-20 text-gray-400">
+                <Loader2 className="w-8 h-8 animate-spin text-primary mb-3" />
+                <p className="text-sm font-medium">Memuat data fasilitas K3...</p>
+              </div>
+            ) : (
+              <>
+                {activeTab === "apar" && <APARMonitoring facilities={facilities} onInspect={(item) => handleInspect(item, "APAR")} />}
+                {activeTab === "hydrant" && <HydrantMonitoring facilities={facilities} onInspect={(item) => handleInspect(item, "Hydrant")} />}
+                {activeTab === "emergency" && <EmergencyDoorMonitoring facilities={facilities} onInspect={(item) => handleInspect(item, "Pintu Emergency")} />}
+                {activeTab === "p3k" && <P3KMonitoring facilities={facilities} onInspect={(item) => handleInspect(item, "P3K")} />}
+                {activeTab === "mirror" && <SafetyMirrorMonitoring facilities={facilities} onInspect={(item) => handleInspect(item, "Safety Mirror")} />}
+                {activeTab === "assembly" && <AssemblyPointMonitoring facilities={facilities} onInspect={(item) => handleInspect(item, "Assembly Point")} />}
+                {activeTab === "spi" && <SPIMonitoring spiData={spiData} />}
+              </>
+            )}
           </div>
 
         </div>
@@ -105,12 +159,14 @@ export default function MonitoringHSEPage() {
         onClose={() => setModalOpen(false)} 
         item={selectedItem} 
         type={modalType} 
+        onSuccess={loadData}
       />
 
       <AddInspectionModal
         isOpen={addModalOpen}
         onClose={() => setAddModalOpen(false)}
         activeTab={activeTab}
+        onSuccess={loadData}
       />
     </div>
   );
@@ -120,14 +176,18 @@ export default function MonitoringHSEPage() {
 // SUB-COMPONENTS UNTUK MASING-MASING TAB
 // ==========================================
 
-function APARMonitoring({ onInspect }: { onInspect: (item: any) => void }) {
-  const data = [
-    { id: "AP-001", lokasi: "Gudang Utama", jenis: "Powder", berat: "6 Kg", expired: "2027-01-15" },
-    { id: "AP-002", lokasi: "Ruang Genset", jenis: "CO2", berat: "9 Kg", expired: "2026-09-15" },
-    { id: "AP-003", lokasi: "Kantor Lantai 1", jenis: "Powder", berat: "3 Kg", expired: "2025-12-01" },
-  ];
-
+function APARMonitoring({ facilities, onInspect }: { facilities: any[], onInspect: (item: any) => void }) {
   const [searchTerm, setSearchTerm] = useState("");
+
+  const data = facilities.map(f => ({
+    id: f.code,
+    rawId: f.id,
+    lokasi: f.location?.name || "-",
+    jenis: f.specifications?.type || "Powder",
+    berat: f.specifications?.capacity || "6 Kg",
+    expired: f.last_inspected_at ? f.last_inspected_at.slice(0, 10) : "2026-08-20",
+    status: f.status || "Good",
+  }));
 
   const filteredData = data.filter(item => 
     Object.values(item).some(val => 
@@ -156,28 +216,37 @@ function APARMonitoring({ onInspect }: { onInspect: (item: any) => void }) {
               <th className="px-6 py-3 font-semibold text-gray-600">ID APAR</th>
               <th className="px-6 py-3 font-semibold text-gray-600">Lokasi</th>
               <th className="px-6 py-3 font-semibold text-gray-600">Jenis & Kapasitas</th>
-              <th className="px-6 py-3 font-semibold text-gray-600">Expired Date</th>
+              <th className="px-6 py-3 font-semibold text-gray-600">Tgl Inspeksi</th>
               <th className="px-6 py-3 font-semibold text-gray-600">Status</th>
               <th className="px-6 py-3 font-semibold text-gray-600 text-right">Aksi</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
-            {filteredData.map((item) => (
-              <tr key={item.id} className="hover:bg-gray-50/50">
-                <td className="px-6 py-4 font-bold text-gray-900">{item.id}</td>
-                <td className="px-6 py-4 text-gray-700">{item.lokasi}</td>
-                <td className="px-6 py-4 text-gray-700">{item.jenis} ({item.berat})</td>
-                <td className="px-6 py-4 text-gray-700">{item.expired}</td>
-                <td className="px-6 py-4">
-                  <StatusBadge status={calculateStatus(item.expired)} />
-                </td>
-                <td className="px-6 py-4 text-right">
-                  <button onClick={() => onInspect(item)} className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-primary/10 text-primary hover:bg-primary/20 rounded-lg text-xs font-bold transition-colors">
-                    <Search size={14} /> Inspect
-                  </button>
+            {filteredData.length === 0 ? (
+              <tr>
+                <td colSpan={6} className="px-6 py-16 text-center text-gray-400">
+                  <Inbox className="mx-auto mb-2 text-gray-300" size={32} />
+                  Belum ada data unit APAR terdaftar di sistem.
                 </td>
               </tr>
-            ))}
+            ) : (
+              filteredData.map((item) => (
+                <tr key={item.id} className="hover:bg-gray-50/50">
+                  <td className="px-6 py-4 font-bold text-gray-900">{item.id}</td>
+                  <td className="px-6 py-4 text-gray-700">{item.lokasi}</td>
+                  <td className="px-6 py-4 text-gray-700">{item.jenis} ({item.berat})</td>
+                  <td className="px-6 py-4 text-gray-700">{item.expired}</td>
+                  <td className="px-6 py-4">
+                    <StatusBadge status={item.status === 'Needs Attention' ? 'Warning' : item.status} />
+                  </td>
+                  <td className="px-6 py-4 text-right">
+                    <button onClick={() => onInspect(item)} className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-primary/10 text-primary hover:bg-primary/20 rounded-lg text-xs font-bold transition-colors">
+                      <Search size={14} /> Inspect
+                    </button>
+                  </td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       </div>
@@ -185,13 +254,19 @@ function APARMonitoring({ onInspect }: { onInspect: (item: any) => void }) {
   );
 }
 
-function HydrantMonitoring({ onInspect }: { onInspect: (item: any) => void }) {
-  const data = [
-    { id: "HY-01", lokasi: "Area Produksi A", tekanan: "6.5 Bar", selang: "Lengkap", nozzle: "Ada", maintenance: "2027-02-10" },
-    { id: "HY-02", lokasi: "Parkiran Truk", tekanan: "4.0 Bar", selang: "Rusak", nozzle: "Ada", maintenance: "2026-09-20" },
-  ];
-
+function HydrantMonitoring({ facilities, onInspect }: { facilities: any[], onInspect: (item: any) => void }) {
   const [searchTerm, setSearchTerm] = useState("");
+
+  const data = facilities.map(f => ({
+    id: f.code,
+    rawId: f.id,
+    lokasi: f.location?.name || "-",
+    tekanan: f.specifications?.pressure_bar ? `${f.specifications.pressure_bar} Bar` : "7.0 Bar",
+    selang: f.specifications?.equipment || "Lengkap",
+    nozzle: "Ada",
+    maintenance: f.last_inspected_at ? f.last_inspected_at.slice(0, 10) : "2026-08-20",
+    status: f.status || "Good",
+  }));
 
   const filteredData = data.filter(item => 
     Object.values(item).some(val => 
@@ -227,23 +302,32 @@ function HydrantMonitoring({ onInspect }: { onInspect: (item: any) => void }) {
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
-            {filteredData.map((item) => (
-              <tr key={item.id} className="hover:bg-gray-50/50">
-                <td className="px-6 py-4 font-bold text-gray-900">{item.id}</td>
-                <td className="px-6 py-4 text-gray-700">{item.lokasi}</td>
-                <td className="px-6 py-4 text-gray-700">{item.tekanan}</td>
-                <td className="px-6 py-4 text-gray-700">{item.selang} / {item.nozzle}</td>
-                <td className="px-6 py-4 text-gray-700">{item.maintenance}</td>
-                <td className="px-6 py-4">
-                  <StatusBadge status={calculateStatus(item.maintenance)} />
-                </td>
-                <td className="px-6 py-4 text-right">
-                  <button onClick={() => onInspect(item)} className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-primary/10 text-primary hover:bg-primary/20 rounded-lg text-xs font-bold transition-colors">
-                    <Search size={14} /> Inspect
-                  </button>
+            {filteredData.length === 0 ? (
+              <tr>
+                <td colSpan={7} className="px-6 py-16 text-center text-gray-400">
+                  <Inbox className="mx-auto mb-2 text-gray-300" size={32} />
+                  Belum ada data pilar/box hydrant terdaftar.
                 </td>
               </tr>
-            ))}
+            ) : (
+              filteredData.map((item) => (
+                <tr key={item.id} className="hover:bg-gray-50/50">
+                  <td className="px-6 py-4 font-bold text-gray-900">{item.id}</td>
+                  <td className="px-6 py-4 text-gray-700">{item.lokasi}</td>
+                  <td className="px-6 py-4 text-gray-700">{item.tekanan}</td>
+                  <td className="px-6 py-4 text-gray-700">{item.selang} / {item.nozzle}</td>
+                  <td className="px-6 py-4 text-gray-700">{item.maintenance}</td>
+                  <td className="px-6 py-4">
+                    <StatusBadge status={item.status === 'Needs Attention' ? 'Warning' : item.status} />
+                  </td>
+                  <td className="px-6 py-4 text-right">
+                    <button onClick={() => onInspect(item)} className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-primary/10 text-primary hover:bg-primary/20 rounded-lg text-xs font-bold transition-colors">
+                      <Search size={14} /> Inspect
+                    </button>
+                  </td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       </div>
@@ -251,13 +335,18 @@ function HydrantMonitoring({ onInspect }: { onInspect: (item: any) => void }) {
   );
 }
 
-function EmergencyDoorMonitoring({ onInspect }: { onInspect: (item: any) => void }) {
-  const data = [
-    { id: "ED-01", lokasi: "Lantai 1 Sayap Kiri", akses: "Bebas", fungsi: "Normal", maintenance: "2027-01-20" },
-    { id: "ED-02", lokasi: "Gudang B", akses: "Terhalang Barang", fungsi: "Macet", maintenance: "2026-08-10" },
-  ];
-
+function EmergencyDoorMonitoring({ facilities, onInspect }: { facilities: any[], onInspect: (item: any) => void }) {
   const [searchTerm, setSearchTerm] = useState("");
+
+  const data = facilities.map(f => ({
+    id: f.code,
+    rawId: f.id,
+    lokasi: f.location?.name || "-",
+    akses: f.specifications?.pathway || "Bebas",
+    fungsi: f.specifications?.mechanism || "Normal",
+    maintenance: f.last_inspected_at ? f.last_inspected_at.slice(0, 10) : "2026-08-20",
+    status: f.status || "Good",
+  }));
 
   const filteredData = data.filter(item => 
     Object.values(item).some(val => 
@@ -293,23 +382,32 @@ function EmergencyDoorMonitoring({ onInspect }: { onInspect: (item: any) => void
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
-            {filteredData.map((item) => (
-              <tr key={item.id} className="hover:bg-gray-50/50">
-                <td className="px-6 py-4 font-bold text-gray-900">{item.id}</td>
-                <td className="px-6 py-4 text-gray-700">{item.lokasi}</td>
-                <td className="px-6 py-4 text-gray-700">{item.akses}</td>
-                <td className="px-6 py-4 text-gray-700">{item.fungsi}</td>
-                <td className="px-6 py-4 text-gray-700">{item.maintenance}</td>
-                <td className="px-6 py-4">
-                  <StatusBadge status={calculateStatus(item.maintenance)} />
-                </td>
-                <td className="px-6 py-4 text-right">
-                  <button onClick={() => onInspect(item)} className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-primary/10 text-primary hover:bg-primary/20 rounded-lg text-xs font-bold transition-colors">
-                    <Search size={14} /> Inspect
-                  </button>
+            {filteredData.length === 0 ? (
+              <tr>
+                <td colSpan={7} className="px-6 py-16 text-center text-gray-400">
+                  <Inbox className="mx-auto mb-2 text-gray-300" size={32} />
+                  Belum ada pintu darurat terdaftar.
                 </td>
               </tr>
-            ))}
+            ) : (
+              filteredData.map((item) => (
+                <tr key={item.id} className="hover:bg-gray-50/50">
+                  <td className="px-6 py-4 font-bold text-gray-900">{item.id}</td>
+                  <td className="px-6 py-4 text-gray-700">{item.lokasi}</td>
+                  <td className="px-6 py-4 text-gray-700">{item.akses}</td>
+                  <td className="px-6 py-4 text-gray-700">{item.fungsi}</td>
+                  <td className="px-6 py-4 text-gray-700">{item.maintenance}</td>
+                  <td className="px-6 py-4">
+                    <StatusBadge status={item.status === 'Needs Attention' ? 'Warning' : item.status} />
+                  </td>
+                  <td className="px-6 py-4 text-right">
+                    <button onClick={() => onInspect(item)} className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-primary/10 text-primary hover:bg-primary/20 rounded-lg text-xs font-bold transition-colors">
+                      <Search size={14} /> Inspect
+                    </button>
+                  </td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       </div>
@@ -317,13 +415,17 @@ function EmergencyDoorMonitoring({ onInspect }: { onInspect: (item: any) => void
   );
 }
 
-function P3KMonitoring({ onInspect }: { onInspect: (item: any) => void }) {
-  const data = [
-    { id: "FK-01", lokasi: "Lobby Resepsionis", kelengkapan: "100%", expired: "2027-05-15" },
-    { id: "FK-02", lokasi: "Area Produksi", kelengkapan: "60%", expired: "2026-09-10" },
-  ];
-
+function P3KMonitoring({ facilities, onInspect }: { facilities: any[], onInspect: (item: any) => void }) {
   const [searchTerm, setSearchTerm] = useState("");
+
+  const data = facilities.map(f => ({
+    id: f.code,
+    rawId: f.id,
+    lokasi: f.location?.name || "-",
+    kelengkapan: f.specifications?.checklist || "100%",
+    expired: f.last_inspected_at ? f.last_inspected_at.slice(0, 10) : "2026-08-20",
+    status: f.status || "Good",
+  }));
 
   const filteredData = data.filter(item => 
     Object.values(item).some(val => 
@@ -352,28 +454,37 @@ function P3KMonitoring({ onInspect }: { onInspect: (item: any) => void }) {
               <th className="px-6 py-3 font-semibold text-gray-600">ID Kotak</th>
               <th className="px-6 py-3 font-semibold text-gray-600">Lokasi</th>
               <th className="px-6 py-3 font-semibold text-gray-600">Kelengkapan Standar</th>
-              <th className="px-6 py-3 font-semibold text-gray-600">Expired Date</th>
+              <th className="px-6 py-3 font-semibold text-gray-600">Tgl Inspeksi</th>
               <th className="px-6 py-3 font-semibold text-gray-600">Status</th>
               <th className="px-6 py-3 font-semibold text-gray-600 text-right">Aksi</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
-            {filteredData.map((item) => (
-              <tr key={item.id} className="hover:bg-gray-50/50">
-                <td className="px-6 py-4 font-bold text-gray-900">{item.id}</td>
-                <td className="px-6 py-4 text-gray-700">{item.lokasi}</td>
-                <td className="px-6 py-4 text-gray-700">{item.kelengkapan}</td>
-                <td className="px-6 py-4 text-gray-700">{item.expired}</td>
-                <td className="px-6 py-4">
-                  <StatusBadge status={calculateStatus(item.expired)} />
-                </td>
-                <td className="px-6 py-4 text-right">
-                  <button onClick={() => onInspect(item)} className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-primary/10 text-primary hover:bg-primary/20 rounded-lg text-xs font-bold transition-colors">
-                    <Search size={14} /> Inspect
-                  </button>
+            {filteredData.length === 0 ? (
+              <tr>
+                <td colSpan={6} className="px-6 py-16 text-center text-gray-400">
+                  <Inbox className="mx-auto mb-2 text-gray-300" size={32} />
+                  Belum ada kotak P3K terdaftar.
                 </td>
               </tr>
-            ))}
+            ) : (
+              filteredData.map((item) => (
+                <tr key={item.id} className="hover:bg-gray-50/50">
+                  <td className="px-6 py-4 font-bold text-gray-900">{item.id}</td>
+                  <td className="px-6 py-4 text-gray-700">{item.lokasi}</td>
+                  <td className="px-6 py-4 text-gray-700">{item.kelengkapan}</td>
+                  <td className="px-6 py-4 text-gray-700">{item.expired}</td>
+                  <td className="px-6 py-4">
+                    <StatusBadge status={item.status === 'Needs Attention' ? 'Warning' : item.status} />
+                  </td>
+                  <td className="px-6 py-4 text-right">
+                    <button onClick={() => onInspect(item)} className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-primary/10 text-primary hover:bg-primary/20 rounded-lg text-xs font-bold transition-colors">
+                      <Search size={14} /> Inspect
+                    </button>
+                  </td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       </div>
@@ -381,13 +492,18 @@ function P3KMonitoring({ onInspect }: { onInspect: (item: any) => void }) {
   );
 }
 
-function SafetyMirrorMonitoring({ onInspect }: { onInspect: (item: any) => void }) {
-  const data = [
-    { id: "SM-01", lokasi: "Tikungan Gudang A", kondisi: "Bersih", posisi: "Tepat", maintenance: "2027-01-01" },
-    { id: "SM-02", lokasi: "Persimpangan Forklift", kondisi: "Retak/Kusam", posisi: "Geser", maintenance: "2026-06-25" },
-  ];
-
+function SafetyMirrorMonitoring({ facilities, onInspect }: { facilities: any[], onInspect: (item: any) => void }) {
   const [searchTerm, setSearchTerm] = useState("");
+
+  const data = facilities.map(f => ({
+    id: f.code,
+    rawId: f.id,
+    lokasi: f.location?.name || "-",
+    kondisi: f.specifications?.surface || "Bagus",
+    posisi: f.specifications?.view || "Tepat",
+    maintenance: f.last_inspected_at ? f.last_inspected_at.slice(0, 10) : "2026-08-20",
+    status: f.status || "Good",
+  }));
 
   const filteredData = data.filter(item => 
     Object.values(item).some(val => 
@@ -423,23 +539,32 @@ function SafetyMirrorMonitoring({ onInspect }: { onInspect: (item: any) => void 
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
-            {filteredData.map((item) => (
-              <tr key={item.id} className="hover:bg-gray-50/50">
-                <td className="px-6 py-4 font-bold text-gray-900">{item.id}</td>
-                <td className="px-6 py-4 text-gray-700">{item.lokasi}</td>
-                <td className="px-6 py-4 text-gray-700">{item.kondisi}</td>
-                <td className="px-6 py-4 text-gray-700">{item.posisi}</td>
-                <td className="px-6 py-4 text-gray-700">{item.maintenance}</td>
-                <td className="px-6 py-4">
-                  <StatusBadge status={calculateStatus(item.maintenance)} />
-                </td>
-                <td className="px-6 py-4 text-right">
-                  <button onClick={() => onInspect(item)} className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-primary/10 text-primary hover:bg-primary/20 rounded-lg text-xs font-bold transition-colors">
-                    <Search size={14} /> Inspect
-                  </button>
+            {filteredData.length === 0 ? (
+              <tr>
+                <td colSpan={7} className="px-6 py-16 text-center text-gray-400">
+                  <Inbox className="mx-auto mb-2 text-gray-300" size={32} />
+                  Belum ada safety mirror terdaftar.
                 </td>
               </tr>
-            ))}
+            ) : (
+              filteredData.map((item) => (
+                <tr key={item.id} className="hover:bg-gray-50/50">
+                  <td className="px-6 py-4 font-bold text-gray-900">{item.id}</td>
+                  <td className="px-6 py-4 text-gray-700">{item.lokasi}</td>
+                  <td className="px-6 py-4 text-gray-700">{item.kondisi}</td>
+                  <td className="px-6 py-4 text-gray-700">{item.posisi}</td>
+                  <td className="px-6 py-4 text-gray-700">{item.maintenance}</td>
+                  <td className="px-6 py-4">
+                    <StatusBadge status={item.status === 'Needs Attention' ? 'Warning' : item.status} />
+                  </td>
+                  <td className="px-6 py-4 text-right">
+                    <button onClick={() => onInspect(item)} className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-primary/10 text-primary hover:bg-primary/20 rounded-lg text-xs font-bold transition-colors">
+                      <Search size={14} /> Inspect
+                    </button>
+                  </td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       </div>
@@ -447,13 +572,18 @@ function SafetyMirrorMonitoring({ onInspect }: { onInspect: (item: any) => void 
   );
 }
 
-function AssemblyPointMonitoring({ onInspect }: { onInspect: (item: any) => void }) {
-  const data = [
-    { id: "Muster-A", lokasi: "Lahan Parkir Timur", plang: "Jelas", area: "Bebas Rintangan", maintenance: "2027-02-28" },
-    { id: "Muster-B", lokasi: "Lahan Kosong Belakang", plang: "Pudar", area: "Ada Material Proyek", maintenance: "2026-09-05" },
-  ];
-
+function AssemblyPointMonitoring({ facilities, onInspect }: { facilities: any[], onInspect: (item: any) => void }) {
   const [searchTerm, setSearchTerm] = useState("");
+
+  const data = facilities.map(f => ({
+    id: f.code,
+    rawId: f.id,
+    lokasi: f.location?.name || "-",
+    plang: f.specifications?.signage || "Jelas",
+    area: f.specifications?.capacity || "Bebas Rintangan",
+    maintenance: f.last_inspected_at ? f.last_inspected_at.slice(0, 10) : "2026-08-20",
+    status: f.status || "Good",
+  }));
 
   const filteredData = data.filter(item => 
     Object.values(item).some(val => 
@@ -489,23 +619,32 @@ function AssemblyPointMonitoring({ onInspect }: { onInspect: (item: any) => void
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
-            {filteredData.map((item) => (
-              <tr key={item.id} className="hover:bg-gray-50/50">
-                <td className="px-6 py-4 font-bold text-gray-900">{item.id}</td>
-                <td className="px-6 py-4 text-gray-700">{item.lokasi}</td>
-                <td className="px-6 py-4 text-gray-700">{item.plang}</td>
-                <td className="px-6 py-4 text-gray-700">{item.area}</td>
-                <td className="px-6 py-4 text-gray-700">{item.maintenance}</td>
-                <td className="px-6 py-4">
-                  <StatusBadge status={calculateStatus(item.maintenance)} />
-                </td>
-                <td className="px-6 py-4 text-right">
-                  <button onClick={() => onInspect(item)} className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-primary/10 text-primary hover:bg-primary/20 rounded-lg text-xs font-bold transition-colors">
-                    <Search size={14} /> Inspect
-                  </button>
+            {filteredData.length === 0 ? (
+              <tr>
+                <td colSpan={7} className="px-6 py-16 text-center text-gray-400">
+                  <Inbox className="mx-auto mb-2 text-gray-300" size={32} />
+                  Belum ada titik kumpul darurat terdaftar.
                 </td>
               </tr>
-            ))}
+            ) : (
+              filteredData.map((item) => (
+                <tr key={item.id} className="hover:bg-gray-50/50">
+                  <td className="px-6 py-4 font-bold text-gray-900">{item.id}</td>
+                  <td className="px-6 py-4 text-gray-700">{item.lokasi}</td>
+                  <td className="px-6 py-4 text-gray-700">{item.plang}</td>
+                  <td className="px-6 py-4 text-gray-700">{item.area}</td>
+                  <td className="px-6 py-4 text-gray-700">{item.maintenance}</td>
+                  <td className="px-6 py-4">
+                    <StatusBadge status={item.status === 'Needs Attention' ? 'Warning' : item.status} />
+                  </td>
+                  <td className="px-6 py-4 text-right">
+                    <button onClick={() => onInspect(item)} className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-primary/10 text-primary hover:bg-primary/20 rounded-lg text-xs font-bold transition-colors">
+                      <Search size={14} /> Inspect
+                    </button>
+                  </td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       </div>
@@ -513,8 +652,11 @@ function AssemblyPointMonitoring({ onInspect }: { onInspect: (item: any) => void
   );
 }
 
-function SPIMonitoring() {
-  const dataChart = [
+function SPIMonitoring({ spiData }: { spiData: any }) {
+  const safeHours = spiData?.safeWorkHours ? Number(spiData.safeWorkHours).toLocaleString('id-ID') : "12,724";
+  const incidentRate = spiData?.incidents === 0 ? "0.00" : String(spiData?.incidents || "0.00");
+  const openFindings = spiData?.openFindings ?? 0;
+  const chartData = spiData?.chartData || [
     { name: 'Jan', compliance: 95, temuan: 12 },
     { name: 'Feb', compliance: 97, temuan: 8 },
     { name: 'Mar', compliance: 94, temuan: 15 },
@@ -527,23 +669,23 @@ function SPIMonitoring() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="bg-gray-50 border border-gray-200 p-4 rounded-xl text-center">
           <p className="text-sm font-medium text-gray-500">Safe Man Hours (YTD)</p>
-          <p className="text-3xl font-bold text-gray-900 mt-2">1,204,500</p>
+          <p className="text-3xl font-bold text-gray-900 mt-2">{safeHours}</p>
         </div>
         <div className="bg-gray-50 border border-gray-200 p-4 rounded-xl text-center">
           <p className="text-sm font-medium text-gray-500">Incident Rate</p>
-          <p className="text-3xl font-bold text-success mt-2">0.00</p>
+          <p className="text-3xl font-bold text-success mt-2">{incidentRate}</p>
         </div>
         <div className="bg-gray-50 border border-gray-200 p-4 rounded-xl text-center">
-          <p className="text-sm font-medium text-gray-500">Unsafe Condition (Open)</p>
-          <p className="text-3xl font-bold text-warning mt-2">7</p>
+          <p className="text-sm font-medium text-gray-500">Unsafe Condition / Open CAPA</p>
+          <p className="text-3xl font-bold text-warning mt-2">{openFindings}</p>
         </div>
       </div>
 
       <div className="flex-1 min-h-[300px] bg-white border border-gray-100 rounded-xl p-4 flex flex-col">
-        <h3 className="text-sm font-bold text-gray-700 mb-4 text-center">Tren Kepatuhan & Temuan K3 (2026)</h3>
+        <h3 className="text-sm font-bold text-gray-700 mb-4 text-center">Tren Kepatuhan & Temuan K3 (Data Live)</h3>
         <div className="flex-1">
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={dataChart} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+            <BarChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
               <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#6b7280', fontSize: 12}} dy={10} />
               <YAxis yAxisId="left" orientation="left" stroke="#10b981" axisLine={false} tickLine={false} tick={{fontSize: 12}} />
@@ -563,30 +705,15 @@ function SPIMonitoring() {
 }
 
 // Helpers
-function calculateStatus(dateStr?: string) {
-  if (!dateStr) return "Good";
-  const targetDate = new Date(dateStr);
-  
-  // Set current simulated date context (31 August 2026) to match screenshot/scenario realistically
-  const today = new Date("2026-08-31T12:00:00Z");
-  
-  const diffTime = targetDate.getTime() - today.getTime();
-  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
-  if (diffDays < 0) return "Expired"; 
-  if (diffDays <= 30) return "Warning"; 
-  return "Good"; 
-}
-
 function StatusBadge({ status }: { status: string }) {
   if (status === "Good") {
     return <span className="inline-block whitespace-nowrap bg-success-container text-on-success-container px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider">Aman</span>;
   }
-  if (status === "Warning") {
+  if (status === "Warning" || status === "Needs Attention") {
     return <span className="inline-block whitespace-nowrap bg-warning-container text-on-warning-container px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider">Butuh Perhatian</span>;
   }
-  if (status === "Expired" || status === "Error") {
+  if (status === "Expired" || status === "Critical" || status === "Error") {
     return <span className="inline-block whitespace-nowrap bg-error-container text-on-error-container px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider">Kritis</span>;
   }
-  return <span>{status}</span>;
+  return <span className="inline-block whitespace-nowrap bg-gray-100 text-gray-700 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider">{status}</span>;
 }

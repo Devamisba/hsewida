@@ -32,16 +32,24 @@ export function Header({ title = "HSE Portal", onMobileMenuToggle }: HeaderProps
         <Link to="/profile" className="flex items-center gap-3 hover:opacity-80 transition-opacity cursor-pointer">
           <div className="hidden sm:block text-right">
             <p className="text-sm font-semibold text-gray-900 leading-tight">
-              {sessionStorage.getItem('userRole') === 'hse' ? 'Tim HSE' : 
-               sessionStorage.getItem('userRole') === 'ga_dept_head' ? 'P. Andaru' : 
-               sessionStorage.getItem('userRole') === 'ga_div_head' ? 'P. Effendy' : 
-               sessionStorage.getItem('userRole') === 'pic_vendor' ? 'PIC Vendor Widatra' : 'PT. Maju Mundur'}
+              {(() => {
+                try {
+                  const u = JSON.parse(sessionStorage.getItem('userData') || '{}');
+                  return u.name || 'Pengguna';
+                } catch {
+                  return 'Pengguna';
+                }
+              })()}
             </p>
             <p className="text-xs text-gray-500 font-bold">
-              {sessionStorage.getItem('userRole') === 'hse' ? 'PIC HSE' : 
-               sessionStorage.getItem('userRole') === 'ga_dept_head' ? 'HRD & GA Dept Head' : 
-               sessionStorage.getItem('userRole') === 'ga_div_head' ? 'HRD & GA Div Head' : 
-               sessionStorage.getItem('userRole') === 'pic_vendor' ? 'Penanggung Jawab' : 'Vendor'}
+              {(() => {
+                try {
+                  const u = JSON.parse(sessionStorage.getItem('userData') || '{}');
+                  return u.role?.name || u.company_name || sessionStorage.getItem('userRole') || 'User';
+                } catch {
+                  return sessionStorage.getItem('userRole') || 'User';
+                }
+              })()}
             </p>
           </div>
           <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary text-on-primary font-bold shadow-sm">

@@ -5,72 +5,6 @@ import { cn } from "@/lib/utils";
 import { api } from "@/services/api";
 import { PrintPermitModal } from "@/components/PrintPermitModal";
 
-const DUMMY_REQUESTS = [
-  {
-    id: "WP-2608-001",
-    status: "Disetujui",
-    // Step 1: Data Vendor
-    requestType: "Baru",
-    namaKontraktor: "PT Maju Mundur",
-    jenisPekerjaan: "Perbaikan Instalasi Listrik Panel Utama",
-    lokasi: "Gedung A, Ruang Server",
-    mulaiKerja: "2026-08-20",
-    selesaiKerja: "2026-08-21",
-    jamKerjaMulai: "08:00",
-    jamKerjaAkhir: "17:00",
-    penanggungJawab: "Budi Santoso",
-    noHpPJ: "081234567890",
-    pengawasPekerjaan: "Agus Supriyadi",
-    noHpPengawas: "081298765432",
-    pengawasHse: "Andi Pratama",
-    noHpHse: "085612345678",
-    totalTenagaKerja: "2",
-    // Step 2: Permit & APD
-    permitTypes: ["Ijin Kerja Panas", "Ijin Kerja Listrik", "Ijin Kerja Ruang Terbatas"],
-    ppe: ["Helm Safety", "Sepatu Safety", "Sarung Tangan Karet (20kV)", "Kacamata Safety"],
-    workEquipment: ["Multitester", "Tang Ampere", "Obeng Set Isolasi"],
-    // Step 3: Pekerja
-    pekerja: [
-      { id: 1, nama: "Ahmad Yani", jabatan: "Teknisi Listrik Utama", alamat: "Jl. Merdeka No 1" },
-      { id: 2, nama: "Siti Aminah", jabatan: "Pengawas K3", alamat: "Jl. Sudirman No 2" }
-    ],
-    // Step 4: JSA
-    jsa: [
-      { id: 1, tahapan: "Mematikan arus listrik panel", peralatan: "LOTO Kit", potensi: "Tersengat listrik arus tinggi (Mati/Luka Berat)", pengendalian: "LOTO, gunakan sarung tangan karet 20kV, pastikan indikator mati", tanggapDarurat: "Hubungi klinik 112, amankan area" },
-      { id: 2, tahapan: "Membuka cover dan mengganti komponen", peralatan: "Obeng Set", potensi: "Tergores plat besi, debu berlebih", pengendalian: "Gunakan sarung tangan mekanik, masker debu", tanggapDarurat: "P3K di tempat" }
-    ]
-  },
-  {
-    id: "WP-2608-002",
-    status: "Menunggu PIC Vendor",
-    requestType: "Perpanjangan",
-    namaKontraktor: "PT Karya Konstruksi",
-    jenisPekerjaan: "Pemasangan Scaffolding Area Lobi",
-    lokasi: "Lobi Utama Gedung B",
-    mulaiKerja: "2026-08-22",
-    selesaiKerja: "2026-08-25",
-    jamKerjaMulai: "20:00",
-    jamKerjaAkhir: "05:00",
-    penanggungJawab: "Rudi Hartono",
-    noHpPJ: "082211223344",
-    pengawasPekerjaan: "Joko Anwar",
-    noHpPengawas: "081199887766",
-    pengawasHse: "Dina Mariana",
-    noHpHse: "087755443322",
-    totalTenagaKerja: "4",
-    permitTypes: ["Ijin Kerja Ketinggian", "Ijin Kerja Malam"],
-    ppe: ["Helm Safety", "Sepatu Safety", "Full Body Harness", "Rompi Reflektif"],
-    workEquipment: ["Pipa Scaffolding", "Kunci Pas", "Tali Tambang"],
-    pekerja: [
-      { id: 1, nama: "Rudi H", jabatan: "Scaffolder", alamat: "-" },
-      { id: 2, nama: "Samsul", jabatan: "Helper", alamat: "-" }
-    ],
-    jsa: [
-      { id: 1, tahapan: "Merakit scaffolding lapis 1-3", peralatan: "Kunci Pas, Pipa", potensi: "Pipa terjatuh, tangan terjepit", pengendalian: "Wajib pakai helm & sarung tangan, pasang barikade", tanggapDarurat: "P3K, hentikan pekerjaan sementara" }
-    ]
-  }
-];
-
 function mapApiToRequest(item: any) {
   return {
     id: item.permit_number || `WP-${item.id}`,
@@ -108,6 +42,7 @@ function mapApiToRequest(item: any) {
       pengendalian: j.mitigation_control || j.pengendalian,
       tanggapDarurat: j.emergency_response || j.tanggapDarurat,
     })) : (item.jsa || []),
+    qrToken: item.qr_code_token,
   };
 }
 
@@ -120,13 +55,14 @@ const getStatusBadge = (status: string) => {
       return "bg-warning-container text-on-warning-container";
     case "Disetujui": return "bg-success-container text-on-success-container";
     case "Ditolak": return "bg-error-container text-on-error-container";
+    case "Selesai": return "bg-blue-100 text-blue-800";
     default: return "bg-gray-100 text-gray-700";
   }
 };
 
 export default function MyRequestsPage() {
-  const [requests, setRequests] = useState<any[]>(DUMMY_REQUESTS);
-  const [loading, setLoading] = useState(false);
+  const [requests, setRequests] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
   const [selectedRequest, setSelectedRequest] = useState<any>(null);
   const [printModalPermit, setPrintModalPermit] = useState<any>(null);
 
@@ -135,11 +71,14 @@ export default function MyRequestsPage() {
       setLoading(true);
       try {
         const res = await api.getMyRequests();
-        if (res.success && res.data && res.data.length > 0) {
+        if (res.success && res.data) {
           setRequests(res.data.map(mapApiToRequest));
+        } else {
+          setRequests([]);
         }
-      } catch (err) {
-        console.warn("Could not fetch my requests from API, using default fallback:", err);
+      } catch (err: any) {
+        console.warn("Could not fetch my requests from API:", err.message);
+        setRequests([]);
       } finally {
         setLoading(false);
       }
@@ -176,46 +115,57 @@ export default function MyRequestsPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
-                  {requests.map((req) => (
-                    <tr key={req.id} className="hover:bg-gray-50/50 transition-colors">
-                      <td className="px-5 py-4 text-sm font-bold text-gray-900 whitespace-nowrap">{req.id}</td>
-                      <td className="px-5 py-4 text-sm font-medium text-gray-700">{req.jenisPekerjaan}</td>
-                      <td className="px-5 py-4 text-sm text-gray-500">{req.lokasi}</td>
-                      <td className="px-5 py-4 text-sm text-gray-500 whitespace-nowrap">{req.mulaiKerja} s.d {req.selesaiKerja}</td>
-                      <td className="px-5 py-4 whitespace-nowrap">
-                        <span className={cn("px-2.5 py-1 rounded-full text-xs font-bold tracking-wide uppercase", getStatusBadge(req.status))}>
-                          {req.status}
-                        </span>
-                      </td>
-                      <td className="px-5 py-4 text-right whitespace-nowrap">
-                        <div className="flex items-center justify-end gap-2">
-                          <button 
-                            onClick={() => setSelectedRequest(req)}
-                            className="p-2 text-gray-400 hover:text-primary hover:bg-primary-container/50 rounded-lg transition-colors" 
-                            title="Lihat Detail"
-                          >
-                            <Eye size={18} />
-                          </button>
-                          <button 
-                            onClick={() => setPrintModalPermit(req)} 
-                            className="p-2 text-gray-400 hover:text-primary hover:bg-primary-container/50 rounded-lg transition-colors cursor-pointer" 
-                            title="Cetak Permit"
-                          >
-                            <Printer size={18} />
-                          </button>
-                        </div>
+                  {requests.length > 0 ? (
+                    requests.map((req) => (
+                      <tr key={req.id} className="hover:bg-gray-50/50 transition-colors">
+                        <td className="px-5 py-4 text-sm font-bold text-gray-900 whitespace-nowrap">{req.id}</td>
+                        <td className="px-5 py-4 text-sm font-medium text-gray-700">{req.jenisPekerjaan}</td>
+                        <td className="px-5 py-4 text-sm text-gray-500">{req.lokasi}</td>
+                        <td className="px-5 py-4 text-sm text-gray-500 whitespace-nowrap">{req.mulaiKerja} s.d {req.selesaiKerja}</td>
+                        <td className="px-5 py-4 whitespace-nowrap">
+                          <span className={cn("px-2.5 py-1 rounded-full text-xs font-bold tracking-wide uppercase", getStatusBadge(req.status))}>
+                            {req.status}
+                          </span>
+                        </td>
+                        <td className="px-5 py-4 text-right whitespace-nowrap">
+                          <div className="flex items-center justify-end gap-2">
+                            <button 
+                              onClick={() => setSelectedRequest(req)}
+                              className="p-2 text-gray-400 hover:text-primary hover:bg-primary-container/50 rounded-lg transition-colors cursor-pointer" 
+                              title="Lihat Detail"
+                            >
+                              <Eye size={18} />
+                            </button>
+                            <button 
+                              onClick={() => setPrintModalPermit(req)} 
+                              className="p-2 text-gray-400 hover:text-primary hover:bg-primary-container/50 rounded-lg transition-colors cursor-pointer" 
+                              title="Cetak Permit"
+                            >
+                              <Printer size={18} />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan={6} className="px-6 py-12 text-center text-gray-500">
+                        <FileText size={40} className="mx-auto mb-3 opacity-20" />
+                        <p className="text-base font-medium text-gray-800">Belum Ada Ijin Kerja</p>
+                        <p className="text-xs text-gray-500 mt-1">Anda belum memiliki riwayat pengajuan izin kerja. Klik "Buat Ijin Kerja Baru" untuk mengajukan permohonan.</p>
                       </td>
                     </tr>
-                  ))}
+                  )}
                 </tbody>
               </table>
             </div>
           </div>
 
-          {/* Mobile Card Layout Fallback */}
+          {/* Mobile Card Layout */}
           <div className="sm:hidden space-y-4">
-            {requests.map((req) => (
-              <div key={req.id} className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm relative space-y-4">
+            {requests.length > 0 ? (
+              requests.map((req) => (
+                <div key={req.id} className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm relative space-y-4">
                 <div className="flex justify-between items-start">
                   <div className="flex items-center gap-2">
                     <FileText size={16} className="text-gray-400" />
@@ -250,7 +200,14 @@ export default function MyRequestsPage() {
                   </div>
                 </div>
               </div>
-            ))}
+            ))
+          ) : (
+            <div className="bg-white p-8 rounded-xl border border-gray-200 text-center text-gray-500">
+              <FileText size={32} className="mx-auto mb-2 opacity-20" />
+              <p className="text-sm font-semibold text-gray-700">Belum Ada Ijin Kerja</p>
+              <p className="text-xs text-gray-400 mt-1">Anda belum memiliki pengajuan ijin kerja.</p>
+            </div>
+          )}
           </div>
 
         </div>

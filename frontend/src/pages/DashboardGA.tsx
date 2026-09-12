@@ -3,26 +3,34 @@ import { useNavigate } from "react-router-dom";
 import { Header } from "@/components/Header";
 import { Clock, Users, Building, FileCheck, CheckCircle2, ChevronRight, Contact } from "lucide-react";
 import { cn } from "@/lib/utils";
-
-// Dummy Data untuk GA
-const DUMMY_PENDING_REVIEW_GA = [
-  { id: "WP-2608-062", kontraktor: "PT Amanah Karya", jenis: "Instalasi AC", pekerja: 4, mulai: "2026-08-22", statusHSE: "Disetujui HSE" },
-];
-
-const DUMMY_ACTIVE_WORKERS = [
-  { nama: "Tono", jabatan: "Teknisi", kontraktor: "PT Maju Terus", status: "In Area" },
-  { nama: "Rudi", jabatan: "Tukang", kontraktor: "CV Konstruksi Jaya", status: "In Area" },
-];
+import { api } from "@/services/api";
 
 export default function DashboardGAPage() {
   const [loading, setLoading] = useState(true);
+  const [dashboardData, setDashboardData] = useState<any>({
+    pendingValidationCount: 0,
+    pendingValidation: [],
+    activeWorkersCount: 0,
+    registeredVendorsCount: 0,
+    activeWorkers: [],
+  });
   const navigate = useNavigate();
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setLoading(false);
-    }, 500);
-    return () => clearTimeout(timer);
+    const fetchDashboard = async () => {
+      setLoading(true);
+      try {
+        const res = await api.getGaDashboard();
+        if (res.success && res.data) {
+          setDashboardData(res.data);
+        }
+      } catch (err: any) {
+        console.warn("Could not fetch GA dashboard:", err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchDashboard();
   }, []);
 
   if (loading) {
@@ -49,8 +57,8 @@ export default function DashboardGAPage() {
           
           <div className="flex flex-col lg:flex-row gap-4 justify-between items-start lg:items-center">
             <div>
-              <h2 className="text-2xl font-bold text-gray-900">Portal GA / HRD</h2>
-              <p className="text-sm text-gray-500 mt-1">Validasi data pekerja pihak ketiga, asuransi, dan akses masuk area.</p>
+              <h2 className="text-2xl font-bold text-gray-900">Portal General Affairs (GA) & Legal</h2>
+              <p className="text-sm text-gray-500 mt-1">Validasi data pekerja pihak ketiga, kepatuhan K3, dan akses masuk area pabrik.</p>
             </div>
           </div>
 
@@ -58,19 +66,19 @@ export default function DashboardGAPage() {
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <MetricCard 
               title="Menunggu Validasi GA" 
-              value={DUMMY_PENDING_REVIEW_GA.length} 
+              value={dashboardData.pendingValidationCount || 0} 
               icon={Clock} 
               color="warning" 
             />
             <MetricCard 
               title="Pekerja Eksternal Aktif" 
-              value="35" 
+              value={dashboardData.activeWorkersCount || 0} 
               icon={Users} 
               color="info"
             />
             <MetricCard 
               title="Vendor Terdaftar" 
-              value="12" 
+              value={dashboardData.registeredVendorsCount || 0} 
               icon={Building} 
               color="success"
             />
@@ -96,27 +104,37 @@ export default function DashboardGAPage() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100">
-                    {DUMMY_PENDING_REVIEW_GA.map((req) => (
-                      <tr key={req.id} className="hover:bg-gray-50/50">
-                        <td className="px-4 py-3">
-                          <div className="font-bold text-gray-900">{req.id}</div>
-                          <div className="text-gray-500 mt-0.5">{req.jenis}</div>
-                          <span className="inline-block mt-1 bg-success-container text-on-success-container text-[10px] px-2 py-0.5 rounded-full font-bold uppercase">✓ {req.statusHSE}</span>
-                        </td>
-                        <td className="px-4 py-3 text-gray-700">
-                          <div>{req.kontraktor}</div>
-                          <div className="text-xs text-gray-500 mt-0.5">{req.pekerja} Orang Pekerja</div>
-                        </td>
-                        <td className="px-4 py-3 text-right">
-                          <button 
-                            onClick={() => navigate('/review')}
-                            className="inline-flex items-center gap-1 bg-primary text-on-primary px-3 py-1.5 rounded-lg text-xs font-semibold hover:opacity-90 transition-opacity"
-                          >
-                            Review & Setujui <ChevronRight size={14} />
-                          </button>
+                    {dashboardData.pendingValidation && dashboardData.pendingValidation.length > 0 ? (
+                      dashboardData.pendingValidation.map((req: any) => (
+                        <tr key={req.id} className="hover:bg-gray-50/50">
+                          <td className="px-4 py-3">
+                            <div className="font-bold text-gray-900">{req.id}</div>
+                            <div className="text-gray-500 mt-0.5">{req.jenis}</div>
+                            <span className="inline-block mt-1 bg-success-container text-on-success-container text-[10px] px-2 py-0.5 rounded-full font-bold uppercase">✓ {req.statusHSE || 'Lolos HSE'}</span>
+                          </td>
+                          <td className="px-4 py-3 text-gray-700">
+                            <div>{req.kontraktor}</div>
+                            <div className="text-xs text-gray-500 mt-0.5">{req.pekerja} Orang Pekerja</div>
+                          </td>
+                          <td className="px-4 py-3 text-right">
+                            <button 
+                              onClick={() => navigate('/review')}
+                              className="inline-flex items-center gap-1 bg-primary text-on-primary px-3 py-1.5 rounded-lg text-xs font-semibold hover:opacity-90 transition-opacity cursor-pointer"
+                            >
+                              Review & Setujui <ChevronRight size={14} />
+                            </button>
+                          </td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td colSpan={3} className="px-4 py-8 text-center text-gray-500">
+                          <CheckCircle2 size={28} className="mx-auto mb-1 text-emerald-500 opacity-60" />
+                          <p className="text-xs font-semibold text-gray-700">Tidak ada permit menunggu validasi GA</p>
+                          <p className="text-[11px] text-gray-400">Semua ijin telah selesai ditinjau.</p>
                         </td>
                       </tr>
-                    ))}
+                    )}
                   </tbody>
                 </table>
               </div>
@@ -131,21 +149,29 @@ export default function DashboardGAPage() {
                 </h3>
               </div>
               <div className="p-0">
-                <ul className="divide-y divide-gray-100">
-                  {DUMMY_ACTIVE_WORKERS.map((pekerja, i) => (
-                    <li key={i} className="p-4 hover:bg-gray-50/50 transition-colors flex justify-between items-center">
-                      <div>
-                        <p className="text-sm font-bold text-gray-900">{pekerja.nama} <span className="text-xs font-normal text-gray-500">({pekerja.jabatan})</span></p>
-                        <p className="text-xs text-gray-500 mt-1">{pekerja.kontraktor}</p>
-                      </div>
-                      <div>
-                        <span className="bg-success/10 text-success border border-success/20 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase flex items-center gap-1">
-                          <CheckCircle2 size={12} /> {pekerja.status}
-                        </span>
-                      </div>
-                    </li>
-                  ))}
-                </ul>
+                {dashboardData.activeWorkers && dashboardData.activeWorkers.length > 0 ? (
+                  <ul className="divide-y divide-gray-100">
+                    {dashboardData.activeWorkers.map((pekerja: any, i: number) => (
+                      <li key={i} className="p-4 hover:bg-gray-50/50 transition-colors flex justify-between items-center">
+                        <div>
+                          <p className="text-sm font-bold text-gray-900">{pekerja.nama} <span className="text-xs font-normal text-gray-500">({pekerja.jabatan})</span></p>
+                          <p className="text-xs text-gray-500 mt-1">{pekerja.kontraktor}</p>
+                        </div>
+                        <div>
+                          <span className="bg-success/10 text-success border border-success/20 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase flex items-center gap-1">
+                            <CheckCircle2 size={12} /> {pekerja.status || 'In Area'}
+                          </span>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <div className="p-8 text-center text-gray-500">
+                    <Users size={32} className="mx-auto mb-2 opacity-20" />
+                    <p className="text-sm font-medium text-gray-800">Tidak ada pekerja eksternal di area hari ini.</p>
+                    <p className="text-xs text-gray-400 mt-0.5">Daftar nama pekerja akan aktif saat permit disetujui dan tanggal kerja dimulai.</p>
+                  </div>
+                )}
               </div>
             </div>
 
