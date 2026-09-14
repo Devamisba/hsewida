@@ -16,15 +16,43 @@ class AuthController extends Controller
     public function login(Request $request)
     {
         $request->validate([
-            'email' => 'required|email',
-            'password' => 'required',
+            'email' => 'required|string',
+            'password' => 'required|string',
         ]);
 
-        $user = User::with(['role.permissions'])->where('email', $request->email)->first();
+        $inputIdentifier = trim($request->email);
+
+        // Map common NIKs and aliases to seeded accounts
+        $nikMap = [
+            'sa12345' => 'admin@hse.com',
+            'admin' => 'admin@hse.com',
+            'vendor' => 'vendor@hse.com',
+            'vn10001' => 'vendor@hse.com',
+            'pic' => 'pic@hse.com',
+            'pc10002' => 'pic@hse.com',
+            'hse' => 'hse@hse.com',
+            'hs10003' => 'hse@hse.com',
+            'ga_dept' => 'ga_dept@hse.com',
+            'ga10004' => 'ga_dept@hse.com',
+            'ga_div' => 'ga_div@hse.com',
+            'ga10005' => 'ga_div@hse.com',
+        ];
+
+        $targetEmail = $nikMap[strtolower($inputIdentifier)] ?? $inputIdentifier;
+
+        $user = User::with(['role.permissions'])
+            ->where('email', $targetEmail)
+            ->first();
+
+        if (!$user) {
+            $user = User::with(['role.permissions'])
+                ->where('email', 'like', $inputIdentifier . '%')
+                ->first();
+        }
 
         if (!$user || !Hash::check($request->password, $user->password)) {
             throw ValidationException::withMessages([
-                'email' => ['Kredensial email atau password yang dimasukkan tidak sesuai.'],
+                'email' => ['Kredensial NIK/email atau password yang dimasukkan tidak sesuai.'],
             ]);
         }
 
