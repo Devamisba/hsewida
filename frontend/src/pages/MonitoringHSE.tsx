@@ -114,6 +114,18 @@ export default function MonitoringHSEPage() {
             {TABS.map((tab) => {
               const Icon = tab.icon;
               const isActive = activeTab === tab.id;
+              let activeClass = "bg-primary text-on-primary border-primary shadow-sm";
+              if (isActive) {
+                if (tab.id === 'apar' || tab.id === 'hydrant') {
+                  activeClass = "bg-red-50 text-red-600 border-red-200 shadow-sm font-bold";
+                } else if (tab.id === 'p3k' || tab.id === 'assembly') {
+                  activeClass = "bg-emerald-50 text-emerald-600 border-emerald-200 shadow-sm font-bold";
+                } else if (tab.id === 'emergency') {
+                  activeClass = "bg-teal-50 text-teal-600 border-teal-200 shadow-sm font-bold";
+                } else if (tab.id === 'mirror' || tab.id === 'spi') {
+                  activeClass = "bg-amber-50 text-amber-600 border-amber-200 shadow-sm font-bold";
+                }
+              }
               return (
                 <button
                   key={tab.id}
@@ -121,7 +133,7 @@ export default function MonitoringHSEPage() {
                   className={cn(
                     "flex items-center gap-2 px-4 py-2.5 rounded-full text-sm font-semibold whitespace-nowrap transition-colors border",
                     isActive 
-                      ? "bg-primary text-on-primary border-primary shadow-sm" 
+                      ? activeClass 
                       : "bg-white text-gray-600 border-gray-200 hover:bg-gray-50 hover:text-gray-900"
                   )}
                 >
@@ -240,7 +252,7 @@ function APARMonitoring({ facilities, onInspect }: { facilities: any[], onInspec
                     <StatusBadge status={item.status === 'Needs Attention' ? 'Warning' : item.status} />
                   </td>
                   <td className="px-6 py-4 text-right">
-                    <button onClick={() => onInspect(item)} className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-primary/10 text-primary hover:bg-primary/20 rounded-lg text-xs font-bold transition-colors">
+                    <button onClick={() => onInspect(item)} className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-sky-50 text-sky-600 border border-sky-200 hover:bg-sky-100 hover:text-sky-700 rounded-lg text-xs font-bold transition-colors">
                       <Search size={14} /> Inspect
                     </button>
                   </td>
@@ -321,7 +333,7 @@ function HydrantMonitoring({ facilities, onInspect }: { facilities: any[], onIns
                     <StatusBadge status={item.status === 'Needs Attention' ? 'Warning' : item.status} />
                   </td>
                   <td className="px-6 py-4 text-right">
-                    <button onClick={() => onInspect(item)} className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-primary/10 text-primary hover:bg-primary/20 rounded-lg text-xs font-bold transition-colors">
+                    <button onClick={() => onInspect(item)} className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-sky-50 text-sky-600 border border-sky-200 hover:bg-sky-100 hover:text-sky-700 rounded-lg text-xs font-bold transition-colors">
                       <Search size={14} /> Inspect
                     </button>
                   </td>
@@ -401,7 +413,7 @@ function EmergencyDoorMonitoring({ facilities, onInspect }: { facilities: any[],
                     <StatusBadge status={item.status === 'Needs Attention' ? 'Warning' : item.status} />
                   </td>
                   <td className="px-6 py-4 text-right">
-                    <button onClick={() => onInspect(item)} className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-primary/10 text-primary hover:bg-primary/20 rounded-lg text-xs font-bold transition-colors">
+                    <button onClick={() => onInspect(item)} className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-sky-50 text-sky-600 border border-sky-200 hover:bg-sky-100 hover:text-sky-700 rounded-lg text-xs font-bold transition-colors">
                       <Search size={14} /> Inspect
                     </button>
                   </td>
@@ -478,7 +490,7 @@ function P3KMonitoring({ facilities, onInspect }: { facilities: any[], onInspect
                     <StatusBadge status={item.status === 'Needs Attention' ? 'Warning' : item.status} />
                   </td>
                   <td className="px-6 py-4 text-right">
-                    <button onClick={() => onInspect(item)} className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-primary/10 text-primary hover:bg-primary/20 rounded-lg text-xs font-bold transition-colors">
+                    <button onClick={() => onInspect(item)} className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-sky-50 text-sky-600 border border-sky-200 hover:bg-sky-100 hover:text-sky-700 rounded-lg text-xs font-bold transition-colors">
                       <Search size={14} /> Inspect
                     </button>
                   </td>
@@ -558,7 +570,7 @@ function SafetyMirrorMonitoring({ facilities, onInspect }: { facilities: any[], 
                     <StatusBadge status={item.status === 'Needs Attention' ? 'Warning' : item.status} />
                   </td>
                   <td className="px-6 py-4 text-right">
-                    <button onClick={() => onInspect(item)} className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-primary/10 text-primary hover:bg-primary/20 rounded-lg text-xs font-bold transition-colors">
+                    <button onClick={() => onInspect(item)} className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-sky-50 text-sky-600 border border-sky-200 hover:bg-sky-100 hover:text-sky-700 rounded-lg text-xs font-bold transition-colors">
                       <Search size={14} /> Inspect
                     </button>
                   </td>
@@ -638,7 +650,7 @@ function AssemblyPointMonitoring({ facilities, onInspect }: { facilities: any[],
                     <StatusBadge status={item.status === 'Needs Attention' ? 'Warning' : item.status} />
                   </td>
                   <td className="px-6 py-4 text-right">
-                    <button onClick={() => onInspect(item)} className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-primary/10 text-primary hover:bg-primary/20 rounded-lg text-xs font-bold transition-colors">
+                    <button onClick={() => onInspect(item)} className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-sky-50 text-sky-600 border border-sky-200 hover:bg-sky-100 hover:text-sky-700 rounded-lg text-xs font-bold transition-colors">
                       <Search size={14} /> Inspect
                     </button>
                   </td>

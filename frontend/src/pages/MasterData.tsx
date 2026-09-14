@@ -287,7 +287,7 @@ export default function MasterDataPage() {
                   onClick={() => handleOpenAdd("user")}
                   className="flex items-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-bold transition-colors shadow-sm"
                 >
-                  <Plus size={18} /> Tambah Pengguna
+                  <Plus size={18} /> Tambah
                 </button>
               )}
 
@@ -296,7 +296,7 @@ export default function MasterDataPage() {
                   onClick={() => handleOpenAdd("role")}
                   className="flex items-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-bold transition-colors shadow-sm"
                 >
-                  <Plus size={18} /> Tambah Role Baru
+                  <Plus size={18} /> Tambah
                 </button>
               )}
 
@@ -305,7 +305,7 @@ export default function MasterDataPage() {
                   onClick={() => handleOpenAdd("permit_type")}
                   className="flex items-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-bold transition-colors shadow-sm"
                 >
-                  <Plus size={18} /> Tambah Jenis Izin
+                  <Plus size={18} /> Tambah
                 </button>
               )}
 
@@ -314,7 +314,7 @@ export default function MasterDataPage() {
                   onClick={() => handleOpenAdd("ppe")}
                   className="flex items-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-bold transition-colors shadow-sm"
                 >
-                  <Plus size={18} /> Tambah APD Baru
+                  <Plus size={18} /> Tambah
                 </button>
               )}
 
@@ -323,7 +323,7 @@ export default function MasterDataPage() {
                   onClick={() => handleOpenAdd("location")}
                   className="flex items-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-bold transition-colors shadow-sm"
                 >
-                  <Plus size={18} /> Tambah Lokasi Pabrik
+                  <Plus size={18} /> Tambah
                 </button>
               )}
 
@@ -332,7 +332,7 @@ export default function MasterDataPage() {
                   onClick={() => handleOpenAdd("vendor")}
                   className="flex items-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-bold transition-colors shadow-sm"
                 >
-                  <Plus size={18} /> Daftarkan Vendor
+                  <Plus size={18} /> Tambah
                 </button>
               )}
             </div>
@@ -343,7 +343,7 @@ export default function MasterDataPage() {
             <button
               onClick={() => setActiveTab("users_roles")}
               className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-bold transition-all whitespace-nowrap ${
-                activeTab === "users_roles" ? "bg-blue-600 text-white shadow-sm" : "text-slate-600 hover:bg-slate-100"
+                activeTab === "users_roles" ? "bg-blue-50 text-blue-700 shadow-sm ring-1 ring-blue-200" : "text-slate-600 hover:bg-slate-100"
               }`}
             >
               <ShieldCheck size={18} /> Hak Akses & Pengguna (RBAC)
@@ -351,7 +351,7 @@ export default function MasterDataPage() {
             <button
               onClick={() => setActiveTab("permit_types")}
               className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-bold transition-all whitespace-nowrap ${
-                activeTab === "permit_types" ? "bg-blue-600 text-white shadow-sm" : "text-slate-600 hover:bg-slate-100"
+                activeTab === "permit_types" ? "bg-blue-50 text-blue-700 shadow-sm ring-1 ring-blue-200" : "text-slate-600 hover:bg-slate-100"
               }`}
             >
               <FileText size={18} /> Jenis Izin Kerja (Permit Types)
@@ -359,7 +359,7 @@ export default function MasterDataPage() {
             <button
               onClick={() => setActiveTab("ppe")}
               className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-bold transition-all whitespace-nowrap ${
-                activeTab === "ppe" ? "bg-blue-600 text-white shadow-sm" : "text-slate-600 hover:bg-slate-100"
+                activeTab === "ppe" ? "bg-blue-50 text-blue-700 shadow-sm ring-1 ring-blue-200" : "text-slate-600 hover:bg-slate-100"
               }`}
             >
               <HardHat size={18} /> Alat Pelindung Diri (PPE / APD)
@@ -367,7 +367,7 @@ export default function MasterDataPage() {
             <button
               onClick={() => setActiveTab("workflow")}
               className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-bold transition-all whitespace-nowrap ${
-                activeTab === "workflow" ? "bg-blue-600 text-white shadow-sm" : "text-slate-600 hover:bg-slate-100"
+                activeTab === "workflow" ? "bg-blue-50 text-blue-700 shadow-sm ring-1 ring-blue-200" : "text-slate-600 hover:bg-slate-100"
               }`}
             >
               <GitFork size={18} /> Status Workflow & Approval
@@ -375,7 +375,7 @@ export default function MasterDataPage() {
             <button
               onClick={() => setActiveTab("locations_vendors")}
               className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-bold transition-all whitespace-nowrap ${
-                activeTab === "locations_vendors" ? "bg-blue-600 text-white shadow-sm" : "text-slate-600 hover:bg-slate-100"
+                activeTab === "locations_vendors" ? "bg-blue-50 text-blue-700 shadow-sm ring-1 ring-blue-200" : "text-slate-600 hover:bg-slate-100"
               }`}
             >
               <Building size={18} /> Lokasi Pabrik & Rekanan Vendor
@@ -522,7 +522,13 @@ export default function MasterDataPage() {
                     <div key={r.id} className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between hover:shadow-md transition-shadow">
                       <div className="space-y-3">
                         <div className="flex justify-between items-start">
-                          <span className="px-2.5 py-1 bg-blue-50 text-blue-700 font-extrabold text-xs rounded-lg uppercase tracking-wider font-mono">
+                          <span className={`px-2.5 py-1 font-extrabold text-xs rounded-lg uppercase tracking-wider font-mono ${
+                            r.code === 'admin' ? 'bg-purple-100 text-purple-800' :
+                            r.code === 'hse' ? 'bg-emerald-100 text-emerald-800' :
+                            r.code === 'ga_dept_head' || r.code === 'ga_div_head' ? 'bg-amber-100 text-amber-800' :
+                            r.code === 'pic_vendor' ? 'bg-indigo-100 text-indigo-800' :
+                            'bg-blue-100 text-blue-800'
+                          }`}>
                             {r.code}
                           </span>
                           <span className="text-xs text-slate-500 font-semibold flex items-center gap-1">
@@ -533,17 +539,17 @@ export default function MasterDataPage() {
                           <h3 className="font-bold text-slate-900 text-base">{r.name}</h3>
                           <p className="text-xs text-slate-500 mt-1 leading-relaxed line-clamp-3">{r.description || "Tidak ada rincian deskripsi tanggung jawab."}</p>
                         </div>
-                        <div className="pt-2 border-t border-slate-100 flex flex-wrap gap-1">
-                          <span className="text-[11px] font-bold text-slate-600 block w-full mb-1">
+                        <div className="pt-2 border-t border-slate-100 flex flex-wrap gap-1.5">
+                          <span className="text-xs font-bold text-slate-600 block w-full mb-1">
                             Hak Akses ({r.permissions ? r.permissions.length : 0} Wewenang):
                           </span>
                           {r.permissions && r.permissions.slice(0, 5).map((p: any) => (
-                            <span key={p.id} className="text-[10px] bg-slate-100 text-slate-700 font-medium px-2 py-0.5 rounded">
+                            <span key={p.id} className="text-xs bg-slate-100 text-slate-700 font-medium px-2.5 py-1 rounded-md">
                               {p.name}
                             </span>
                           ))}
                           {r.permissions && r.permissions.length > 5 && (
-                            <span className="text-[10px] bg-blue-50 text-blue-700 font-bold px-1.5 py-0.5 rounded">
+                            <span className="text-xs bg-blue-50 text-blue-700 font-bold px-2 py-1 rounded-md">
                               +{r.permissions.length - 5} lainnya
                             </span>
                           )}
@@ -666,7 +672,14 @@ export default function MasterDataPage() {
                 {ppes.map((item) => (
                   <div key={item.id} className="bg-slate-50/80 p-4 rounded-xl border border-slate-200 hover:border-blue-300 transition-colors flex items-center justify-between group">
                     <div className="flex items-center gap-2.5 overflow-hidden">
-                      <div className="w-8 h-8 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center shrink-0">
+                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
+                        ['safety helmet', 'safety shoes', 'safety glasses', 'gloves', 'ear plug/muff', 'face shield'].includes(item.name.toLowerCase()) ? 'bg-blue-50 text-blue-600' :
+                        ['body harness', 'lifeline', 'respiratory protection', 'breathing apparatus'].includes(item.name.toLowerCase()) ? 'bg-orange-50 text-orange-600' :
+                        ['fire extinguisher'].includes(item.name.toLowerCase()) ? 'bg-red-50 text-red-600' :
+                        ['barricade', 'safety line', 'sign', 'scaffolding'].includes(item.name.toLowerCase()) ? 'bg-amber-50 text-amber-600' :
+                        ['safety net', 'stairs'].includes(item.name.toLowerCase()) ? 'bg-emerald-50 text-emerald-600' :
+                        'bg-slate-50 text-slate-600'
+                      }`}>
                         <HardHat size={16} />
                       </div>
                       <span className="text-sm font-bold text-slate-800 truncate" title={item.name}>{item.name}</span>
