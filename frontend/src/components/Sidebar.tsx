@@ -1,4 +1,4 @@
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { 
   LayoutDashboard, 
   FilePlus2, 
@@ -12,6 +12,8 @@ import {
   Database
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { auth } from "@/lib/auth";
+import { api } from "@/services/api";
 
 const kontraktorNav = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
@@ -59,21 +61,23 @@ const adminNav = [
 
 export function Sidebar() {
   const location = useLocation();
-  const navigate = useNavigate();
   const pathname = location.pathname;
   
-  const role = sessionStorage.getItem('userRole');
+  const role = auth.getRole();
   let navItems = kontraktorNav;
   if (role === 'hse') navItems = hseNav;
   else if (role === 'ga_dept_head' || role === 'ga_div_head') navItems = gaNav;
   else if (role === 'pic_vendor') navItems = picVendorNav;
   else if (role === 'admin') navItems = adminNav;
 
-  const handleLogout = () => {
-    sessionStorage.removeItem('userRole');
-    sessionStorage.removeItem('authToken');
-    sessionStorage.removeItem('userData');
-    navigate('/login');
+  const handleLogout = async () => {
+    try {
+      await api.logout();
+    } catch {
+      // ignore network errors on logout
+    }
+    auth.clearSession();
+    window.location.href = '/login';
   };
 
   return (

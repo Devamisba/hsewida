@@ -20,39 +20,17 @@ class AuthController extends Controller
             'password' => 'required|string',
         ]);
 
-        $inputIdentifier = trim($request->email);
+        $input = trim($request->email);
 
-        // Map common NIKs and aliases to seeded accounts
-        $nikMap = [
-            'sa12345' => 'admin@hse.com',
-            'admin' => 'admin@hse.com',
-            'vendor' => 'vendor@hse.com',
-            'vn10001' => 'vendor@hse.com',
-            'pic' => 'pic@hse.com',
-            'pc10002' => 'pic@hse.com',
-            'hse' => 'hse@hse.com',
-            'hs10003' => 'hse@hse.com',
-            'ga_dept' => 'ga_dept@hse.com',
-            'ga10004' => 'ga_dept@hse.com',
-            'ga_div' => 'ga_div@hse.com',
-            'ga10005' => 'ga_div@hse.com',
-        ];
-
-        $targetEmail = $nikMap[strtolower($inputIdentifier)] ?? $inputIdentifier;
-
+        // Search by NIK or email directly in database (case-insensitive)
         $user = User::with(['role.permissions'])
-            ->where('email', $targetEmail)
+            ->whereRaw('LOWER(nik) = ?', [strtolower($input)])
+            ->orWhereRaw('LOWER(email) = ?', [strtolower($input)])
             ->first();
-
-        if (!$user) {
-            $user = User::with(['role.permissions'])
-                ->where('email', 'like', $inputIdentifier . '%')
-                ->first();
-        }
 
         if (!$user || !Hash::check($request->password, $user->password)) {
             throw ValidationException::withMessages([
-                'email' => ['Kredensial NIK/email atau password yang dimasukkan tidak sesuai.'],
+                'email' => ['Kredensial NIK atau password yang dimasukkan tidak sesuai.'],
             ]);
         }
 
@@ -66,6 +44,7 @@ class AuthController extends Controller
                 'token' => $token,
                 'user' => [
                     'id' => $user->id,
+                    'nik' => $user->nik,
                     'name' => $user->name,
                     'email' => $user->email,
                     'company_name' => $user->company_name,
@@ -106,6 +85,7 @@ class AuthController extends Controller
             'success' => true,
             'data' => [
                 'id' => $user->id,
+                'nik' => $user->nik,
                 'name' => $user->name,
                 'email' => $user->email,
                 'company_name' => $user->company_name,

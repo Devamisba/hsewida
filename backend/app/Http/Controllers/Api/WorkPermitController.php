@@ -160,6 +160,7 @@ class WorkPermitController extends Controller
             'pekerja.*.nama' => 'required|string',
             'pekerja.*.jabatan' => 'required|string',
             'pekerja.*.alamat' => 'nullable|string',
+            'pekerja.*.id_card_photo' => 'nullable|string',
 
             // Step 4
             'jsa' => 'required|array|min:1',
@@ -278,6 +279,7 @@ class WorkPermitController extends Controller
                     'worker_name' => $w['nama'],
                     'position' => $w['jabatan'],
                     'address' => $w['alamat'] ?? null,
+                    'id_card_photo' => $w['id_card_photo'] ?? null,
                 ]);
             }
 

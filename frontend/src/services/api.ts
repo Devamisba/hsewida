@@ -1,9 +1,11 @@
+import { auth } from '@/lib/auth';
+
 // API Base URL from env or default local Laravel server
 export const API_BASE_URL = (import.meta as any).env?.VITE_API_BASE_URL || 'http://localhost:8000/api/v1';
 
 // Helper for authenticated fetch
 export async function apiRequest<T = any>(endpoint: string, options: RequestInit = {}): Promise<T> {
-  const token = sessionStorage.getItem('authToken');
+  const token = auth.getToken();
   const headers: Record<string, string> = {
     'Accept': 'application/json',
     'Content-Type': 'application/json',
@@ -19,6 +21,12 @@ export async function apiRequest<T = any>(endpoint: string, options: RequestInit
 
     const data = await res.json();
     if (!res.ok) {
+      if (res.status === 401 && !endpoint.includes('/auth/login')) {
+        auth.clearSession();
+        if (window.location.pathname !== '/login') {
+          window.location.href = '/login';
+        }
+      }
       throw new Error(data.message || 'Request failed with status ' + res.status);
     }
     return data;

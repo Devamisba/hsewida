@@ -1,19 +1,18 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
 import { Eye, EyeOff, AlertCircle, Sparkles, X } from "lucide-react";
 import { api } from "@/services/api";
+import { auth } from "@/lib/auth";
 
 const DEMO_ACCOUNTS = [
-  { role: "admin", label: "Admin", nik: "SA12345", email: "admin@hse.com" },
-  { role: "pemohon", label: "Vendor (Pemohon)", nik: "VN10001", email: "vendor@hse.com" },
-  { role: "pic_vendor", label: "PIC Vendor", nik: "PC10002", email: "pic@hse.com" },
-  { role: "hse", label: "Tim K3 / HSE", nik: "HS10003", email: "hse@hse.com" },
-  { role: "ga_dept_head", label: "GA Dept Head", nik: "GA10004", email: "ga_dept@hse.com" },
-  { role: "ga_div_head", label: "GA Div Head", nik: "GA10005", email: "ga_div@hse.com" },
+  { role: "admin", label: "Admin", nik: "SA12345" },
+  { role: "pemohon", label: "Vendor (Pemohon)", nik: "VN10001" },
+  { role: "pic_vendor", label: "PIC Vendor", nik: "PC10002" },
+  { role: "hse", label: "Tim K3 / HSE", nik: "HS10003" },
+  { role: "ga_dept_head", label: "GA Dept Head", nik: "GA10004" },
+  { role: "ga_div_head", label: "GA Div Head", nik: "GA10005" },
 ];
 
 export default function LoginPage() {
-  const navigate = useNavigate();
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -22,6 +21,13 @@ export default function LoginPage() {
   const [errorMsg, setErrorMsg] = useState("");
   const [showDemoModal, setShowDemoModal] = useState(false);
 
+  // Auto-redirect if user already has an active session (persistent session like Facebook/Google)
+  useEffect(() => {
+    if (auth.isAuthenticated()) {
+      window.location.href = "/dashboard";
+    }
+  }, []);
+
   const performLogin = async (loginIdentifier: string, loginPass: string) => {
     setLoading(true);
     setErrorMsg("");
@@ -29,28 +35,14 @@ export default function LoginPage() {
     try {
       const res = await api.login(loginIdentifier, loginPass);
       if (res.success && res.data) {
-        sessionStorage.setItem("authToken", res.data.token);
-        sessionStorage.setItem("userRole", res.data.user.role.code);
-        sessionStorage.setItem("userData", JSON.stringify(res.data.user));
-        navigate("/dashboard");
+        auth.setSession(res.data.token, res.data.user);
+        window.location.href = "/dashboard";
       } else {
         setErrorMsg(res.message || "Login gagal, periksa kembali NIK dan password Anda.");
       }
     } catch (err: any) {
       console.error("Login error:", err);
-      // Fallback local simulation
-      const matched = DEMO_ACCOUNTS.find(
-        (a) =>
-          a.email.toLowerCase() === loginIdentifier.toLowerCase() ||
-          a.nik.toLowerCase() === loginIdentifier.toLowerCase()
-      );
-      if (matched) {
-        sessionStorage.setItem("userRole", matched.role);
-        sessionStorage.setItem("userData", JSON.stringify({ name: matched.label, email: matched.email }));
-        navigate("/dashboard");
-      } else {
-        setErrorMsg(err.message || "Kredensial NIK atau password salah.");
-      }
+      setErrorMsg(err.message || "Kredensial NIK atau password tidak sesuai.");
     } finally {
       setLoading(false);
     }
@@ -111,14 +103,14 @@ export default function LoginPage() {
             {/* Field NIK */}
             <div className="mb-3">
               <label className="block text-[11px] font-semibold text-[#64748b] mb-1">
-                NIK
+                NIK (Nomor Induk Karyawan / Rekanan)
               </label>
               <input
                 type="text"
                 required
                 value={identifier}
                 onChange={(e) => setIdentifier(e.target.value)}
-                placeholder="SA12345"
+                placeholder="Contoh: SA12345, VN10001"
                 className="w-full h-[34px] px-3 bg-[#e8f0fe] border border-transparent rounded-[5px] text-[13px] text-[#1e293b] placeholder:text-[#94a3b8] focus:outline-none focus:bg-white focus:border-[#3b82f6] transition-all"
               />
             </div>

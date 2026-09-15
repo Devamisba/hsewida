@@ -1,5 +1,6 @@
 import { BrowserRouter as Router, Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import { Sidebar } from '@/components/Sidebar';
+import { auth } from '@/lib/auth';
 import LoginPage from '@/pages/Login';
 import DashboardPage from '@/pages/Dashboard';
 import DashboardHSEPage from '@/pages/DashboardHSE';
@@ -14,8 +15,7 @@ import MasterDataPage from '@/pages/MasterData';
 import PublicQrVerifyPage from '@/pages/PublicQrVerify';
 
 function ProtectedRoute() {
-  const role = sessionStorage.getItem('userRole');
-  if (!role) {
+  if (!auth.isAuthenticated()) {
     return <Navigate to="/login" replace />;
   }
 
@@ -30,7 +30,7 @@ function ProtectedRoute() {
 }
 
 function RootDashboard() {
-  const role = sessionStorage.getItem('userRole');
+  const role = auth.getRole();
   if (role === 'hse') return <DashboardHSEPage />;
   if (role === 'ga_dept_head' || role === 'ga_div_head') return <DashboardGAPage />;
   return <DashboardPage />;

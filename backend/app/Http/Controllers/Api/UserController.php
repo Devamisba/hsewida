@@ -27,7 +27,8 @@ class UserController extends Controller
         if ($request->filled('search')) {
             $search = $request->search;
             $query->where(function ($q) use ($search) {
-                $q->where('name', 'like', "%{$search}%")
+                $q->where('nik', 'like', "%{$search}%")
+                  ->orWhere('name', 'like', "%{$search}%")
                   ->orWhere('email', 'like', "%{$search}%")
                   ->orWhere('company_name', 'like', "%{$search}%")
                   ->orWhere('department', 'like', "%{$search}%");
@@ -48,6 +49,7 @@ class UserController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
+            'nik' => 'required|string|max:50|unique:users,nik',
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users,email',
             'password' => 'required|string|min:6',
@@ -58,6 +60,7 @@ class UserController extends Controller
         ]);
 
         $user = User::create([
+            'nik' => $validated['nik'],
             'name' => $validated['name'],
             'email' => $validated['email'],
             'password' => Hash::make($validated['password']),
@@ -82,6 +85,7 @@ class UserController extends Controller
         $user = User::findOrFail($id);
 
         $validated = $request->validate([
+            'nik' => ['sometimes', 'required', 'string', 'max:50', Rule::unique('users')->ignore($user->id)],
             'name' => 'sometimes|required|string|max:255',
             'email' => ['sometimes', 'required', 'email', 'max:255', Rule::unique('users')->ignore($user->id)],
             'role_id' => 'sometimes|required|exists:roles,id',

@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Header } from "@/components/Header";
 import { User, Mail, Phone, Building, Briefcase, CheckCircle2, AlertCircle, Save, Loader2 } from "lucide-react";
 import { api } from "@/services/api";
+import { auth } from "@/lib/auth";
 
 export default function ProfilePage() {
   const [profile, setProfile] = useState<any>(null);
@@ -21,24 +22,22 @@ export default function ProfilePage() {
         setProfile(res.data);
         setEditName(res.data.name || "");
         setEditPhone(res.data.phone_number || "");
-        sessionStorage.setItem("userData", JSON.stringify(res.data));
+        auth.setUser(res.data);
       } else {
-        // fallback to session data
-        const stored = sessionStorage.getItem("userData");
+        // fallback to stored user data
+        const stored = auth.getUser();
         if (stored) {
-          const u = JSON.parse(stored);
-          setProfile(u);
-          setEditName(u.name || "");
-          setEditPhone(u.phone_number || "");
+          setProfile(stored);
+          setEditName(stored.name || "");
+          setEditPhone(stored.phone_number || "");
         }
       }
     } catch {
-      const stored = sessionStorage.getItem("userData");
+      const stored = auth.getUser();
       if (stored) {
-        const u = JSON.parse(stored);
-        setProfile(u);
-        setEditName(u.name || "");
-        setEditPhone(u.phone_number || "");
+        setProfile(stored);
+        setEditName(stored.name || "");
+        setEditPhone(stored.phone_number || "");
       }
     } finally {
       setLoading(false);
@@ -66,7 +65,7 @@ export default function ProfilePage() {
       const res = await api.updateProfile(payload);
       if (res.success && res.data) {
         setProfile(res.data);
-        sessionStorage.setItem("userData", JSON.stringify(res.data));
+        auth.setUser(res.data);
         setIsEditing(false);
         setEditPassword("");
         setMessage({ text: "Profil berhasil diperbarui.", type: "success" });

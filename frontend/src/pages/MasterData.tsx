@@ -96,6 +96,7 @@ export default function MasterDataPage() {
       }
     } catch (err: any) {
       console.warn("Failed fetching master data:", err.message);
+      showFeedback("error", "Gagal memuat data dari server backend: " + (err.message || "Periksa koneksi backend"));
     } finally {
       setLoading(false);
     }
@@ -229,6 +230,7 @@ export default function MasterDataPage() {
   // Filtered Users
   const filteredUsers = users.filter(u => {
     const matchSearch = userSearch === "" || 
+      (u.nik && u.nik.toLowerCase().includes(userSearch.toLowerCase())) ||
       u.name.toLowerCase().includes(userSearch.toLowerCase()) || 
       u.email.toLowerCase().includes(userSearch.toLowerCase()) ||
       (u.company_name && u.company_name.toLowerCase().includes(userSearch.toLowerCase()));
@@ -441,7 +443,7 @@ export default function MasterDataPage() {
                     <table className="w-full text-left text-sm">
                       <thead className="bg-slate-50 border-y border-slate-200 text-xs font-bold text-slate-600 uppercase tracking-wider">
                         <tr>
-                          <th className="px-5 py-3.5">Nama & Kontak</th>
+                          <th className="px-5 py-3.5">Nama, NIK & Kontak</th>
                           <th className="px-5 py-3.5">Peran / Role</th>
                           <th className="px-5 py-3.5">Instansi / Departemen</th>
                           <th className="px-5 py-3.5">No. Telepon</th>
@@ -454,7 +456,8 @@ export default function MasterDataPage() {
                             <tr key={u.id} className="hover:bg-slate-50/70 transition-colors">
                               <td className="px-5 py-4">
                                 <div className="font-bold text-slate-900">{u.name}</div>
-                                <div className="text-xs text-slate-500">{u.email}</div>
+                                <div className="text-xs font-mono font-semibold text-blue-600">NIK: {u.nik || "-"}</div>
+                                <div className="text-xs text-slate-400">{u.email}</div>
                               </td>
                               <td className="px-5 py-4">
                                 <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold ${
@@ -935,6 +938,17 @@ export default function MasterDataPage() {
               {/* 1. FORM USER */}
               {modalType === "user" && (
                 <>
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 uppercase mb-1">NIK (Nomor Induk Karyawan / Rekanan) *</label>
+                    <input
+                      required
+                      type="text"
+                      placeholder="Contoh: SA12345, VN10001"
+                      value={formData.nik || ""}
+                      onChange={(e) => setFormData({ ...formData, nik: e.target.value })}
+                      className="w-full p-2.5 border border-slate-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500 font-mono"
+                    />
+                  </div>
                   <div>
                     <label className="block text-xs font-bold text-slate-700 uppercase mb-1">Nama Lengkap *</label>
                     <input

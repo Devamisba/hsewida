@@ -9,6 +9,33 @@ import { CheckCircle, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useNavigate } from "react-router-dom";
 
+// Helper to create blank worker row
+const createEmptyWorker = (idx: number) => ({
+  id: Date.now() + Math.floor(Math.random() * 1000) + idx,
+  nama: "",
+  jabatan: "",
+  alamat: "",
+  id_card_photo: null,
+  photoName: "",
+});
+
+// Helper to expand or truncate worker rows while preserving existing data
+const syncWorkersWithCount = (existingWorkers: any[], targetCount: number): any[] => {
+  const count = Math.max(1, Math.min(50, targetCount));
+  const current = existingWorkers || [];
+  if (current.length === count) return current;
+
+  if (current.length < count) {
+    const additions = Array.from(
+      { length: count - current.length },
+      (_, i) => createEmptyWorker(current.length + i + 1)
+    );
+    return [...current, ...additions];
+  } else {
+    return current.slice(0, count);
+  }
+};
+
 export default function CreateRequestPage() {
   const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(1);
@@ -29,11 +56,11 @@ export default function CreateRequestPage() {
     noHpPJ: "",
     pengawasPekerjaan: "",
     noHpPengawas: "",
-    pengawasHse: "",
-    noHpHse: "",
-    totalTenagaKerja: "",
-    jamKerjaMulai: "",
-    jamKerjaAkhir: "",
+    pengawasHse: "Tim K3 / HSE Lapangan",
+    noHpHse: "085566778899",
+    totalTenagaKerja: "1",
+    jamKerjaMulai: "08:00",
+    jamKerjaAkhir: "17:00",
     lokasi: "",
     
     // Step 2
@@ -42,15 +69,32 @@ export default function CreateRequestPage() {
     otherPpe: "",
     workEquipment: ["", "", ""], // start with 3 empty inputs
     
-    // Step 3
-    pekerja: [] as any[],
+    // Step 3 (Initialized with 1 blank worker matching totalTenagaKerja = 1)
+    pekerja: [createEmptyWorker(1)] as any[],
     
     // Step 4
     jsa: [] as any[],
   });
 
-  const updateFormData = (data: Partial<typeof formData>) => {
-    setFormData((prev) => ({ ...prev, ...data }));
+  const updateFormData = (updates: Partial<typeof formData>) => {
+    setFormData((prev) => {
+      let nextState = { ...prev, ...updates };
+
+      // Sinkronisasi otomatis: Jika totalTenagaKerja berubah dari Step 1, sesuaikan baris pekerja
+      if ('totalTenagaKerja' in updates && !('pekerja' in updates)) {
+        const count = parseInt(String(updates.totalTenagaKerja || "")) || 0;
+        if (count > 0) {
+          nextState.pekerja = syncWorkersWithCount(prev.pekerja, count);
+        }
+      }
+
+      // Sinkronisasi otomatis dua arah: Jika pekerja diubah (tambah/hapus baris), sesuaikan totalTenagaKerja
+      if ('pekerja' in updates && updates.pekerja) {
+        nextState.totalTenagaKerja = String(updates.pekerja.length);
+      }
+
+      return nextState;
+    });
   };
 
   const nextStep = () => {

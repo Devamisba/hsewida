@@ -3,6 +3,7 @@ import { Header } from "@/components/Header";
 import { CheckCircle, XCircle, Clock, Eye, CheckSquare, Search, Briefcase, AlertTriangle, Users, FileCheck, X, Shield, FileText, Printer } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { api } from "@/services/api";
+import { auth } from "@/lib/auth";
 import { PrintPermitModal } from "@/components/PrintPermitModal";
 
 function mapApiToReview(item: any) {
@@ -32,6 +33,7 @@ function mapApiToReview(item: any) {
       nama: w.worker_name || w.nama,
       jabatan: w.position || w.jabatan,
       alamat: w.address || w.alamat,
+      id_card_photo: w.id_card_photo || null,
     })) : (item.pekerja || []),
     jsa: item.jsas ? item.jsas.map((j: any) => ({
       id: j.id,
@@ -54,7 +56,8 @@ export default function ReviewRequestsPage() {
   const [rejectReason, setRejectReason] = useState("");
   const [printPermit, setPrintPermit] = useState<any | null>(null);
   const [closeModal, setCloseModal] = useState<{isOpen: boolean, id: string | null, rawId?: any, notes: string}>({isOpen: false, id: null, notes: ""});
-  const role = sessionStorage.getItem('userRole'); // 'pic_vendor', 'hse', 'ga_dept_head', 'ga_div_head', 'admin'
+  const [previewPhoto, setPreviewPhoto] = useState<string | null>(null);
+  const role = auth.getRole(); // 'pic_vendor', 'hse', 'ga_dept_head', 'ga_div_head', 'admin'
 
   const fetchQueue = async () => {
     setLoading(true);
@@ -369,6 +372,7 @@ export default function ReviewRequestsPage() {
                           <th className="px-4 py-3 text-xs font-semibold text-gray-600 border-b border-gray-200">Nama Lengkap</th>
                           <th className="px-4 py-3 text-xs font-semibold text-gray-600 border-b border-gray-200">Jabatan</th>
                           <th className="px-4 py-3 text-xs font-semibold text-gray-600 border-b border-gray-200">Alamat</th>
+                          <th className="px-4 py-3 text-xs font-semibold text-gray-600 border-b border-gray-200 text-center w-36">ID Card / Foto</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-gray-100">
@@ -377,7 +381,21 @@ export default function ReviewRequestsPage() {
                             <td className="px-4 py-3 text-center text-gray-500">{i + 1}</td>
                             <td className="px-4 py-3 font-medium text-gray-900">{p.nama}</td>
                             <td className="px-4 py-3 text-gray-700">{p.jabatan}</td>
-                            <td className="px-4 py-3 text-gray-500">{p.alamat}</td>
+                            <td className="px-4 py-3 text-gray-500">{p.alamat || "-"}</td>
+                            <td className="px-4 py-3 text-center">
+                              {p.id_card_photo ? (
+                                <button
+                                  type="button"
+                                  onClick={() => setPreviewPhoto(p.id_card_photo)}
+                                  className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-xs font-semibold rounded-lg border border-emerald-200 transition-colors cursor-pointer"
+                                >
+                                  <Eye size={13} />
+                                  <span>Lihat Foto</span>
+                                </button>
+                              ) : (
+                                <span className="text-xs text-gray-400 italic">Tidak ada foto</span>
+                              )}
+                            </td>
                           </tr>
                         ))}
                       </tbody>
@@ -594,6 +612,49 @@ export default function ReviewRequestsPage() {
                 className="px-4 py-2 text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors cursor-pointer"
               >
                 Selesaikan Permit (Close-Out)
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Preview Foto Pekerja / ID Card */}
+      {previewPhoto && (
+        <div 
+          className="fixed inset-0 z-[70] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200"
+          onClick={() => setPreviewPhoto(null)}
+        >
+          <div 
+            className="bg-white rounded-2xl shadow-2xl max-w-lg w-full overflow-hidden animate-in zoom-in-95 duration-200"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 bg-gray-50/80">
+              <h3 className="font-bold text-gray-900 text-sm sm:text-base flex items-center gap-2">
+                <Users className="text-primary" size={18} />
+                Pratinjau Foto / ID Card Pekerja
+              </h3>
+              <button
+                type="button"
+                onClick={() => setPreviewPhoto(null)}
+                className="p-1 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors cursor-pointer"
+              >
+                <X size={20} />
+              </button>
+            </div>
+            <div className="p-6 flex flex-col items-center justify-center bg-gray-950/5">
+              <img
+                src={previewPhoto}
+                alt="Foto ID Card Pekerja"
+                className="max-h-[70vh] w-auto object-contain rounded-lg shadow-md border border-gray-200"
+              />
+            </div>
+            <div className="p-4 bg-gray-50 border-t border-gray-100 flex justify-end">
+              <button
+                type="button"
+                onClick={() => setPreviewPhoto(null)}
+                className="px-4 py-2 text-sm font-semibold text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 rounded-xl transition-colors shadow-sm cursor-pointer"
+              >
+                Tutup
               </button>
             </div>
           </div>

@@ -15,6 +15,7 @@ class UserSeeder extends Seeder
 
         $users = [
             [
+                'nik' => 'VN10001',
                 'name' => 'PT Maju Mundur (Vendor)',
                 'email' => 'vendor@hse.com',
                 'password' => Hash::make('password123'),
@@ -24,6 +25,7 @@ class UserSeeder extends Seeder
                 'phone_number' => '081122334455',
             ],
             [
+                'nik' => 'PC10002',
                 'name' => 'PIC Vendor Widatra',
                 'email' => 'pic@hse.com',
                 'password' => Hash::make('password123'),
@@ -33,6 +35,7 @@ class UserSeeder extends Seeder
                 'phone_number' => '089988776655',
             ],
             [
+                'nik' => 'HS10003',
                 'name' => 'Tim K3 / HSE',
                 'email' => 'hse@hse.com',
                 'password' => Hash::make('password123'),
@@ -42,6 +45,7 @@ class UserSeeder extends Seeder
                 'phone_number' => '085566778899',
             ],
             [
+                'nik' => 'GA10004',
                 'name' => 'P. Andaru',
                 'email' => 'ga_dept@hse.com',
                 'password' => Hash::make('password123'),
@@ -51,6 +55,7 @@ class UserSeeder extends Seeder
                 'phone_number' => '081234567890',
             ],
             [
+                'nik' => 'GA10005',
                 'name' => 'P. Effendy',
                 'email' => 'ga_div@hse.com',
                 'password' => Hash::make('password123'),
@@ -60,6 +65,7 @@ class UserSeeder extends Seeder
                 'phone_number' => '082345678901',
             ],
             [
+                'nik' => 'SA12345',
                 'name' => 'System Administrator',
                 'email' => 'admin@hse.com',
                 'password' => Hash::make('password123'),

@@ -5,6 +5,7 @@ import { Activity, ShieldCheck, AlertTriangle, PlusCircle, CalendarPlus, Clock, 
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { cn } from "@/lib/utils";
 import { api } from "@/services/api";
+import { auth } from "@/lib/auth";
 
 export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
@@ -17,7 +18,7 @@ export default function DashboardPage() {
     chartData: [],
   });
   const navigate = useNavigate();
-  const userName = sessionStorage.getItem('userName') || "Mitra Rekanan PT Widatra Bhakti";
+  const userName = auth.getUser()?.name || "Mitra Rekanan PT Widatra Bhakti";
 
   useEffect(() => {
     const fetchDashboard = async () => {

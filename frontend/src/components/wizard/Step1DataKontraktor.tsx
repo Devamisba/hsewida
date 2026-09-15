@@ -3,6 +3,7 @@ import { format, addDays, isBefore, startOfToday } from "date-fns";
 import { ClipboardList } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { api } from "@/services/api";
+import { auth } from "@/lib/auth";
 
 export function Step1DataKontraktor({ data, updateData }: { data: any, updateData: any }) {
   const [minStartDate, setMinStartDate] = useState("");
@@ -12,14 +13,20 @@ export function Step1DataKontraktor({ data, updateData }: { data: any, updateDat
     const today = startOfToday();
     setMinStartDate(format(addDays(today, 3), 'yyyy-MM-dd')); // H-3 rule
 
-    // Pre-fill vendor name if available in session
+    // Pre-fill vendor name and default shift/hse if available
     try {
-      const stored = sessionStorage.getItem("userData");
-      if (stored) {
-        const user = JSON.parse(stored);
-        if (user.company_name && !data.namaKontraktor) {
-          updateData({ namaKontraktor: user.company_name });
-        }
+      const user = auth.getUser();
+      const updates: any = {};
+      if (user && user.company_name && !data.namaKontraktor) {
+        updates.namaKontraktor = user.company_name;
+      }
+      if (!data.jamKerjaMulai) updates.jamKerjaMulai = "08:00";
+      if (!data.jamKerjaAkhir) updates.jamKerjaAkhir = "17:00";
+      if (!data.pengawasHse) updates.pengawasHse = "Tim K3 Widatra / HSE Lapangan";
+      if (!data.noHpHse) updates.noHpHse = "085566778899";
+      if (!data.totalTenagaKerja) updates.totalTenagaKerja = "1";
+      if (Object.keys(updates).length > 0) {
+        updateData(updates);
       }
     } catch {}
 
@@ -188,6 +195,50 @@ export function Step1DataKontraktor({ data, updateData }: { data: any, updateDat
           </div>
 
           <div className="space-y-1.5">
+            <label className="block text-sm font-medium text-gray-700">Jam Kerja Mulai <span className="text-red-500">*</span></label>
+            <input 
+              type="time" 
+              required
+              value={data.jamKerjaMulai || "08:00"}
+              onChange={(e) => updateData({ jamKerjaMulai: e.target.value })}
+              className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm font-mono"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <label className="block text-sm font-medium text-gray-700">Jam Kerja Selesai <span className="text-red-500">*</span></label>
+            <input 
+              type="time" 
+              required
+              value={data.jamKerjaAkhir || "17:00"}
+              onChange={(e) => updateData({ jamKerjaAkhir: e.target.value })}
+              className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm font-mono"
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="block text-sm font-medium text-gray-700">Pengawas K3 / HSE Lapangan <span className="text-red-500">*</span></label>
+            <input 
+              type="text" 
+              required
+              value={data.pengawasHse || ""}
+              onChange={(e) => updateData({ pengawasHse: e.target.value })}
+              className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+              placeholder="Contoh: Tim K3 Widatra / Safety Officer"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <label className="block text-sm font-medium text-gray-700">No. HP Pengawas K3 / HSE <span className="text-red-500">*</span></label>
+            <input 
+              type="tel" 
+              required
+              value={data.noHpHse || ""}
+              onChange={(e) => updateData({ noHpHse: e.target.value })}
+              className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+              placeholder="085566778899"
+            />
+          </div>
+
+          <div className="space-y-1.5">
             <label className="block text-sm font-medium text-gray-700">Lokasi Pekerjaan <span className="text-red-500">*</span></label>
             <input 
               type="text" 
@@ -204,13 +255,19 @@ export function Step1DataKontraktor({ data, updateData }: { data: any, updateDat
             </datalist>
           </div>
           <div className="space-y-1.5">
-            <label className="block text-sm font-medium text-gray-700">Total Tenaga Kerja</label>
+            <label className="block text-sm font-medium text-gray-700">Total Tenaga Kerja <span className="text-red-500">*</span></label>
             <input 
               type="number" 
-              value={data.totalTenagaKerja}
-              onChange={(e) => updateData({ totalTenagaKerja: e.target.value })}
-              className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
-              placeholder="Jumlah orang"
+              min={1}
+              max={50}
+              required
+              value={data.totalTenagaKerja || "1"}
+              onChange={(e) => {
+                const val = e.target.value;
+                updateData({ totalTenagaKerja: val });
+              }}
+              className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm font-medium"
+              placeholder="Jumlah orang (misal: 3)"
             />
           </div>
         </div>
