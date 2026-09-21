@@ -16,6 +16,7 @@ Route::prefix('v1')->group(function () {
     // --- PUBLIC ROUTES ---
     Route::post('/auth/login', [AuthController::class, 'login']);
     Route::get('/permits/verify/{token}', [WorkPermitController::class, 'verifyQrToken']);
+    Route::get('/master/settings', [MasterDataController::class, 'getSettings']);
 
     // --- PROTECTED ROUTES (SANCTUM) ---
     Route::middleware('auth:sanctum')->group(function () {
@@ -49,6 +50,7 @@ Route::prefix('v1')->group(function () {
         Route::get('/master/permit-types', [MasterDataController::class, 'getPermitTypes']);
         Route::post('/master/permit-types', [MasterDataController::class, 'storePermitType']);
         Route::put('/master/permit-types/{id}', [MasterDataController::class, 'updatePermitType']);
+        Route::put('/master/permit-types/{id}/ppes', [MasterDataController::class, 'updatePermitTypePpes']);
         Route::delete('/master/permit-types/{id}', [MasterDataController::class, 'deletePermitType']);
 
         Route::get('/master/ppe-options', [MasterDataController::class, 'getPpeOptions']);
@@ -62,6 +64,7 @@ Route::prefix('v1')->group(function () {
         Route::delete('/vendors/{id}', [MasterDataController::class, 'deleteVendor']);
 
         Route::get('/master/workflow-stages', [MasterDataController::class, 'getWorkflowStages']);
+        Route::put('/master/settings', [MasterDataController::class, 'updateSettings']);
 
         // 5. Work Permits Lifecycle
         Route::get('/permits/my-requests', [WorkPermitController::class, 'myRequests']);
@@ -81,6 +84,9 @@ Route::prefix('v1')->group(function () {
         // 7. Monitoring & Inspeksi K3
         Route::get('/monitoring/facilities', [MonitoringController::class, 'getFacilities']);
         Route::post('/monitoring/facilities', [MonitoringController::class, 'storeFacility']);
+        Route::get('/monitoring/facilities/by-qr/{qrCodeId}', [MonitoringController::class, 'getFacilityByQrId']);
+        Route::post('/monitoring/facilities/{id}/refill', [MonitoringController::class, 'recordRefill']);
+        Route::get('/monitoring/alerts-summary', [MonitoringController::class, 'getAlertsSummary']);
         Route::post('/monitoring/inspections', [MonitoringController::class, 'storeInspection']);
         Route::post('/monitoring/capa', [MonitoringController::class, 'storeCapa']);
         Route::put('/monitoring/capa/{id}/close', [MonitoringController::class, 'closeCapa']);

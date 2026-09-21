@@ -1,20 +1,38 @@
 import { useState, useEffect } from "react";
 import { Header } from "@/components/Header";
-import { CheckCircle, XCircle, Clock, Eye, CheckSquare, Search, Briefcase, AlertTriangle, Users, FileCheck, X, Shield, FileText, Printer } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { CheckCircle, XCircle, Clock, Eye, CheckSquare, Search, Briefcase, AlertTriangle, Users, FileCheck, X, Shield, FileText, Printer, Lock, CalendarPlus } from "lucide-react";
+import { cn, calculateInclusiveDays } from "@/lib/utils";
 import { api } from "@/services/api";
 import { auth } from "@/lib/auth";
 import { PrintPermitModal } from "@/components/PrintPermitModal";
+import { ApprovalWorkflowStepper } from "@/components/ApprovalWorkflowStepper";
 
 function mapApiToReview(item: any) {
+  const parent = item.parent_permit || item.parentPermit || null;
+  const parentStartDate = parent?.start_date ? parent.start_date.substring(0, 10) : (parent?.startDate || null);
+  const parentEndDate = parent?.end_date ? parent.end_date.substring(0, 10) : (parent?.endDate || null);
+  const currentStart = item.start_date ? item.start_date.substring(0, 10) : item.mulaiKerja;
+  const currentEnd = item.end_date ? item.end_date.substring(0, 10) : item.selesaiKerja;
+
   return {
     id: item.permit_number || `WP-${item.id}`,
     rawId: item.id,
+    requestType: item.request_type || "Baru",
+    parentPermitId: item.parent_permit_id || item.parentPermitId || (parent?.id ?? null),
+    parentPermit: parent ? {
+      id: parent.id,
+      permitNumber: parent.permit_number || parent.permitNumber || `WP-${parent.id}`,
+      startDate: parentStartDate,
+      endDate: parentEndDate,
+      jobTitle: parent.job_title || parent.jobTitle || "",
+    } : null,
+    cumulativeStartDate: parentStartDate || currentStart,
+    cumulativeEndDate: currentEnd,
     kontraktor: item.vendor?.company_name || item.user?.company_name || "PT Vendor",
     jenisPekerjaan: item.job_title || item.jenisPekerjaan || "Pekerjaan Vendor",
     lokasi: item.location?.name || item.lokasi || "Area Pabrik",
-    mulaiKerja: item.start_date ? item.start_date.substring(0, 10) : item.mulaiKerja,
-    selesaiKerja: item.end_date ? item.end_date.substring(0, 10) : item.selesaiKerja,
+    mulaiKerja: currentStart,
+    selesaiKerja: currentEnd,
     jamKerjaMulai: item.daily_start_time || item.jamKerjaMulai || "08:00",
     jamKerjaAkhir: item.daily_end_time || item.jamKerjaAkhir || "17:00",
     penanggungJawab: item.pic_name || item.penanggungJawab || "-",
@@ -44,6 +62,8 @@ function mapApiToReview(item: any) {
       tanggapDarurat: j.emergency_response || j.tanggapDarurat,
     })) : (item.jsa || []),
     qrToken: item.qr_code_token || item.qrToken,
+    approvals: item.approvals || [],
+    rejectReason: item.reject_reason || null,
   };
 }
 
@@ -100,28 +120,33 @@ export default function ReviewRequestsPage() {
     if (role === 'hse') return req.status === "Menunggu HSE";
     if (role === 'ga_dept_head') return req.status === "Menunggu GA Dept Head";
     if (role === 'ga_div_head') return req.status === "Menunggu GA Div Head";
-    return true; // fallback
+    return false; // Strict isolation: only recognized roles get their active queue!
   });
+
+  const getRequiredRoleForStatus = (st: string) => {
+    switch (st) {
+      case "Menunggu PIC Vendor": return { role: "pic_vendor", label: "PIC Vendor", step: 1 };
+      case "Menunggu HSE": return { role: "hse", label: "HSE Officer", step: 2 };
+      case "Menunggu GA Dept Head": return { role: "ga_dept_head", label: "GA Dept Head", step: 3 };
+      case "Menunggu GA Div Head": return { role: "ga_div_head", label: "GA Div Head", step: 4 };
+      default: return null;
+    }
+  };
 
   const handleApprove = async (id: string, rawId?: any) => {
     try {
       const targetId = rawId || id;
-      await api.approvePermit(targetId, `Disetujui oleh ${role || 'reviewer'}`);
-    } catch (err: any) {
-      console.warn("API approve failed or fallback:", err.message);
-    }
-
-    setRequests(prev => prev.map(req => {
-      if (req.id === id) {
-        if (role === 'pic_vendor') return { ...req, status: "Menunggu HSE" };
-        if (role === 'hse') return { ...req, status: "Menunggu GA Dept Head" };
-        if (role === 'ga_dept_head') return { ...req, status: "Menunggu GA Div Head" };
-        if (role === 'ga_div_head') return { ...req, status: "Disetujui" };
-        return { ...req, status: "Disetujui" };
+      const res = await api.approvePermit(targetId, `Disetujui oleh ${role || 'reviewer'}`);
+      if (res.success) {
+        setApproveModal({ isOpen: true, id });
+        fetchQueue();
+      } else {
+        alert(res.message || "Gagal menyetujui ijin kerja.");
       }
-      return req;
-    }));
-    setApproveModal({ isOpen: true, id });
+    } catch (err: any) {
+      const msg = err.response?.data?.message || err.message || "Gagal menyetujui ijin kerja. Tahap ini terkunci di luar wewenang Anda.";
+      alert(msg);
+    }
   };
 
   const confirmApprove = () => {
@@ -135,21 +160,19 @@ export default function ReviewRequestsPage() {
     
     try {
       const targetId = rejectModal.rawId || rejectModal.id;
-      await api.rejectPermit(targetId, rejectReason);
-    } catch (err: any) {
-      console.warn("API reject failed or fallback:", err.message);
-    }
-
-    setRequests(prev => prev.map(req => {
-      if (req.id === rejectModal.id) {
-        return { ...req, status: "Ditolak" };
+      const res = await api.rejectPermit(targetId, rejectReason);
+      if (res.success) {
+        setRejectModal({ isOpen: false, id: null });
+        setSelectedRequest(null);
+        setRejectReason("");
+        fetchQueue();
+      } else {
+        alert(res.message || "Gagal menolak ijin kerja.");
       }
-      return req;
-    }));
-    setRejectModal({ isOpen: false, id: null });
-    setSelectedRequest(null);
-    setRejectReason("");
-    fetchQueue();
+    } catch (err: any) {
+      const msg = err.response?.data?.message || err.message || "Gagal menolak ijin kerja. Tahap ini terkunci di luar wewenang Anda.";
+      alert(msg);
+    }
   };
 
   const handleClosePermit = async () => {
@@ -212,7 +235,14 @@ export default function ReviewRequestsPage() {
                     filteredRequests.map((req) => (
                       <tr key={req.id} className="hover:bg-gray-50 transition-colors group">
                         <td className="px-6 py-4">
-                          <div className="font-bold text-gray-900">{req.id}</div>
+                          <div className="font-bold text-gray-900 font-mono">{req.id}</div>
+                          {req.requestType === 'Perpanjangan' && (
+                            <div className="mt-1">
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-amber-50 text-amber-800 border border-amber-200">
+                                Perpanjangan: {req.parentPermit?.permitNumber || (req.parentPermitId ? `ID #${req.parentPermitId}` : "SIKA Induk")}
+                              </span>
+                            </div>
+                          )}
                           <div className="text-gray-500 mt-0.5">{req.jenisPekerjaan}</div>
                         </td>
                         <td className="px-6 py-4">
@@ -221,7 +251,12 @@ export default function ReviewRequestsPage() {
                         </td>
                         <td className="px-6 py-4">
                           <div className="text-gray-800">{req.lokasi}</div>
-                          <div className="text-xs text-gray-500 mt-0.5">{req.mulaiKerja} s/d {req.selesaiKerja}</div>
+                          <div className="text-xs text-gray-600 mt-0.5 font-medium">{req.mulaiKerja} s/d {req.selesaiKerja}</div>
+                          {req.requestType === 'Perpanjangan' && req.cumulativeStartDate && (
+                            <div className="text-[10px] font-semibold text-amber-700 mt-0.5">
+                              Kumulatif: {req.cumulativeStartDate} - {req.cumulativeEndDate} ({calculateInclusiveDays(req.cumulativeStartDate, req.cumulativeEndDate)} Hari)
+                            </div>
+                          )}
                         </td>
                         <td className="px-6 py-4 text-center">
                           <span className={cn("inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold", getStatusBadge(req.status))}>
@@ -294,7 +329,61 @@ export default function ReviewRequestsPage() {
 
             {/* Body Modal */}
             <div className="flex-1 overflow-y-auto p-4 sm:p-6 bg-gray-50/30">
-              <div className="space-y-8">
+              <div className="space-y-6">
+
+                {/* 0. Alur Persetujuan Berjenjang (Sequential Workflow Stepper) */}
+                <ApprovalWorkflowStepper
+                  status={selectedRequest.status}
+                  currentRole={role}
+                  approvals={selectedRequest.approvals}
+                  rejectReason={selectedRequest.rejectReason}
+                />
+
+                {/* 0.5. Info Audit Jejak Perpanjangan Ijin (Khusus Tipe Perpanjangan) */}
+                {selectedRequest.requestType === 'Perpanjangan' && (
+                  <div className="bg-amber-50/90 border border-amber-200 rounded-xl p-4 sm:p-5 shadow-sm space-y-3 animate-in fade-in">
+                    <div className="flex items-center gap-2.5">
+                      <div className="p-2 bg-amber-100 text-amber-800 rounded-lg shrink-0">
+                        <CalendarPlus size={20} />
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-bold text-amber-950">Informasi Audit Perpanjangan Ijin Kerja</h4>
+                        <p className="text-xs text-amber-800 mt-0.5">Ijin ini diajukan sebagai kelanjutan legal dari izin kerja sebelumnya.</p>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 border-t border-amber-200/70 text-xs">
+                      <div className="bg-white/90 p-3 rounded-lg border border-amber-200">
+                        <span className="text-gray-500 block font-medium">Ijin Induk Awal:</span>
+                        <strong className="text-sm text-gray-900 block font-mono mt-0.5">
+                          {selectedRequest.parentPermit?.permitNumber || (selectedRequest.parentPermitId ? `ID #${selectedRequest.parentPermitId}` : "SIKA Induk")}
+                        </strong>
+                        {selectedRequest.parentPermit?.startDate && (
+                          <span className="text-gray-500 text-[11px] block mt-1">
+                            Masa Awal: {selectedRequest.parentPermit.startDate} s.d {selectedRequest.parentPermit.endDate}
+                          </span>
+                        )}
+                      </div>
+                      <div className="bg-white/90 p-3 rounded-lg border border-amber-200">
+                        <span className="text-gray-500 block font-medium">Periode Perpanjangan Aktif:</span>
+                        <strong className="text-sm text-amber-900 block mt-0.5 font-mono">
+                          {selectedRequest.mulaiKerja} s.d {selectedRequest.selesaiKerja}
+                        </strong>
+                        <span className="text-amber-800 text-[11px] font-medium block mt-1">
+                          Tambahan: {calculateInclusiveDays(selectedRequest.mulaiKerja, selectedRequest.selesaiKerja)} Hari Kerja
+                        </span>
+                      </div>
+                      <div className="bg-amber-100/70 p-3 rounded-lg border border-amber-300">
+                        <span className="text-amber-900 block font-bold">Rentang Kumulatif Pekerjaan:</span>
+                        <strong className="text-sm text-amber-950 block mt-0.5 font-mono">
+                          {selectedRequest.cumulativeStartDate} s.d {selectedRequest.cumulativeEndDate}
+                        </strong>
+                        <span className="text-amber-900 font-bold text-[11px] block mt-1">
+                          Total Durasi Proyek: {calculateInclusiveDays(selectedRequest.cumulativeStartDate, selectedRequest.cumulativeEndDate)} Hari Kalender
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                )}
                 
                 {/* 1. Info Pekerjaan & Vendor */}
                 <section>
@@ -310,10 +399,31 @@ export default function ReviewRequestsPage() {
                     <div><span className="block text-xs text-gray-500">Jam Kerja</span><span className="font-semibold text-gray-900">{selectedRequest.jamKerjaMulai} - {selectedRequest.jamKerjaAkhir}</span></div>
                     <div><span className="block text-xs text-gray-500">Total Tenaga Kerja</span><span className="font-semibold text-gray-900">{selectedRequest.pekerja.length} Orang</span></div>
                     
-                    <div className="col-span-full border-t border-gray-100 pt-3 mt-1 grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <div><span className="block text-xs text-gray-500">Penanggung Jawab</span><span className="font-medium text-gray-900">{selectedRequest.penanggungJawab} ({selectedRequest.noHpPJ})</span></div>
-                      <div><span className="block text-xs text-gray-500">Pengawas Pekerjaan</span><span className="font-medium text-gray-900">{selectedRequest.pengawasPekerjaan} ({selectedRequest.noHpPengawas})</span></div>
-                      <div><span className="block text-xs text-gray-500">Pengawas K3/HSE</span><span className="font-medium text-gray-900">{selectedRequest.pengawasHse} ({selectedRequest.noHpHse})</span></div>
+                    <div className="col-span-full border-t border-gray-100 pt-3 mt-1 grid grid-cols-1 md:grid-cols-3 gap-3 bg-gray-50/70 p-3 rounded-xl border border-gray-100">
+                      <div>
+                        <div className="flex items-center gap-1.5 mb-1">
+                          <span className="text-xs text-gray-500 font-medium">Penanggung Jawab</span>
+                          <span className="text-[10px] font-semibold bg-blue-100 text-blue-700 px-1.5 py-0.2 rounded border border-blue-200">Vendor</span>
+                        </div>
+                        <span className="font-semibold text-gray-900 block">{selectedRequest.penanggungJawab}</span>
+                        <span className="text-xs text-gray-500 font-mono">{selectedRequest.noHpPJ || "-"}</span>
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-1.5 mb-1">
+                          <span className="text-xs text-gray-500 font-medium">Pengawas Pekerjaan</span>
+                          <span className="text-[10px] font-semibold bg-emerald-100 text-emerald-800 px-1.5 py-0.2 rounded border border-emerald-200">Internal Widatra</span>
+                        </div>
+                        <span className="font-semibold text-gray-900 block">{selectedRequest.pengawasPekerjaan}</span>
+                        <span className="text-xs text-gray-500 font-mono">{selectedRequest.noHpPengawas || "-"}</span>
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-1.5 mb-1">
+                          <span className="text-xs text-gray-500 font-medium">Pengawas K3/HSE</span>
+                          <span className="text-[10px] font-semibold bg-emerald-100 text-emerald-800 px-1.5 py-0.2 rounded border border-emerald-200">Internal Widatra</span>
+                        </div>
+                        <span className="font-semibold text-gray-900 block">{selectedRequest.pengawasHse}</span>
+                        <span className="text-xs text-gray-500 font-mono">{selectedRequest.noHpHse || "-"}</span>
+                      </div>
                     </div>
                   </div>
                 </section>
@@ -480,20 +590,38 @@ export default function ReviewRequestsPage() {
                     <CheckCircle size={18} /> Tutup Permit (Safety Close-Out)
                   </button>
                 ) : selectedRequest.status !== 'Disetujui' && selectedRequest.status !== 'Selesai' && selectedRequest.status !== 'Ditolak' ? (
-                  <>
-                    <button 
-                      onClick={() => setRejectModal({ isOpen: true, id: selectedRequest.id, rawId: selectedRequest.rawId })}
-                      className="px-5 py-2.5 text-sm font-bold text-error bg-white border border-error-container hover:bg-error-container/20 rounded-lg flex items-center gap-2 transition-colors cursor-pointer"
-                    >
-                      <XCircle size={18} /> Tolak
-                    </button>
-                    <button 
-                      onClick={() => handleApprove(selectedRequest.id, selectedRequest.rawId)}
-                      className="px-5 py-2.5 text-sm font-bold text-white bg-success rounded-lg hover:opacity-90 flex items-center gap-2 transition-colors shadow-sm cursor-pointer"
-                    >
-                      <CheckCircle size={18} /> Setujui Dokumen
-                    </button>
-                  </>
+                  (() => {
+                    const reqInfo = getRequiredRoleForStatus(selectedRequest.status);
+                    const isAuthorized = role === 'admin' || (reqInfo && reqInfo.role === role);
+
+                    if (!isAuthorized) {
+                      return (
+                        <div className="flex items-center gap-2 px-3.5 py-2 bg-amber-50 border border-amber-200 text-amber-900 rounded-xl text-xs font-semibold shadow-2xs">
+                          <Lock size={15} className="text-amber-600 shrink-0" />
+                          <span>
+                            Tahap Terkunci: Wewenang persetujuan pada <strong>{reqInfo?.label || 'pihak lain'}</strong>. Anda tidak dapat menyetujui tahap ini.
+                          </span>
+                        </div>
+                      );
+                    }
+
+                    return (
+                      <>
+                        <button 
+                          onClick={() => setRejectModal({ isOpen: true, id: selectedRequest.id, rawId: selectedRequest.rawId })}
+                          className="px-5 py-2.5 text-sm font-bold text-error bg-white border border-error-container hover:bg-error-container/20 rounded-lg flex items-center gap-2 transition-colors cursor-pointer"
+                        >
+                          <XCircle size={18} /> Tolak
+                        </button>
+                        <button 
+                          onClick={() => handleApprove(selectedRequest.id, selectedRequest.rawId)}
+                          className="px-5 py-2.5 text-sm font-bold text-white bg-success rounded-lg hover:opacity-90 flex items-center gap-2 transition-colors shadow-sm cursor-pointer"
+                        >
+                          <CheckCircle size={18} /> Setujui Dokumen
+                        </button>
+                      </>
+                    );
+                  })()
                 ) : null}
               </div>
             </div>

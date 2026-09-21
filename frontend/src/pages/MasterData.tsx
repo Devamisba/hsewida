@@ -21,11 +21,80 @@ import {
   GitFork, 
   RefreshCw,
   CheckSquare,
-  Square
+  Square,
+  Info,
+  SlidersHorizontal,
+  Calendar,
+  CalendarPlus
 } from "lucide-react";
 import { api } from "@/services/api";
+import { RolePermissionMatrixView } from "@/components/RolePermissionMatrixView";
 
-type MainTab = "users_roles" | "permit_types" | "ppe" | "workflow" | "locations_vendors";
+const PPE_CATEGORIES_INFO: Record<string, { label: string; desc: string; color: string; bg: string; border: string }> = {
+  "Head & Face": {
+    label: "Kepala & Wajah",
+    desc: "Melindungi kepala, mata, telinga, dan wajah dari benturan benda keras, percikan kimia, radiasi pengelasan, atau kebisingan ekstrem.",
+    color: "text-blue-700",
+    bg: "bg-blue-50",
+    border: "border-blue-200"
+  },
+  "Foot & Hand": {
+    label: "Kaki & Tangan",
+    desc: "Melindungi tangan dan kaki dari bahaya sayatan, tusukan paku, sengatan kimia, suhu panas/dingin, dan impak benturan beban berat.",
+    color: "text-amber-700",
+    bg: "bg-amber-50",
+    border: "border-amber-200"
+  },
+  "Fall Protection": {
+    label: "Ketinggian & Anti Jatuh",
+    desc: "Perlengkapan pencegah dan penahan jatuh untuk pekerjaan pada elevasi di atas 1.8 meter sesuai SOP Bekerja di Ketinggian.",
+    color: "text-rose-700",
+    bg: "bg-rose-50",
+    border: "border-rose-200"
+  },
+  "Respiratory": {
+    label: "Perlindungan Pernapasan",
+    desc: "Menyaring partikel debu, uap kimia berbahaya, gas beracun, atau menyuplai udara bersih pada area terbatas (confined space).",
+    color: "text-purple-700",
+    bg: "bg-purple-50",
+    border: "border-purple-200"
+  },
+  "Fire & Safety": {
+    label: "Kebakaran & Listrik",
+    desc: "Peralatan proteksi kebakaran, isolasi energi panas, dan mitigasi risiko sengatan listrik / arc flash (hot work & electrical).",
+    color: "text-red-700",
+    bg: "bg-red-50",
+    border: "border-red-200"
+  },
+  "Site & Area Safety": {
+    label: "Barikade & Rambu Lokasi",
+    desc: "Alat pengaman pembatas perimeter kerja dan tanda peringatan visual untuk mengisolasi area kerja dari lintasan umum pabrik.",
+    color: "text-orange-700",
+    bg: "bg-orange-50",
+    border: "border-orange-200"
+  },
+  "General PPE": {
+    label: "Alat Keselamatan Umum",
+    desc: "Kelengkapan keselamatan standar yang diterapkan secara umum di lingkungan operasional pabrik PT Widatra Bhakti.",
+    color: "text-emerald-700",
+    bg: "bg-emerald-50",
+    border: "border-emerald-200"
+  }
+};
+
+const getPpeCategoryIcon = (category?: string, name?: string) => {
+  const cat = (category || "").toLowerCase();
+  const n = (name || "").toLowerCase();
+  if (cat.includes("fall") || n.includes("harness") || n.includes("lifeline")) return "bg-rose-50 text-rose-600";
+  if (cat.includes("respiratory") || n.includes("respiratory") || n.includes("breathing") || n.includes("masker")) return "bg-purple-50 text-purple-600";
+  if (cat.includes("fire") || n.includes("fire") || n.includes("extinguisher") || n.includes("apar")) return "bg-red-50 text-red-600";
+  if (cat.includes("foot") || cat.includes("hand") || n.includes("shoes") || n.includes("gloves") || n.includes("sepatu")) return "bg-amber-50 text-amber-600";
+  if (cat.includes("site") || n.includes("barricade") || n.includes("sign")) return "bg-orange-50 text-orange-600";
+  if (cat.includes("head") || n.includes("helmet") || n.includes("glasses") || n.includes("face")) return "bg-blue-50 text-blue-600";
+  return "bg-slate-100 text-slate-700";
+};
+
+type MainTab = "users_roles" | "permit_types" | "ppe" | "workflow" | "locations_vendors" | "policy_settings";
 
 export default function MasterDataPage() {
   const [activeTab, setActiveTab] = useState<MainTab>("users_roles");
@@ -42,6 +111,12 @@ export default function MasterDataPage() {
   const [vendors, setVendors] = useState<any[]>([]);
   const [workflowStages, setWorkflowStages] = useState<any[]>([]);
   const [terminalStatuses, setTerminalStatuses] = useState<any[]>([]);
+  const [policySettingsMap, setPolicySettingsMap] = useState<Record<string, any>>({
+    max_permit_duration_days: 6,
+    min_lead_time_days: 3,
+    extension_window_days: 3,
+  });
+  const [isSavingSettings, setIsSavingSettings] = useState(false);
 
   const [loading, setLoading] = useState(false);
   const [feedbackMsg, setFeedbackMsg] = useState<{ type: "success" | "error"; text: string } | null>(null);
@@ -49,9 +124,12 @@ export default function MasterDataPage() {
   // Search & Filter
   const [userSearch, setUserSearch] = useState("");
   const [userRoleFilter, setUserRoleFilter] = useState("");
+  const [ppeSearch, setPpeSearch] = useState("");
+  const [ppeCategoryFilter, setPpeCategoryFilter] = useState("");
 
-  // Modals
+  // Modals & Detail Popups
   const [modalType, setModalType] = useState<string | null>(null);
+  const [detailPpe, setDetailPpe] = useState<any | null>(null);
   const [editingItem, setEditingItem] = useState<any>(null);
   const [formData, setFormData] = useState<any>({});
   const [selectedPermissions, setSelectedPermissions] = useState<number[]>([]);
@@ -75,11 +153,19 @@ export default function MasterDataPage() {
         if (rRes?.success) setRoles(rRes.data);
         if (pRes?.success) setPermissionsGrouped(pRes.data);
       } else if (activeTab === "permit_types") {
-        const res = await api.getPermitTypes();
-        if (res?.success) setPermitTypes(res.data);
+        const [ptRes, ppeRes] = await Promise.all([
+          api.getPermitTypes(),
+          api.getPpeOptions()
+        ]);
+        if (ptRes?.success) setPermitTypes(ptRes.data);
+        if (ppeRes?.success) setPpes(ppeRes.data);
       } else if (activeTab === "ppe") {
-        const res = await api.getPpeOptions();
-        if (res?.success) setPpes(res.data);
+        const [ppeRes, ptRes] = await Promise.all([
+          api.getPpeOptions(),
+          api.getPermitTypes()
+        ]);
+        if (ppeRes?.success) setPpes(ppeRes.data);
+        if (ptRes?.success) setPermitTypes(ptRes.data);
       } else if (activeTab === "workflow") {
         const res = await api.getWorkflowStages();
         if (res?.success) {
@@ -87,12 +173,19 @@ export default function MasterDataPage() {
           setTerminalStatuses(res.data.terminal_statuses || []);
         }
       } else if (activeTab === "locations_vendors") {
-        const [lRes, vRes] = await Promise.all([
+        const [lRes, vRes, uRes] = await Promise.all([
           api.getLocations(),
-          api.getVendors()
+          api.getVendors(),
+          api.getUsers()
         ]);
         if (lRes?.success) setLocations(lRes.data);
         if (vRes?.success) setVendors(vRes.data);
+        if (uRes?.success) setUsers(uRes.data);
+      } else if (activeTab === "policy_settings") {
+        const sRes = await api.getSettings();
+        if (sRes?.success && sRes.data?.map) {
+          setPolicySettingsMap(sRes.data.map);
+        }
       }
     } catch (err: any) {
       console.warn("Failed fetching master data:", err.message);
@@ -106,10 +199,67 @@ export default function MasterDataPage() {
     fetchCurrentTabData();
   }, [activeTab]);
 
+  // Search filter for APD selection inside Permit Type modal
+  const [permitPpeSearch, setPermitPpeSearch] = useState("");
+
+  const togglePermitPpe = (id: number) => {
+    const cur = formData.ppe_ids || [];
+    const next = cur.includes(id) ? cur.filter((x: number) => x !== id) : [...cur, id];
+    setFormData({ ...formData, ppe_ids: next });
+  };
+
+  const selectPermitPpeBaseline = () => {
+    const baselineKeywords = ["safety helmet", "helm keselamatan", "safety shoes", "sepatu safety"];
+    const baselineIds = ppes
+      .filter((p: any) => baselineKeywords.some((k) => p.name.toLowerCase().includes(k)))
+      .map((p: any) => p.id);
+    setFormData({ ...formData, ppe_ids: Array.from(new Set([...(formData.ppe_ids || []), ...baselineIds])) });
+  };
+
+  const selectPermitPpeAll = () => {
+    setFormData({ ...formData, ppe_ids: ppes.map((p: any) => p.id) });
+  };
+
+  const clearPermitPpeAll = () => {
+    setFormData({ ...formData, ppe_ids: [] });
+  };
+
   // Open Add Modal
   const handleOpenAdd = (type: string) => {
     setEditingItem(null);
-    setFormData({});
+    setPermitPpeSearch("");
+    if (type === "permit_type") {
+      setFormData({
+        name: "",
+        risk_level: "High Risk",
+        is_active: true,
+        ppe_ids: []
+      });
+    } else if (type === "ppe") {
+      setFormData({
+        name: "",
+        category: "Head & Face",
+        description: "",
+        is_active: true
+      });
+    } else if (type === "location") {
+      setFormData({
+        name: "",
+        description: "",
+        is_active: true
+      });
+    } else if (type === "vendor") {
+      setFormData({
+        company_name: "",
+        address: "",
+        main_contact_name: "",
+        main_contact_phone: "",
+        pic_vendor_user_id: "",
+        status: "Aktif"
+      });
+    } else {
+      setFormData({});
+    }
     setSelectedPermissions([]);
     setModalType(type);
   };
@@ -117,7 +267,40 @@ export default function MasterDataPage() {
   // Open Edit Modal
   const handleOpenEdit = (type: string, item: any) => {
     setEditingItem(item);
-    setFormData({ ...item });
+    setPermitPpeSearch("");
+    if (type === "permit_type") {
+      setFormData({
+        name: item.name,
+        risk_level: item.risk_level || "General Risk",
+        is_active: item.is_active !== false,
+        ppe_ids: item.default_ppes ? item.default_ppes.map((p: any) => p.id) : []
+      });
+    } else if (type === "ppe") {
+      setFormData({
+        name: item.name,
+        category: item.category || "Head & Face",
+        description: item.description || "",
+        is_active: item.is_active !== false
+      });
+    } else if (type === "location") {
+      setFormData({
+        name: item.name,
+        description: item.description || "",
+        is_active: item.is_active !== false
+      });
+    } else if (type === "vendor") {
+      setFormData({
+        company_name: item.company_name,
+        address: item.address || "",
+        main_contact_name: item.main_contact_name || "",
+        main_contact_phone: item.main_contact_phone || "",
+        pic_vendor_user_id: item.pic_vendor_user_id || "",
+        status: item.status || "Aktif"
+      });
+    } else {
+      setFormData({ ...item });
+    }
+
     if (type === "role_permissions" || type === "edit_role") {
       setSelectedPermissions(item.permissions ? item.permissions.map((p: any) => p.id) : []);
     }
@@ -154,36 +337,61 @@ export default function MasterDataPage() {
         await api.updateRolePermissions(editingItem.id, selectedPermissions);
         showFeedback("success", `Hak akses untuk role ${editingItem.name} berhasil diperbarui.`);
       } else if (modalType === "permit_type") {
+        const payload = {
+          name: formData.name,
+          risk_level: formData.risk_level || "General Risk",
+          is_active: formData.is_active !== false,
+          ppe_ids: formData.ppe_ids || []
+        };
         if (editingItem) {
-          await api.updatePermitType(editingItem.id, formData);
-          showFeedback("success", "Kategori izin kerja berhasil diperbarui.");
+          await api.updatePermitType(editingItem.id, payload);
+          showFeedback("success", `Kategori izin kerja "${formData.name}" berhasil diperbarui.`);
         } else {
-          await api.createPermitType(formData);
-          showFeedback("success", "Kategori izin kerja berhasil ditambahkan.");
+          await api.createPermitType(payload);
+          showFeedback("success", `Kategori izin kerja "${formData.name}" berhasil ditambahkan.`);
         }
       } else if (modalType === "ppe") {
+        const payload = {
+          name: formData.name,
+          category: formData.category || "Head & Face",
+          description: formData.description || "",
+          is_active: formData.is_active !== false
+        };
         if (editingItem) {
-          await api.updatePpeOption(editingItem.id, formData);
-          showFeedback("success", "Item APD berhasil diperbarui.");
+          await api.updatePpeOption(editingItem.id, payload);
+          showFeedback("success", `Item APD "${formData.name}" berhasil diperbarui.`);
         } else {
-          await api.createPpeOption(formData);
-          showFeedback("success", "Item APD baru berhasil ditambahkan.");
+          await api.createPpeOption(payload);
+          showFeedback("success", `Item APD baru "${formData.name}" berhasil ditambahkan.`);
         }
       } else if (modalType === "location") {
+        const payload = {
+          name: formData.name,
+          description: formData.description || "",
+          is_active: formData.is_active !== false
+        };
         if (editingItem) {
-          await api.updateLocation(editingItem.id, formData);
-          showFeedback("success", "Lokasi pabrik berhasil diperbarui.");
+          await api.updateLocation(editingItem.id, payload);
+          showFeedback("success", `Lokasi pabrik "${formData.name}" berhasil diperbarui.`);
         } else {
-          await api.createLocation(formData);
-          showFeedback("success", "Lokasi baru berhasil ditambahkan.");
+          await api.createLocation(payload);
+          showFeedback("success", `Lokasi baru "${formData.name}" berhasil ditambahkan.`);
         }
       } else if (modalType === "vendor") {
+        const payload = {
+          company_name: formData.company_name,
+          address: formData.address || "",
+          main_contact_name: formData.main_contact_name || "",
+          main_contact_phone: formData.main_contact_phone || "",
+          pic_vendor_user_id: formData.pic_vendor_user_id ? Number(formData.pic_vendor_user_id) : null,
+          status: formData.status || "Aktif"
+        };
         if (editingItem) {
-          await api.updateVendor(editingItem.id, formData);
-          showFeedback("success", "Data vendor rekanan berhasil diperbarui.");
+          await api.updateVendor(editingItem.id, payload);
+          showFeedback("success", `Data vendor rekanan "${formData.company_name}" berhasil diperbarui.`);
         } else {
-          await api.createVendor(formData);
-          showFeedback("success", "Vendor rekanan baru berhasil didaftarkan.");
+          await api.createVendor(payload);
+          showFeedback("success", `Vendor rekanan "${formData.company_name}" berhasil didaftarkan.`);
         }
       }
 
@@ -217,6 +425,29 @@ export default function MasterDataPage() {
       showFeedback("error", err.message || "Gagal menghapus data.");
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Save Policy Settings
+  const handleSaveSettings = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSavingSettings(true);
+    try {
+      const payload = Object.entries(policySettingsMap).map(([key, value]) => ({
+        key,
+        value: Number(value),
+      }));
+      const res = await api.updateSettings(payload);
+      if (res?.success) {
+        if (res.data?.map) setPolicySettingsMap(res.data.map);
+        showFeedback("success", "Pengaturan Kebijakan SIKA berhasil disimpan ke sistem.");
+      } else {
+        showFeedback("error", res?.message || "Gagal menyimpan pengaturan.");
+      }
+    } catch (err: any) {
+      showFeedback("error", err.message || "Gagal menyimpan pengaturan kebijakan SIKA.");
+    } finally {
+      setIsSavingSettings(false);
     }
   };
 
@@ -278,65 +509,12 @@ export default function MasterDataPage() {
             <div className="flex items-center gap-2">
               <button
                 onClick={fetchCurrentTabData}
-                className="p-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl transition-colors"
+                className="flex items-center gap-2 px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition-colors cursor-pointer"
                 title="Refresh Data"
               >
-                <RefreshCw size={18} className={loading ? "animate-spin" : ""} />
+                <RefreshCw size={15} className={loading ? "animate-spin" : ""} />
+                <span>Sinkronkan</span>
               </button>
-
-              {activeTab === "users_roles" && userSubTab === "users" && (
-                <button
-                  onClick={() => handleOpenAdd("user")}
-                  className="flex items-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-bold transition-colors shadow-sm"
-                >
-                  <Plus size={18} /> Tambah
-                </button>
-              )}
-
-              {activeTab === "users_roles" && userSubTab === "roles" && (
-                <button
-                  onClick={() => handleOpenAdd("role")}
-                  className="flex items-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-bold transition-colors shadow-sm"
-                >
-                  <Plus size={18} /> Tambah
-                </button>
-              )}
-
-              {activeTab === "permit_types" && (
-                <button
-                  onClick={() => handleOpenAdd("permit_type")}
-                  className="flex items-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-bold transition-colors shadow-sm"
-                >
-                  <Plus size={18} /> Tambah
-                </button>
-              )}
-
-              {activeTab === "ppe" && (
-                <button
-                  onClick={() => handleOpenAdd("ppe")}
-                  className="flex items-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-bold transition-colors shadow-sm"
-                >
-                  <Plus size={18} /> Tambah
-                </button>
-              )}
-
-              {activeTab === "locations_vendors" && locVendorSubTab === "locations" && (
-                <button
-                  onClick={() => handleOpenAdd("location")}
-                  className="flex items-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-bold transition-colors shadow-sm"
-                >
-                  <Plus size={18} /> Tambah
-                </button>
-              )}
-
-              {activeTab === "locations_vendors" && locVendorSubTab === "vendors" && (
-                <button
-                  onClick={() => handleOpenAdd("vendor")}
-                  className="flex items-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-bold transition-colors shadow-sm"
-                >
-                  <Plus size={18} /> Tambah
-                </button>
-              )}
             </div>
           </div>
 
@@ -382,6 +560,14 @@ export default function MasterDataPage() {
             >
               <Building size={18} /> Lokasi Pabrik & Rekanan Vendor
             </button>
+            <button
+              onClick={() => setActiveTab("policy_settings")}
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-bold transition-all whitespace-nowrap ${
+                activeTab === "policy_settings" ? "bg-blue-50 text-blue-700 shadow-sm ring-1 ring-blue-200" : "text-slate-600 hover:bg-slate-100"
+              }`}
+            >
+              <SlidersHorizontal size={18} /> Kebijakan & Durasi SIKA
+            </button>
           </div>
 
           {/* ========================================================================= */}
@@ -390,11 +576,11 @@ export default function MasterDataPage() {
           {activeTab === "users_roles" && (
             <div className="space-y-6">
               {/* Sub-tab switcher */}
-              <div className="flex items-center justify-between">
-                <div className="inline-flex bg-slate-200/80 p-1 rounded-xl gap-1">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="inline-flex bg-slate-200/80 p-1 rounded-xl gap-1 self-start">
                   <button
                     onClick={() => setUserSubTab("users")}
-                    className={`flex items-center gap-2 px-4 py-1.5 rounded-lg text-xs font-bold transition-colors ${
+                    className={`flex items-center gap-2 px-4 py-1.5 rounded-lg text-xs font-bold transition-colors cursor-pointer ${
                       userSubTab === "users" ? "bg-white text-slate-900 shadow-sm" : "text-slate-600 hover:text-slate-900"
                     }`}
                   >
@@ -402,13 +588,33 @@ export default function MasterDataPage() {
                   </button>
                   <button
                     onClick={() => setUserSubTab("roles")}
-                    className={`flex items-center gap-2 px-4 py-1.5 rounded-lg text-xs font-bold transition-colors ${
+                    className={`flex items-center gap-2 px-4 py-1.5 rounded-lg text-xs font-bold transition-colors cursor-pointer ${
                       userSubTab === "roles" ? "bg-white text-slate-900 shadow-sm" : "text-slate-600 hover:text-slate-900"
                     }`}
                   >
                     <ShieldCheck size={16} /> Peran & Wewenang ({roles.length})
                   </button>
                 </div>
+
+                {userSubTab === "users" && (
+                  <button
+                    type="button"
+                    onClick={() => handleOpenAdd("user")}
+                    className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition-all shadow-sm cursor-pointer shrink-0"
+                  >
+                    <Plus size={15} /> Tambah Pengguna Baru
+                  </button>
+                )}
+
+                {userSubTab === "roles" && (
+                  <button
+                    type="button"
+                    onClick={() => handleOpenAdd("role")}
+                    className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition-all shadow-sm cursor-pointer shrink-0"
+                  >
+                    <Plus size={15} /> Tambah Role / Peran Baru
+                  </button>
+                )}
               </div>
 
               {/* Sub 1A: USERS MANAGEMENT TABLE */}
@@ -518,75 +724,22 @@ export default function MasterDataPage() {
                 </div>
               )}
 
-              {/* Sub 1B: ROLES & DYNAMIC PERMISSIONS MATRIX */}
+              {/* Sub 1B: ROLES & DYNAMIC PERMISSIONS MATRIX DASHBOARD */}
               {userSubTab === "roles" && (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-                  {roles.map((r) => (
-                    <div key={r.id} className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between hover:shadow-md transition-shadow">
-                      <div className="space-y-3">
-                        <div className="flex justify-between items-start">
-                          <span className={`px-2.5 py-1 font-extrabold text-xs rounded-lg uppercase tracking-wider font-mono ${
-                            r.code === 'admin' ? 'bg-purple-100 text-purple-800' :
-                            r.code === 'hse' ? 'bg-emerald-100 text-emerald-800' :
-                            r.code === 'ga_dept_head' || r.code === 'ga_div_head' ? 'bg-amber-100 text-amber-800' :
-                            r.code === 'pic_vendor' ? 'bg-indigo-100 text-indigo-800' :
-                            'bg-blue-100 text-blue-800'
-                          }`}>
-                            {r.code}
-                          </span>
-                          <span className="text-xs text-slate-500 font-semibold flex items-center gap-1">
-                            <Users size={14} className="text-slate-400" /> {r.users_count || 0} Pengguna
-                          </span>
-                        </div>
-                        <div>
-                          <h3 className="font-bold text-slate-900 text-base">{r.name}</h3>
-                          <p className="text-xs text-slate-500 mt-1 leading-relaxed line-clamp-3">{r.description || "Tidak ada rincian deskripsi tanggung jawab."}</p>
-                        </div>
-                        <div className="pt-2 border-t border-slate-100 flex flex-wrap gap-1.5">
-                          <span className="text-xs font-bold text-slate-600 block w-full mb-1">
-                            Hak Akses ({r.permissions ? r.permissions.length : 0} Wewenang):
-                          </span>
-                          {r.permissions && r.permissions.slice(0, 5).map((p: any) => (
-                            <span key={p.id} className="text-xs bg-slate-100 text-slate-700 font-medium px-2.5 py-1 rounded-md">
-                              {p.name}
-                            </span>
-                          ))}
-                          {r.permissions && r.permissions.length > 5 && (
-                            <span className="text-xs bg-blue-50 text-blue-700 font-bold px-2 py-1 rounded-md">
-                              +{r.permissions.length - 5} lainnya
-                            </span>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* Action Buttons for Role */}
-                      <div className="pt-4 mt-4 border-t border-slate-100 flex items-center justify-between gap-2">
-                        <button
-                          onClick={() => handleOpenEdit("role_permissions", r)}
-                          className="flex-1 py-2 px-3 bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold text-xs rounded-xl flex items-center justify-center gap-1.5 transition-colors"
-                        >
-                          <ShieldCheck size={14} /> Atur Hak Akses
-                        </button>
-                        <button
-                          onClick={() => handleOpenEdit("role", r)}
-                          className="p-2 text-slate-600 hover:text-blue-600 hover:bg-slate-100 rounded-xl transition-colors"
-                          title="Edit Info Role"
-                        >
-                          <Edit3 size={15} />
-                        </button>
-                        {!['pemohon', 'pic_vendor', 'hse', 'ga_dept_head', 'ga_div_head', 'admin'].includes(r.code) && (
-                          <button
-                            onClick={() => handleDelete("role", r.id, r.name)}
-                            className="p-2 text-slate-600 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-colors"
-                            title="Hapus Role"
-                          >
-                            <Trash2 size={15} />
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                <RolePermissionMatrixView
+                  roles={roles}
+                  users={users}
+                  permissionsGrouped={permissionsGrouped}
+                  onSavePermissions={async (roleId, permissionIds) => {
+                    await api.updateRolePermissions(roleId, permissionIds);
+                    showFeedback("success", "Hak akses role berhasil diperbarui.");
+                    await fetchCurrentTabData();
+                  }}
+                  onOpenEditRole={(role) => handleOpenEdit("role", role)}
+                  onOpenAddRole={() => handleOpenAdd("role")}
+                  onDeleteRole={(role) => handleDelete("role", role.id, role.name)}
+                  onOpenEditUser={(user) => handleOpenEdit("user", user)}
+                />
               )}
             </div>
           )}
@@ -596,9 +749,23 @@ export default function MasterDataPage() {
           {/* ========================================================================= */}
           {activeTab === "permit_types" && (
             <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden p-6 space-y-4">
-              <div>
-                <h3 className="text-base font-bold text-slate-900">Katalog Jenis Izin Kerja (Work Permit Categories)</h3>
-                <p className="text-xs text-slate-500">Izin kerja terdaftar yang wajib dipilih kontraktor saat mengajukan izin kerja di pabrik.</p>
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-base font-bold text-slate-900">Katalog Jenis Izin Kerja (Work Permit Categories)</h3>
+                    <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-blue-50 text-blue-700 border border-blue-100">
+                      {permitTypes.length} Kategori Terdaftar
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-500 mt-0.5">Izin kerja terdaftar yang wajib dipilih kontraktor saat mengajukan izin kerja di pabrik.</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => handleOpenAdd("permit_type")}
+                  className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition-all shadow-sm cursor-pointer shrink-0"
+                >
+                  <Plus size={15} /> Tambah Jenis Izin Baru
+                </button>
               </div>
 
               <div className="overflow-x-auto">
@@ -607,19 +774,23 @@ export default function MasterDataPage() {
                     <tr>
                       <th className="px-5 py-3.5">Nama Kategori Izin</th>
                       <th className="px-5 py-3.5 text-center">Klasifikasi Risiko K3</th>
+                      <th className="px-5 py-3.5">Standar APD Wajib (K3)</th>
                       <th className="px-5 py-3.5 text-center">Status</th>
                       <th className="px-5 py-3.5 text-right">Aksi</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
                     {permitTypes.map((pt) => {
-                      const isHigh = ['Confined Space', 'Hot Work', 'Work at Height', 'High Voltage Electricity', 'Heavy Lifting', 'Ijin Kerja Panas', 'Ijin Kerja Ketinggian', 'Ijin Kerja Ruang Terbatas'].some(k => pt.name.toLowerCase().includes(k.toLowerCase()));
+                      const isHigh = pt.risk_level
+                        ? pt.risk_level === 'High Risk'
+                        : ['Confined Space', 'Hot Work', 'Work at Height', 'High Voltage Electricity', 'Heavy Lifting'].some(k => pt.name.toLowerCase().includes(k.toLowerCase()));
+                      const ppeList = pt.default_ppes || [];
                       return (
                         <tr key={pt.id} className="hover:bg-slate-50">
                           <td className="px-5 py-4 font-bold text-slate-900 flex items-center gap-2">
-                            <FileText size={16} className="text-blue-600" /> {pt.name}
+                            <FileText size={16} className="text-blue-600 shrink-0" /> {pt.name}
                           </td>
-                          <td className="px-5 py-4 text-center">
+                          <td className="px-5 py-4 text-center whitespace-nowrap">
                             <span className={`inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-full font-bold ${
                               isHigh ? 'bg-rose-100 text-rose-800' : 'bg-slate-100 text-slate-700'
                             }`}>
@@ -627,23 +798,58 @@ export default function MasterDataPage() {
                               {isHigh ? "High Risk (Risiko Tinggi)" : "General Risk (Normal)"}
                             </span>
                           </td>
-                          <td className="px-5 py-4 text-center">
-                            <span className="inline-flex items-center gap-1 text-xs px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-semibold">
-                              <CheckCircle2 size={12} /> Aktif
+                          <td className="px-5 py-4">
+                            <div className="flex flex-wrap gap-1 max-w-sm items-center">
+                              {ppeList.length > 0 ? (
+                                <>
+                                  {ppeList.slice(0, 3).map((p: any) => (
+                                    <span key={p.id} className="inline-flex items-center gap-1 text-[11px] font-semibold bg-blue-50 text-blue-700 px-2 py-0.5 rounded-md border border-blue-100 whitespace-nowrap">
+                                      <HardHat size={11} className="text-blue-500" /> {p.name}
+                                    </span>
+                                  ))}
+                                  {ppeList.length > 3 && (
+                                    <button
+                                      type="button"
+                                      onClick={() => handleOpenEdit("permit_type", pt)}
+                                      className="text-[11px] font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 px-1.5 py-0.5 rounded-md cursor-pointer transition-colors"
+                                      title="Klik untuk melihat dan mengatur semua APD"
+                                    >
+                                      +{ppeList.length - 3} lainnya
+                                    </button>
+                                  )}
+                                </>
+                              ) : (
+                                <span className="text-xs text-slate-400 italic">Belum diatur</span>
+                              )}
+                            </div>
+                          </td>
+                          <td className="px-5 py-4 text-center whitespace-nowrap">
+                            <span className={`inline-flex items-center gap-1 text-xs px-2.5 py-0.5 rounded-full font-semibold ${
+                              pt.is_active !== false ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-600'
+                            }`}>
+                              {pt.is_active !== false ? <CheckCircle2 size={12} /> : <X size={12} />}
+                              {pt.is_active !== false ? "Aktif" : "Nonaktif"}
                             </span>
                           </td>
-                          <td className="px-5 py-4 text-right">
+                          <td className="px-5 py-4 text-right whitespace-nowrap">
                             <div className="flex items-center justify-end gap-1.5">
                               <button
                                 onClick={() => handleOpenEdit("permit_type", pt)}
-                                className="p-1.5 text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg"
-                                title="Edit"
+                                className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-bold text-blue-700 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors border border-blue-200 shadow-xs cursor-pointer"
+                                title="Edit & Atur APD Wajib"
+                              >
+                                <HardHat size={13} /> Atur APD ({ppeList.length})
+                              </button>
+                              <button
+                                onClick={() => handleOpenEdit("permit_type", pt)}
+                                className="p-1.5 text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg cursor-pointer"
+                                title="Edit Data Izin"
                               >
                                 <Edit3 size={16} />
                               </button>
                               <button
                                 onClick={() => handleDelete("permit_type", pt.id, pt.name)}
-                                className="p-1.5 text-slate-500 hover:text-rose-600 hover:bg-rose-50 rounded-lg"
+                                className="p-1.5 text-slate-500 hover:text-rose-600 hover:bg-rose-50 rounded-lg cursor-pointer"
                                 title="Hapus"
                               >
                                 <Trash2 size={16} />
@@ -662,52 +868,189 @@ export default function MasterDataPage() {
           {/* ========================================================================= */}
           {/* TAB 3: ALAT PELINDUNG DIRI (PPE / APD) */}
           {/* ========================================================================= */}
-          {activeTab === "ppe" && (
-            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden p-6 space-y-6">
-              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                <div>
-                  <h3 className="text-base font-bold text-slate-900">Standar Alat Pelindung Diri (PPE / APD Wajib)</h3>
-                  <p className="text-xs text-slate-500">Daftar kelengkapan keselamatan yang wajib digunakan pekerja di area PT Widatra Bhakti.</p>
+          {activeTab === "ppe" && (() => {
+            const filteredPpes = ppes.filter((item) => {
+              const matchSearch = (item.name || "").toLowerCase().includes(ppeSearch.toLowerCase()) ||
+                (item.description || "").toLowerCase().includes(ppeSearch.toLowerCase());
+              const matchCategory = !ppeCategoryFilter || item.category === ppeCategoryFilter;
+              return matchSearch && matchCategory;
+            });
+
+            return (
+              <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden p-6 space-y-6">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h3 className="text-base font-bold text-slate-900">Standar Alat Pelindung Diri (PPE / APD Wajib)</h3>
+                      <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-blue-50 text-blue-700 border border-blue-100">
+                        {ppes.length} Item Terdaftar
+                      </span>
+                    </div>
+                    <p className="text-xs text-slate-500 mt-0.5">
+                      Daftar kelengkapan keselamatan kerja wajib di PT Widatra Bhakti. Klik kartu APD untuk melihat rincian proteksi & katalog izin kerja terkait.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleOpenAdd("ppe")}
+                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold flex items-center gap-2 shadow-sm transition-all shrink-0 cursor-pointer"
+                  >
+                    <Plus size={15} /> Tambah APD Baru
+                  </button>
+                </div>
+
+                {/* Filter & Pencarian Bar */}
+                <div className="flex flex-col sm:flex-row gap-3 pt-2 border-t border-slate-100">
+                  <div className="relative flex-1">
+                    <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                    <input
+                      type="text"
+                      placeholder="Cari nama APD atau standar spesifikasi..."
+                      value={ppeSearch}
+                      onChange={(e) => setPpeSearch(e.target.value)}
+                      className="w-full pl-9 pr-8 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all"
+                    />
+                    {ppeSearch && (
+                      <button
+                        onClick={() => setPpeSearch("")}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                      >
+                        <X size={13} />
+                      </button>
+                    )}
+                  </div>
+                  <div className="w-full sm:w-64">
+                    <select
+                      value={ppeCategoryFilter}
+                      onChange={(e) => setPpeCategoryFilter(e.target.value)}
+                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white text-slate-700 font-medium"
+                    >
+                      <option value="">Semua Kategori Proteksi ({ppes.length})</option>
+                      <option value="Head & Face">Kepala & Wajah (Head & Face)</option>
+                      <option value="Foot & Hand">Kaki & Tangan (Foot & Hand)</option>
+                      <option value="Fall Protection">Ketinggian (Fall Protection)</option>
+                      <option value="Respiratory">Pernapasan (Respiratory)</option>
+                      <option value="Fire & Safety">Kebakaran & Listrik (Fire & Safety)</option>
+                      <option value="Site & Area Safety">Barikade & Rambu (Site Safety)</option>
+                      <option value="General PPE">Keselamatan Umum (General PPE)</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* Grid Kartu APD */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3.5">
+                  {filteredPpes.map((item) => {
+                    const catMeta = item.category && PPE_CATEGORIES_INFO[item.category]
+                      ? PPE_CATEGORIES_INFO[item.category]
+                      : {
+                          label: item.category || "Umum",
+                          desc: "Alat keselamatan kerja",
+                          color: "text-slate-700",
+                          bg: "bg-slate-100",
+                          border: "border-slate-200"
+                        };
+
+                    const requiringPermitCount = permitTypes.filter((pt: any) => {
+                      const permitPpes = pt.default_ppes || pt.defaultPpes || [];
+                      return permitPpes.some((dp: any) => Number(dp.id) === Number(item.id));
+                    }).length;
+
+                    return (
+                      <div
+                        key={item.id}
+                        onClick={() => setDetailPpe(item)}
+                        className="group relative bg-white p-4 rounded-xl border border-slate-200 hover:border-blue-400 hover:shadow-md transition-all cursor-pointer flex flex-col justify-between space-y-3"
+                      >
+                        {/* Baris Atas: Label Kategori & Tombol Aksi */}
+                        <div className="flex items-center justify-between gap-2">
+                          <span className={`px-2 py-0.5 text-[10px] font-bold rounded-md border ${catMeta.bg} ${catMeta.color} ${catMeta.border} truncate max-w-[170px]`}>
+                            {catMeta.label}
+                          </span>
+                          
+                          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleOpenEdit("ppe", item);
+                              }}
+                              className="p-1 text-slate-400 hover:text-blue-600 rounded hover:bg-slate-100 transition-colors"
+                              title="Edit APD"
+                            >
+                              <Edit3 size={13} />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDelete("ppe", item.id, item.name);
+                              }}
+                              className="p-1 text-slate-400 hover:text-rose-600 rounded hover:bg-slate-100 transition-colors"
+                              title="Hapus APD"
+                            >
+                              <Trash2 size={13} />
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Baris Tengah: Icon + Nama APD & Deskripsi */}
+                        <div className="flex items-start gap-2.5">
+                          <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
+                            getPpeCategoryIcon(item.category, item.name)
+                          }`}>
+                            <HardHat size={18} />
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-1.5">
+                              <span className="text-sm font-bold text-slate-900 group-hover:text-blue-600 transition-colors line-clamp-1" title={item.name}>
+                                {item.name}
+                              </span>
+                              {item.is_active === false && (
+                                <span className="text-[9px] font-semibold text-slate-400 bg-slate-100 px-1 py-0.2 rounded shrink-0">
+                                  Nonaktif
+                                </span>
+                              )}
+                            </div>
+                            {item.description ? (
+                              <p className="text-[11px] text-slate-500 line-clamp-1 mt-0.5" title={item.description}>
+                                {item.description}
+                              </p>
+                            ) : (
+                              <p className="text-[11px] text-slate-400 italic mt-0.5">Standar K3 Pabrik</p>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Baris Bawah: Info Ijin Kerja & Hint Detail */}
+                        <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-[11px]">
+                          {requiringPermitCount > 0 ? (
+                            <span className="font-semibold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-full border border-blue-100">
+                              Wajib di {requiringPermitCount} Izin Kerja
+                            </span>
+                          ) : (
+                            <span className="text-slate-400">
+                              Opsional
+                            </span>
+                          )}
+                          <span className="text-slate-400 group-hover:text-blue-600 flex items-center gap-0.5 font-medium transition-colors">
+                            Info <Info size={12} />
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })}
+
+                  {filteredPpes.length === 0 && (
+                    <div className="col-span-full py-12 text-center text-slate-400">
+                      <HardHat size={32} className="mx-auto mb-2 opacity-40 text-slate-400" />
+                      <p className="text-sm font-semibold text-slate-600">Tidak ada data APD yang cocok</p>
+                      <p className="text-xs text-slate-400 mt-1">Coba kata kunci pencarian lain atau ubah pilihan kategori proteksi.</p>
+                    </div>
+                  )}
                 </div>
               </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3.5">
-                {ppes.map((item) => (
-                  <div key={item.id} className="bg-slate-50/80 p-4 rounded-xl border border-slate-200 hover:border-blue-300 transition-colors flex items-center justify-between group">
-                    <div className="flex items-center gap-2.5 overflow-hidden">
-                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
-                        ['safety helmet', 'safety shoes', 'safety glasses', 'gloves', 'ear plug/muff', 'face shield'].includes(item.name.toLowerCase()) ? 'bg-blue-50 text-blue-600' :
-                        ['body harness', 'lifeline', 'respiratory protection', 'breathing apparatus'].includes(item.name.toLowerCase()) ? 'bg-orange-50 text-orange-600' :
-                        ['fire extinguisher'].includes(item.name.toLowerCase()) ? 'bg-red-50 text-red-600' :
-                        ['barricade', 'safety line', 'sign', 'scaffolding'].includes(item.name.toLowerCase()) ? 'bg-amber-50 text-amber-600' :
-                        ['safety net', 'stairs'].includes(item.name.toLowerCase()) ? 'bg-emerald-50 text-emerald-600' :
-                        'bg-slate-50 text-slate-600'
-                      }`}>
-                        <HardHat size={16} />
-                      </div>
-                      <span className="text-sm font-bold text-slate-800 truncate" title={item.name}>{item.name}</span>
-                    </div>
-                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button
-                        onClick={() => handleOpenEdit("ppe", item)}
-                        className="p-1 text-slate-400 hover:text-blue-600"
-                        title="Edit"
-                      >
-                        <Edit3 size={14} />
-                      </button>
-                      <button
-                        onClick={() => handleDelete("ppe", item.id, item.name)}
-                        className="p-1 text-slate-400 hover:text-rose-600"
-                        title="Hapus"
-                      >
-                        <Trash2 size={14} />
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
+            );
+          })()}
 
           {/* ========================================================================= */}
           {/* TAB 4: STATUS WORKFLOW & APPROVAL PIPELINE */}
@@ -776,23 +1119,45 @@ export default function MasterDataPage() {
           {/* ========================================================================= */}
           {activeTab === "locations_vendors" && (
             <div className="space-y-6">
-              <div className="inline-flex bg-slate-200/80 p-1 rounded-xl gap-1">
-                <button
-                  onClick={() => setLocVendorSubTab("locations")}
-                  className={`flex items-center gap-2 px-4 py-1.5 rounded-lg text-xs font-bold transition-colors ${
-                    locVendorSubTab === "locations" ? "bg-white text-slate-900 shadow-sm" : "text-slate-600 hover:text-slate-900"
-                  }`}
-                >
-                  <MapPin size={16} /> Lokasi Pabrik ({locations.length})
-                </button>
-                <button
-                  onClick={() => setLocVendorSubTab("vendors")}
-                  className={`flex items-center gap-2 px-4 py-1.5 rounded-lg text-xs font-bold transition-colors ${
-                    locVendorSubTab === "vendors" ? "bg-white text-slate-900 shadow-sm" : "text-slate-600 hover:text-slate-900"
-                  }`}
-                >
-                  <Building size={16} /> Rekanan Vendor ({vendors.length})
-                </button>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="inline-flex bg-slate-200/80 p-1 rounded-xl gap-1 self-start">
+                  <button
+                    onClick={() => setLocVendorSubTab("locations")}
+                    className={`flex items-center gap-2 px-4 py-1.5 rounded-lg text-xs font-bold transition-colors cursor-pointer ${
+                      locVendorSubTab === "locations" ? "bg-white text-slate-900 shadow-sm" : "text-slate-600 hover:text-slate-900"
+                    }`}
+                  >
+                    <MapPin size={16} /> Lokasi Pabrik ({locations.length})
+                  </button>
+                  <button
+                    onClick={() => setLocVendorSubTab("vendors")}
+                    className={`flex items-center gap-2 px-4 py-1.5 rounded-lg text-xs font-bold transition-colors cursor-pointer ${
+                      locVendorSubTab === "vendors" ? "bg-white text-slate-900 shadow-sm" : "text-slate-600 hover:text-slate-900"
+                    }`}
+                  >
+                    <Building size={16} /> Rekanan Vendor ({vendors.length})
+                  </button>
+                </div>
+
+                {locVendorSubTab === "locations" && (
+                  <button
+                    type="button"
+                    onClick={() => handleOpenAdd("location")}
+                    className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition-all shadow-sm cursor-pointer shrink-0"
+                  >
+                    <Plus size={15} /> Tambah Lokasi Pabrik
+                  </button>
+                )}
+
+                {locVendorSubTab === "vendors" && (
+                  <button
+                    type="button"
+                    onClick={() => handleOpenAdd("vendor")}
+                    className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition-all shadow-sm cursor-pointer shrink-0"
+                  >
+                    <Plus size={15} /> Daftarkan Vendor Rekanan
+                  </button>
+                )}
               </div>
 
               {/* Sub 5A: LOCATIONS TABLE */}
@@ -905,6 +1270,202 @@ export default function MasterDataPage() {
             </div>
           )}
 
+          {/* ========================================================================= */}
+          {/* TAB 6: KEBIJAKAN & ATURAN SIKA (PERMIT POLICIES & DURATIONS) */}
+          {/* ========================================================================= */}
+          {activeTab === "policy_settings" && (
+            <div className="space-y-6">
+              {/* Header Policy Section */}
+              <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-lg font-bold text-slate-900">Pengaturan Kebijakan & Durasi SIKA</h3>
+                    <span className="px-2.5 py-0.5 bg-blue-100 text-blue-800 text-xs font-bold rounded-full">
+                      Regulasi K3 PT Widatra Bhakti
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-500 mt-1 max-w-2xl">
+                    Konfigurasi terpusat untuk batas maksimal masa berlaku izin kerja, batas waktu pengajuan awal (lead time), dan jendela pembukaan perpanjangan. Pengaturan ini langsung mengontrol validasi kalender vendor dan otorisasi sistem tanpa perlu mengubah kode program.
+                  </p>
+                </div>
+                <button
+                  onClick={handleSaveSettings}
+                  disabled={isSavingSettings}
+                  className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white rounded-xl text-xs font-bold transition-all shadow-sm cursor-pointer shrink-0"
+                >
+                  <Save size={16} />
+                  <span>{isSavingSettings ? "Menyimpan..." : "Simpan Pengaturan Kebijakan"}</span>
+                </button>
+              </div>
+
+              {/* Form Policy Cards Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {/* 1. Max Permit Duration Card */}
+                <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between space-y-5">
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="p-2.5 bg-blue-50 text-blue-700 rounded-xl border border-blue-100">
+                        <Clock size={22} />
+                      </div>
+                      <span className="px-2.5 py-0.5 bg-blue-100 text-blue-800 text-[10px] font-bold rounded-full">
+                        Masa Berlaku SIKA
+                      </span>
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-bold text-slate-900">Masa Berlaku Maksimal SIKA</h4>
+                      <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+                        Batas maksimal rentang hari kalender untuk satu lembar izin kerja (selesai dikurangi mulai). Anda dapat membatasi hari atau mengizinkan tanpa batas.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="pt-4 border-t border-slate-100 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <label className="block text-xs font-bold text-slate-700 uppercase">
+                        Durasi Maksimal SIKA
+                      </label>
+                      <label className="inline-flex items-center gap-1.5 text-xs font-semibold text-blue-700 cursor-pointer select-none">
+                        <input
+                          type="checkbox"
+                          checked={(policySettingsMap.max_permit_duration_days ?? 6) <= 0}
+                          onChange={(e) => {
+                            const isUnlimited = e.target.checked;
+                            setPolicySettingsMap(prev => ({
+                              ...prev,
+                              max_permit_duration_days: isUnlimited ? 0 : 6
+                            }));
+                          }}
+                          className="w-3.5 h-3.5 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                        />
+                        <span>Tanpa Batas</span>
+                      </label>
+                    </div>
+
+                    {(policySettingsMap.max_permit_duration_days ?? 6) <= 0 ? (
+                      <div className="p-2.5 bg-blue-50/80 border border-blue-200 rounded-xl text-xs font-semibold text-blue-800 flex items-center gap-2">
+                        <span className="w-2 h-2 rounded-full bg-blue-600 shrink-0"></span>
+                        <span>Tanpa Batasan Hari (Unlimited)</span>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="number"
+                          min={1}
+                          max={90}
+                          value={policySettingsMap.max_permit_duration_days ?? 6}
+                          onChange={(e) => setPolicySettingsMap(prev => ({
+                            ...prev,
+                            max_permit_duration_days: Math.max(1, parseInt(e.target.value) || 1)
+                          }))}
+                          className="w-full p-2.5 border border-slate-200 rounded-xl text-sm font-bold text-slate-900 outline-none focus:ring-2 focus:ring-blue-500 bg-slate-50/50"
+                        />
+                        <span className="text-xs font-bold text-slate-500 shrink-0">Hari</span>
+                      </div>
+                    )}
+                    <p className="text-[11px] text-slate-400 italic">
+                      {(policySettingsMap.max_permit_duration_days ?? 6) <= 0
+                        ? "Pemohon bebas menentukan durasi kerja proyek tanpa batas maksimal."
+                        : "Default standar pabrik: 6 hari kalender"}
+                    </p>
+                  </div>
+                </div>
+
+                {/* 2. Min Lead Time Card */}
+                <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between space-y-5">
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="p-2.5 bg-amber-50 text-amber-700 rounded-xl border border-amber-100">
+                        <Calendar size={22} />
+                      </div>
+                      <span className="px-2.5 py-0.5 bg-amber-100 text-amber-800 text-[10px] font-bold rounded-full">
+                        Lead Time Pengajuan
+                      </span>
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-bold text-slate-900">Batas Waktu Pengajuan Baru</h4>
+                      <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+                        Minimal jarak hari pengajuan izin baru sebelum tanggal kerja (Aturan H-X) agar tim K3 dan PIC operasional memiliki waktu audit dokumen, personel, dan JSA.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="pt-4 border-t border-slate-100 space-y-2">
+                    <label className="block text-xs font-bold text-slate-700 uppercase">
+                      Batas Minimal Pengajuan (H-X)
+                    </label>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="number"
+                        min={0}
+                        max={60}
+                        value={policySettingsMap.min_lead_time_days ?? 3}
+                        onChange={(e) => setPolicySettingsMap(prev => ({
+                          ...prev,
+                          min_lead_time_days: Math.max(0, parseInt(e.target.value) || 0)
+                        }))}
+                        className="w-full p-2.5 border border-slate-200 rounded-xl text-sm font-bold text-slate-900 outline-none focus:ring-2 focus:ring-blue-500 bg-slate-50/50"
+                      />
+                      <span className="text-xs font-bold text-slate-500 shrink-0">Hari (H-X)</span>
+                    </div>
+                    <p className="text-[11px] text-slate-400 italic">Default standar K3: H-3 sebelum mulai</p>
+                  </div>
+                </div>
+
+                {/* 3. Extension Window Card */}
+                <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between space-y-5">
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="p-2.5 bg-amber-50 text-amber-600 rounded-xl border border-amber-200">
+                        <CalendarPlus size={22} />
+                      </div>
+                      <span className="px-2.5 py-0.5 bg-amber-100 text-amber-800 text-[10px] font-bold rounded-full">
+                        Akses Perpanjangan
+                      </span>
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-bold text-slate-900">Jendela Perpanjangan Izin</h4>
+                      <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+                        Batas hari sebelum tanggal kedaluwarsa izin di mana tombol "Perpanjang Ijin" mulai dibuka untuk kontraktor pada modul Ijin Saya.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="pt-4 border-t border-slate-100 space-y-2">
+                    <label className="block text-xs font-bold text-slate-700 uppercase">
+                      Jendela Pembukaan (H-X)
+                    </label>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="number"
+                        min={1}
+                        max={30}
+                        value={policySettingsMap.extension_window_days ?? 3}
+                        onChange={(e) => setPolicySettingsMap(prev => ({
+                          ...prev,
+                          extension_window_days: Math.max(1, parseInt(e.target.value) || 1)
+                        }))}
+                        className="w-full p-2.5 border border-slate-200 rounded-xl text-sm font-bold text-slate-900 outline-none focus:ring-2 focus:ring-blue-500 bg-slate-50/50"
+                      />
+                      <span className="text-xs font-bold text-slate-500 shrink-0">Hari (H-X)</span>
+                    </div>
+                    <p className="text-[11px] text-slate-400 italic">Default standar K3: H-3 sebelum expired</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Compliance Info Strip */}
+              <div className="p-5 bg-blue-50/80 border border-blue-200 rounded-2xl flex items-start gap-3">
+                <Info size={20} className="text-blue-700 shrink-0 mt-0.5" />
+                <div className="text-xs text-blue-900 space-y-1">
+                  <p className="font-bold">Pedoman Regulasi Keselamatan Kerja PT Widatra Bhakti (SMK3 / ISO 45001):</p>
+                  <p className="leading-relaxed text-blue-800">
+                    Nilai konfigurasi pada halaman ini disimpan di database terpusat. Apabila sewaktu-waktu terjadi pergantian staf HSE atau perubahan kebijakan operasional pabrik, staf yang berwenang cukup memperbarui angka di atas dan menekan tombol simpan. Sistem akan langsung menyesuaikan batas kalender form pengajuan dan validasi izin tanpa memerlukan bantuan programmer.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
         </div>
       </main>
 
@@ -913,7 +1474,7 @@ export default function MasterDataPage() {
       {/* ========================================================================= */}
       {modalType && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-in fade-in">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-xl max-h-[90vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-200">
+          <div className={`bg-white rounded-2xl shadow-2xl w-full ${modalType === 'permit_type' || modalType === 'role_permissions' ? 'max-w-2xl' : 'max-w-xl'} max-h-[90vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-200`}>
             
             {/* Modal Header */}
             <div className="p-5 border-b border-slate-100 flex justify-between items-center bg-slate-50 shrink-0">
@@ -922,7 +1483,7 @@ export default function MasterDataPage() {
                 {modalType === "reset_password" && `Reset Password — ${editingItem?.name}`}
                 {modalType === "role" && (editingItem ? "Edit Informasi Role" : "Tambah Role Baru")}
                 {modalType === "role_permissions" && `Atur Hak Akses Role: ${editingItem?.name}`}
-                {modalType === "permit_type" && (editingItem ? "Edit Jenis Izin Kerja" : "Tambah Jenis Izin Kerja Baru")}
+                {modalType === "permit_type" && (editingItem ? `Edit Jenis Izin Kerja — ${editingItem?.name}` : "Tambah Jenis Izin Kerja Baru")}
                 {modalType === "ppe" && (editingItem ? "Edit Item APD" : "Tambah Item APD Baru")}
                 {modalType === "location" && (editingItem ? "Edit Lokasi Pabrik" : "Tambah Lokasi Baru")}
                 {modalType === "vendor" && (editingItem ? "Edit Rekanan Vendor" : "Daftarkan Vendor Rekanan")}
@@ -1161,21 +1722,206 @@ export default function MasterDataPage() {
                 </div>
               )}
 
-              {/* 5. FORM PERMIT TYPE */}
+              {/* 5. FORM PERMIT TYPE (NAMA, RISIKO K3, STATUS, DAN APD WAJIB) */}
               {modalType === "permit_type" && (
-                <>
+                <div className="space-y-4">
+                  {/* Field 1: Nama Kategori */}
                   <div>
-                    <label className="block text-xs font-bold text-slate-700 uppercase mb-1">Nama Kategori Izin *</label>
+                    <label className="block text-xs font-bold text-slate-700 uppercase mb-1">
+                      Nama Kategori Izin *
+                    </label>
                     <input
                       required
                       type="text"
                       placeholder="Contoh: Ijin Kerja Ruang Terbatas (Confined Space)"
                       value={formData.name || ""}
                       onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                      className="w-full p-2.5 border border-slate-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full p-2.5 border border-slate-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500 font-medium"
                     />
                   </div>
-                </>
+
+                  {/* Field 2: Klasifikasi Risiko K3 */}
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 uppercase mb-1.5">
+                      Klasifikasi Risiko K3 *
+                    </label>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                      <div
+                        onClick={() => setFormData({ ...formData, risk_level: "High Risk" })}
+                        className={`p-3 rounded-xl border flex items-start gap-2.5 cursor-pointer transition-all ${
+                          formData.risk_level === "High Risk"
+                            ? "border-rose-500 bg-rose-50/80 ring-2 ring-rose-500/20 text-rose-950"
+                            : "border-slate-200 hover:bg-slate-50 bg-white text-slate-700"
+                        }`}
+                      >
+                        <input
+                          type="radio"
+                          name="risk_level"
+                          value="High Risk"
+                          checked={formData.risk_level === "High Risk"}
+                          onChange={() => setFormData({ ...formData, risk_level: "High Risk" })}
+                          className="mt-0.5 text-rose-600 focus:ring-rose-500 cursor-pointer"
+                        />
+                        <div>
+                          <div className="font-bold text-xs flex items-center gap-1 text-rose-800">
+                            <AlertTriangle size={13} /> High Risk (Risiko Tinggi)
+                          </div>
+                          <p className="text-[11px] text-slate-500 mt-0.5 leading-snug">
+                            Pekerjaan berisiko fatalitas (Hot Work, Ketinggian, Ruang Terbatas, Listrik, Crane).
+                          </p>
+                        </div>
+                      </div>
+
+                      <div
+                        onClick={() => setFormData({ ...formData, risk_level: "General Risk" })}
+                        className={`p-3 rounded-xl border flex items-start gap-2.5 cursor-pointer transition-all ${
+                          formData.risk_level === "General Risk"
+                            ? "border-blue-500 bg-blue-50/80 ring-2 ring-blue-500/20 text-blue-950"
+                            : "border-slate-200 hover:bg-slate-50 bg-white text-slate-700"
+                        }`}
+                      >
+                        <input
+                          type="radio"
+                          name="risk_level"
+                          value="General Risk"
+                          checked={formData.risk_level === "General Risk"}
+                          onChange={() => setFormData({ ...formData, risk_level: "General Risk" })}
+                          className="mt-0.5 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                        />
+                        <div>
+                          <div className="font-bold text-xs flex items-center gap-1 text-blue-800">
+                            <CheckCircle2 size={13} /> General Risk (Normal)
+                          </div>
+                          <p className="text-[11px] text-slate-500 mt-0.5 leading-snug">
+                            Pekerjaan umum non-kritis dengan standar keselamatan operasional biasa.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Field 3: Status Izin */}
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 uppercase mb-1">
+                      Status Operasional
+                    </label>
+                    <div className="flex gap-4 items-center">
+                      <label className="flex items-center gap-2 text-xs font-semibold text-slate-700 cursor-pointer">
+                        <input
+                          type="radio"
+                          name="is_active"
+                          checked={formData.is_active !== false}
+                          onChange={() => setFormData({ ...formData, is_active: true })}
+                          className="text-emerald-600 focus:ring-emerald-500 cursor-pointer"
+                        />
+                        <span className="text-emerald-700 font-bold">Aktif</span> (Dapat dipilih di form permit)
+                      </label>
+                      <label className="flex items-center gap-2 text-xs font-semibold text-slate-700 cursor-pointer">
+                        <input
+                          type="radio"
+                          name="is_active"
+                          checked={formData.is_active === false}
+                          onChange={() => setFormData({ ...formData, is_active: false })}
+                          className="text-slate-600 focus:ring-slate-500 cursor-pointer"
+                        />
+                        <span className="text-slate-600">Nonaktif</span> (Diarsipkan)
+                      </label>
+                    </div>
+                  </div>
+
+                  {/* Field 4: Standar APD Wajib (K3) */}
+                  <div className="pt-2 border-t border-slate-100 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <label className="block text-xs font-bold text-slate-800 uppercase">
+                          Standar APD Wajib (K3)
+                        </label>
+                        <span className="text-[11px] text-slate-500">
+                          APD yang dipilih akan <strong>otomatis tercentang</strong> saat kategori izin ini dipilih.
+                        </span>
+                      </div>
+                      <span className="text-xs font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-md border border-blue-200">
+                        Terpilih: {(formData.ppe_ids || []).length} APD
+                      </span>
+                    </div>
+
+                    {/* Toolbar APD: Search & Quick Buttons */}
+                    <div className="flex flex-col sm:flex-row gap-2 justify-between items-stretch sm:items-center">
+                      <div className="relative flex-1">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
+                        <input
+                          type="text"
+                          placeholder="Filter nama APD..."
+                          value={permitPpeSearch}
+                          onChange={(e) => setPermitPpeSearch(e.target.value)}
+                          className="w-full pl-8 pr-3 py-1.5 border border-slate-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                      </div>
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <button
+                          type="button"
+                          onClick={selectPermitPpeBaseline}
+                          className="px-2 py-1 text-[11px] font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors cursor-pointer"
+                          title="Pilih Helm & Sepatu Keselamatan"
+                        >
+                          Standar Dasar
+                        </button>
+                        <button
+                          type="button"
+                          onClick={selectPermitPpeAll}
+                          className="px-2 py-1 text-[11px] font-semibold text-blue-700 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors cursor-pointer"
+                        >
+                          Pilih Semua
+                        </button>
+                        <button
+                          type="button"
+                          onClick={clearPermitPpeAll}
+                          className="px-2 py-1 text-[11px] font-semibold text-rose-700 bg-rose-50 hover:bg-rose-100 rounded-lg transition-colors cursor-pointer"
+                        >
+                          Kosongkan
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Checklist Grid */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 max-h-48 overflow-y-auto p-2 bg-slate-50 border border-slate-200 rounded-xl">
+                      {ppes
+                        .filter((p: any) => 
+                          permitPpeSearch === "" || 
+                          p.name.toLowerCase().includes(permitPpeSearch.toLowerCase())
+                        )
+                        .map((p: any) => {
+                          const isChecked = (formData.ppe_ids || []).includes(p.id);
+                          return (
+                            <div
+                              key={p.id}
+                              onClick={() => togglePermitPpe(p.id)}
+                              className={`flex items-center justify-between p-2 rounded-lg border transition-all cursor-pointer select-none text-xs ${
+                                isChecked
+                                  ? "bg-blue-50/80 border-blue-300 text-blue-900 font-bold shadow-2xs"
+                                  : "bg-white border-slate-200 text-slate-700 hover:bg-slate-100"
+                              }`}
+                            >
+                              <div className="flex items-center gap-2 overflow-hidden">
+                                <input
+                                  type="checkbox"
+                                  checked={isChecked}
+                                  onChange={() => {}} // Handled by parent onClick
+                                  className="rounded text-blue-600 focus:ring-blue-500 w-3.5 h-3.5 cursor-pointer shrink-0"
+                                />
+                                <span className="truncate">{p.name}</span>
+                              </div>
+                              {isChecked && (
+                                <span className="text-[9px] bg-blue-600 text-white font-extrabold px-1 rounded shrink-0">
+                                  WAJIB
+                                </span>
+                              )}
+                            </div>
+                          );
+                        })}
+                    </div>
+                  </div>
+                </div>
               )}
 
               {/* 6. FORM PPE */}
@@ -1192,6 +1938,45 @@ export default function MasterDataPage() {
                       className="w-full p-2.5 border border-slate-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500"
                     />
                   </div>
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 uppercase mb-1">Kategori Perlindungan K3</label>
+                    <select
+                      value={formData.category || "Head & Face"}
+                      onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                      className="w-full p-2.5 border border-slate-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                    >
+                      <option value="Head & Face">Pelindung Kepala, Mata & Wajah (Head & Face)</option>
+                      <option value="Foot & Hand">Pelindung Kaki & Tangan (Foot & Hand)</option>
+                      <option value="Fall Protection">Perlindungan Ketinggian (Fall Protection)</option>
+                      <option value="Respiratory">Perlindungan Pernafasan (Respiratory)</option>
+                      <option value="Fire & Safety">Pencegahan Kebakaran & Listrik (Fire & Safety)</option>
+                      <option value="Site & Area Safety">Barikade & Rambu Area (Site Safety)</option>
+                      <option value="General PPE">Alat Keselamatan Umum (General PPE)</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 uppercase mb-1">Uraian / Spesifikasi Standar K3</label>
+                    <input
+                      type="text"
+                      placeholder="Standar SNI/EN/OSHA, tipe filter, dll (opsional)"
+                      value={formData.description || ""}
+                      onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                      className="w-full p-2.5 border border-slate-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                  {editingItem && (
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 uppercase mb-1">Status APD</label>
+                      <select
+                        value={formData.is_active !== false ? "1" : "0"}
+                        onChange={(e) => setFormData({ ...formData, is_active: e.target.value === "1" })}
+                        className="w-full p-2.5 border border-slate-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                      >
+                        <option value="1">Aktif (Dapat dipilih di form)</option>
+                        <option value="0">Nonaktif (Diarsipkan)</option>
+                      </select>
+                    </div>
+                  )}
                 </>
               )}
 
@@ -1218,6 +2003,19 @@ export default function MasterDataPage() {
                       className="w-full p-2.5 border border-slate-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500 h-20 resize-none"
                     />
                   </div>
+                  {editingItem && (
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 uppercase mb-1">Status Lokasi</label>
+                      <select
+                        value={formData.is_active !== false ? "1" : "0"}
+                        onChange={(e) => setFormData({ ...formData, is_active: e.target.value === "1" })}
+                        className="w-full p-2.5 border border-slate-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                      >
+                        <option value="1">Aktif</option>
+                        <option value="0">Nonaktif</option>
+                      </select>
+                    </div>
+                  )}
                 </>
               )}
 
@@ -1247,10 +2045,10 @@ export default function MasterDataPage() {
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-xs font-bold text-slate-700 uppercase mb-1">Kontak Person (PIC)</label>
+                      <label className="block text-xs font-bold text-slate-700 uppercase mb-1">Kontak Person (PIC Vendor)</label>
                       <input
                         type="text"
-                        placeholder="Nama penanggung jawab"
+                        placeholder="Nama penanggung jawab vendor"
                         value={formData.main_contact_name || ""}
                         onChange={(e) => setFormData({ ...formData, main_contact_name: e.target.value })}
                         className="w-full p-2.5 border border-slate-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500"
@@ -1266,6 +2064,24 @@ export default function MasterDataPage() {
                         className="w-full p-2.5 border border-slate-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500"
                       />
                     </div>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 uppercase mb-1">
+                      PIC Internal PT Widatra (Penanggung Jawab Pabrik)
+                    </label>
+                    <select
+                      value={formData.pic_vendor_user_id || ""}
+                      onChange={(e) => setFormData({ ...formData, pic_vendor_user_id: e.target.value ? Number(e.target.value) : null })}
+                      className="w-full p-2.5 border border-slate-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                    >
+                      <option value="">-- Belum Ditugaskan / Pilih PIC Internal --</option>
+                      {users.map((u) => (
+                        <option key={u.id} value={u.id}>
+                          {u.name} ({u.role?.name || 'User'}) — {u.department || u.email}
+                        </option>
+                      ))}
+                    </select>
+                    <span className="text-[11px] text-slate-400">Pegawai PT Widatra yang mengawasi vendor ini di pabrik</span>
                   </div>
                   <div>
                     <label className="block text-xs font-bold text-slate-700 uppercase mb-1">Status Rekanan</label>
@@ -1305,6 +2121,168 @@ export default function MasterDataPage() {
         </div>
       )}
 
+      {/* ========================================================================= */}
+      {/* DETAIL APD POP-UP MODAL */}
+      {/* ========================================================================= */}
+      {detailPpe && (() => {
+        const catMeta = detailPpe.category && PPE_CATEGORIES_INFO[detailPpe.category]
+          ? PPE_CATEGORIES_INFO[detailPpe.category]
+          : {
+              label: detailPpe.category || "Umum / General",
+              desc: "Alat Pelindung Diri untuk menjaga standar keselamatan kerja operasional di PT Widatra Bhakti.",
+              color: "text-slate-700",
+              bg: "bg-slate-50",
+              border: "border-slate-200"
+            };
+
+        const requiringPermits = permitTypes.filter((pt: any) => {
+          const permitPpes = pt.default_ppes || pt.defaultPpes || [];
+          return permitPpes.some((dp: any) => Number(dp.id) === Number(detailPpe.id));
+        });
+
+        return (
+          <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-150">
+            <div className="bg-white rounded-2xl max-w-lg w-full shadow-2xl border border-slate-100 overflow-hidden flex flex-col max-h-[90vh]">
+              {/* Header */}
+              <div className="p-5 border-b border-slate-100 flex items-start justify-between bg-gradient-to-r from-blue-50/80 via-indigo-50/40 to-white">
+                <div className="flex items-center gap-3">
+                  <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shadow-sm ${
+                    getPpeCategoryIcon(detailPpe.category, detailPpe.name)
+                  }`}>
+                    <HardHat size={24} />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-[10px] font-extrabold uppercase tracking-wider text-blue-700 bg-blue-100/70 px-2 py-0.5 rounded-md">
+                        Detail Informasi APD
+                      </span>
+                      {detailPpe.is_active !== false ? (
+                        <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full flex items-center gap-1">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" /> Aktif Digunakan
+                        </span>
+                      ) : (
+                        <span className="text-[10px] font-bold text-slate-500 bg-slate-100 border border-slate-200 px-2 py-0.5 rounded-full">
+                          Nonaktif (Arsip)
+                        </span>
+                      )}
+                    </div>
+                    <h3 className="text-lg font-extrabold text-slate-900 mt-1">{detailPpe.name}</h3>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setDetailPpe(null)}
+                  className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-white rounded-lg transition-colors cursor-pointer"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+
+              {/* Body */}
+              <div className="p-6 overflow-y-auto space-y-5 text-sm">
+                {/* 1. Kategori Perlindungan K3 */}
+                <div className={`p-4 rounded-xl border ${catMeta.border} ${catMeta.bg} space-y-2`}>
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                      Kategori Perlindungan K3
+                    </span>
+                    <span className={`text-xs font-extrabold px-2.5 py-0.5 rounded-md ${catMeta.bg} ${catMeta.color} border ${catMeta.border}`}>
+                      {catMeta.label}
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-700 leading-relaxed">
+                    {catMeta.desc}
+                  </p>
+                </div>
+
+                {/* 2. Spesifikasi Standar K3 */}
+                <div className="space-y-1.5">
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 block">
+                    Uraian / Spesifikasi Standar K3
+                  </span>
+                  <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl">
+                    {detailPpe.description ? (
+                      <p className="text-xs font-medium text-slate-800 leading-relaxed">
+                        {detailPpe.description}
+                      </p>
+                    ) : (
+                      <p className="text-xs text-slate-400 italic">
+                        Belum ada spesifikasi teknis khusus yang diinput (mengikuti SOP standar K3 pabrik PT Widatra Bhakti).
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                {/* 3. Katalog Izin Kerja Wajib */}
+                <div className="space-y-2.5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                      Kewajiban Pada Katalog Izin Kerja
+                    </span>
+                    <span className="text-xs font-bold text-blue-700 bg-blue-50 border border-blue-100 px-2 py-0.5 rounded-md">
+                      {requiringPermits.length} Izin Kerja Wajib
+                    </span>
+                  </div>
+
+                  {requiringPermits.length > 0 ? (
+                    <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+                      {requiringPermits.map((pt) => (
+                        <div
+                          key={pt.id}
+                          className="p-3 bg-slate-50 hover:bg-blue-50/50 border border-slate-200 rounded-xl flex items-center justify-between transition-colors"
+                        >
+                          <div className="flex items-center gap-2">
+                            <span className="w-2 h-2 rounded-full bg-blue-600" />
+                            <span className="text-xs font-bold text-slate-900">{pt.name}</span>
+                          </div>
+                          <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full ${
+                            pt.risk_level === "High Risk" 
+                              ? "bg-rose-100 text-rose-700 border border-rose-200" 
+                              : "bg-blue-100 text-blue-700 border border-blue-200"
+                          }`}>
+                            {pt.risk_level || "General Risk"}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="p-4 bg-slate-50 border border-dashed border-slate-200 rounded-xl text-center space-y-1">
+                      <p className="text-xs font-medium text-slate-600">
+                        APD ini belum diatur sebagai standar wajib di katalog izin kerja manapun.
+                      </p>
+                      <p className="text-[11px] text-slate-400">
+                        Anda dapat menetapkannya sebagai APD wajib melalui tab "Katalog Jenis Izin Kerja".
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Footer */}
+              <div className="p-4 bg-slate-50 border-t border-slate-100 flex items-center justify-between">
+                <button
+                  type="button"
+                  onClick={() => setDetailPpe(null)}
+                  className="px-4 py-2 text-xs font-bold text-slate-600 hover:bg-slate-200/70 rounded-xl transition-colors cursor-pointer"
+                >
+                  Tutup
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const itemToEdit = detailPpe;
+                    setDetailPpe(null);
+                    handleOpenEdit("ppe", itemToEdit);
+                  }}
+                  className="px-4 py-2 text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-xl shadow-sm flex items-center gap-2 transition-colors cursor-pointer"
+                >
+                  <Edit3 size={14} /> Edit Data APD
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }

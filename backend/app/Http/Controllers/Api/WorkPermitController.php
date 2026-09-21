@@ -13,6 +13,7 @@ use App\Models\Location;
 use App\Models\PermitTypeOption;
 use App\Models\PpeOption;
 use App\Models\Notification;
+use App\Models\SystemSetting;
 
 class WorkPermitController extends Controller
 {
@@ -43,7 +44,7 @@ class WorkPermitController extends Controller
     {
         $user = $request->user();
 
-        $permits = WorkPermit::with(['location', 'vendor', 'permitTypes', 'ppes', 'workers', 'jsas'])
+        $permits = WorkPermit::with(['location', 'vendor', 'permitTypes', 'ppes', 'workers', 'jsas', 'parentPermit:id,permit_number,start_date,end_date,job_title,request_type'])
             ->where('user_id', $user->id)
             ->orderBy('created_at', 'desc')
             ->get();
@@ -62,7 +63,7 @@ class WorkPermitController extends Controller
         $user = $request->user();
         $roleCode = $user->role ? $user->role->code : '';
 
-        $query = WorkPermit::with(['location', 'vendor', 'permitTypes', 'ppes', 'workers', 'jsas', 'user:id,name,company_name']);
+        $query = WorkPermit::with(['location', 'vendor', 'permitTypes', 'ppes', 'workers', 'jsas', 'user:id,name,company_name', 'approvals.user:id,name', 'parentPermit:id,permit_number,start_date,end_date,job_title,request_type']);
 
         switch ($roleCode) {
             case 'pic_vendor':
@@ -105,7 +106,7 @@ class WorkPermitController extends Controller
         $user = $request->user();
         $roleCode = $user->role ? $user->role->code : '';
 
-        $query = WorkPermit::with(['location', 'vendor', 'permitTypes', 'ppes', 'workers', 'jsas', 'approvals.user:id,name']);
+        $query = WorkPermit::with(['location', 'vendor', 'permitTypes', 'ppes', 'workers', 'jsas', 'approvals.user:id,name', 'parentPermit:id,permit_number,start_date,end_date,job_title,request_type']);
 
         if ($roleCode === 'pemohon') {
             $query->where('user_id', $user->id);
@@ -169,27 +170,68 @@ class WorkPermitController extends Controller
             'jsa.*.potensi' => 'required|string',
             'jsa.*.pengendalian' => 'required|string',
             'jsa.*.tanggapDarurat' => 'required|string',
+        ], [
+            'namaKontraktor.required' => 'Mohon isi Nama Perusahaan Vendor.',
+            'jenisPekerjaan.required' => 'Mohon isi Jenis Pekerjaan.',
+            'lokasi.required' => 'Mohon pilih atau ketik Lokasi Pekerjaan.',
+            'mulaiKerja.required' => 'Mohon tentukan Tanggal Mulai Kerja.',
+            'selesaiKerja.required' => 'Mohon tentukan Tanggal Selesai Kerja.',
+            'jamKerjaMulai.required' => 'Mohon tentukan Jam Kerja Mulai.',
+            'jamKerjaAkhir.required' => 'Mohon tentukan Jam Kerja Selesai.',
+            'penanggungJawab.required' => 'Mohon isi Nama Penanggung Jawab Vendor.',
+            'noHpPJ.required' => 'Mohon isi No. HP Penanggung Jawab Vendor.',
+            'pengawasPekerjaan.required' => 'Mohon isi Nama Pengawas Pekerjaan (User Widatra).',
+            'noHpPengawas.required' => 'Mohon isi No. HP Pengawas Pekerjaan.',
+            'pengawasHse.required' => 'Mohon isi Nama Pengawas K3 / HSE Lapangan.',
+            'noHpHse.required' => 'Mohon isi No. HP Pengawas K3 / HSE.',
+            'permitTypes.required' => 'Mohon pilih minimal satu Jenis Ijin Kerja.',
+            'permitTypes.min' => 'Mohon pilih minimal satu Jenis Ijin Kerja.',
+            'ppe.required' => 'Mohon pilih minimal satu Alat Pelindung Diri (APD) Wajib.',
+            'ppe.min' => 'Mohon pilih minimal satu Alat Pelindung Diri (APD) Wajib.',
+            'pekerja.required' => 'Mohon isi data Tenaga Kerja minimal 1 orang.',
+            'pekerja.min' => 'Mohon isi data Tenaga Kerja minimal 1 orang.',
+            'pekerja.*.nama.required' => 'Mohon lengkapi Nama Tenaga Kerja.',
+            'pekerja.*.jabatan.required' => 'Mohon lengkapi Jabatan Tenaga Kerja.',
+            'jsa.required' => 'Mohon isi data Job Safety Analysis (JSA) minimal 1 tahapan kerja.',
+            'jsa.min' => 'Mohon isi data Job Safety Analysis (JSA) minimal 1 tahapan kerja.',
+            'jsa.*.tahapan.required' => 'Mohon isi kolom Tahapan Pekerjaan pada tabel JSA.',
+            'jsa.*.potensi.required' => 'Mohon isi kolom Potensi Bahaya pada tabel JSA.',
+            'jsa.*.pengendalian.required' => 'Mohon isi kolom Pengendalian Bahaya pada tabel JSA.',
+            'jsa.*.tanggapDarurat.required' => 'Mohon isi kolom Tanggap Darurat pada tabel JSA.',
         ]);
 
-        // 2. Business Rules Validation
-        // Rule H-3: start_date >= today + 3 days (only for new requests)
+        // 2. Business Rules Validation (Configurable via Master Data Settings)
+        $maxPermitDays = (int) SystemSetting::getValue('max_permit_duration_days', 6);
+        $minLeadDays = (int) SystemSetting::getValue('min_lead_time_days', 3);
+
+        // Rule Lead Time: start_date >= today + minLeadDays (only for new requests)
         $start = Carbon::parse($validated['mulaiKerja'])->startOfDay();
-        $minStart = Carbon::today()->addDays(3)->startOfDay();
+        $minStart = Carbon::today()->addDays($minLeadDays)->startOfDay();
         if ($validated['requestType'] === 'Baru' && $start->lt($minStart)) {
             return response()->json([
                 'success' => false,
-                'message' => 'Aturan K3: Pengajuan ijin kerja baru wajib diajukan minimal H-3 sebelum tanggal pelaksanaan (' . $minStart->toDateString() . ').'
+                'message' => "Aturan K3: Pengajuan ijin kerja baru wajib diajukan minimal H-{$minLeadDays} sebelum tanggal pelaksanaan (" . $minStart->toDateString() . ")."
             ], 422);
         }
 
-        // Rule Max 6 days: end_date <= start_date + 5 days
+        // Rule Max Duration: end_date <= start_date + (maxPermitDays - 1)
+        // If $maxPermitDays <= 0, it means unlimited duration (tanpa batasan hari)
         $end = Carbon::parse($validated['selesaiKerja'])->startOfDay();
-        $maxEnd = $start->copy()->addDays(5);
-        if ($end->gt($maxEnd)) {
+        if ($end->lt($start)) {
             return response()->json([
                 'success' => false,
-                'message' => 'Aturan K3: Masa berlaku satu ijin kerja maksimal adalah 6 hari kalender (' . $maxEnd->toDateString() . ').'
+                'message' => 'Tanggal selesai pekerjaan tidak boleh mendahului tanggal mulai pekerjaan.'
             ], 422);
+        }
+
+        if ($maxPermitDays > 0) {
+            $maxEnd = $start->copy()->addDays($maxPermitDays - 1);
+            if ($end->gt($maxEnd)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => "Aturan K3: Masa berlaku satu ijin kerja maksimal adalah {$maxPermitDays} hari kalender (" . $maxEnd->toDateString() . ")."
+                ], 422);
+            }
         }
 
         // Resolve or create Vendor
@@ -327,7 +369,8 @@ class WorkPermitController extends Controller
             'equipments',
             'workers.documents',
             'jsas',
-            'approvals.user:id,name'
+            'approvals.user:id,name',
+            'parentPermit:id,permit_number,start_date,end_date,job_title,request_type'
         ])->findOrFail($id);
 
         return response()->json([
@@ -345,21 +388,27 @@ class WorkPermitController extends Controller
         $roleCode = $user->role ? $user->role->code : '';
         $permit = WorkPermit::findOrFail($id);
 
-        // Role verification (admin can override)
-        if ($roleCode !== 'admin') {
-            $requiredRole = match ($permit->status) {
-                'Menunggu PIC Vendor' => 'pic_vendor',
-                'Menunggu HSE' => 'hse',
-                'Menunggu GA Dept Head' => 'ga_dept_head',
-                'Menunggu GA Div Head' => 'ga_div_head',
-                default => null,
-            };
-            if ($requiredRole && $roleCode !== $requiredRole) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Wewenang tidak sesuai: Tahap ini hanya dapat disetujui oleh role ' . $requiredRole . ' (Role Anda: ' . $roleCode . ').',
-                ], 403);
-            }
+        $requiredRole = match ($permit->status) {
+            'Menunggu PIC Vendor' => 'pic_vendor',
+            'Menunggu HSE' => 'hse',
+            'Menunggu GA Dept Head' => 'ga_dept_head',
+            'Menunggu GA Div Head' => 'ga_div_head',
+            default => null,
+        };
+
+        if (!$requiredRole) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Status permit tidak valid untuk disetujui (Status saat ini: ' . $permit->status . ').'
+            ], 422);
+        }
+
+        // Strict sequential enforcement: only the designated role for the active stage (or admin) can approve!
+        if ($roleCode !== 'admin' && $roleCode !== $requiredRole) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Wewenang terkunci: Tahap ' . $permit->status . ' hanya dapat disetujui oleh role ' . $requiredRole . '. Role Anda saat ini: ' . ($roleCode ?: 'unauthorized') . '.',
+            ], 403);
         }
 
         $nextStatus = match ($permit->status) {
@@ -369,13 +418,6 @@ class WorkPermitController extends Controller
             'Menunggu GA Div Head' => 'Disetujui',
             default => null,
         };
-
-        if (!$nextStatus) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Status permit tidak valid untuk disetujui (Status saat ini: ' . $permit->status . ').'
-            ], 422);
-        }
 
         $permit->status = $nextStatus;
         if ($nextStatus === 'Disetujui' && !$permit->qr_code_token) {
@@ -402,8 +444,8 @@ class WorkPermitController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Ijin kerja berhasil disetujui.',
-            'data' => $permit,
+            'message' => 'Ijin kerja berhasil disetujui ke tahap ' . $nextStatus . '.',
+            'data' => $permit->load('approvals.user:id,name'),
         ]);
     }
 
@@ -419,6 +461,29 @@ class WorkPermitController extends Controller
         $user = $request->user();
         $roleCode = $user->role ? $user->role->code : '';
         $permit = WorkPermit::findOrFail($id);
+
+        $requiredRole = match ($permit->status) {
+            'Menunggu PIC Vendor' => 'pic_vendor',
+            'Menunggu HSE' => 'hse',
+            'Menunggu GA Dept Head' => 'ga_dept_head',
+            'Menunggu GA Div Head' => 'ga_div_head',
+            default => null,
+        };
+
+        if (!$requiredRole) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Status permit tidak valid untuk ditolak (Status saat ini: ' . $permit->status . ').'
+            ], 422);
+        }
+
+        // Strict sequential enforcement for rejection as well
+        if ($roleCode !== 'admin' && $roleCode !== $requiredRole) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Wewenang terkunci: Penolakan pada tahap ' . $permit->status . ' hanya dapat dilakukan oleh role ' . $requiredRole . '. Role Anda saat ini: ' . ($roleCode ?: 'unauthorized') . '.',
+            ], 403);
+        }
 
         $permit->status = 'Ditolak';
         $permit->reject_reason = $request->reject_reason;
@@ -438,13 +503,13 @@ class WorkPermitController extends Controller
             'user_id' => $permit->user_id,
             'type' => 'permit_rejected',
             'reference_id' => $permit->id,
-            'message' => 'Ijin kerja ' . $permit->permit_number . ' ditolak. Alasan: ' . $request->reject_reason,
+            'message' => 'Ijin kerja ' . $permit->permit_number . ' ditolak pada tahap ' . $permit->status . '. Alasan: ' . $request->reject_reason,
         ]);
 
         return response()->json([
             'success' => true,
             'message' => 'Ijin kerja telah ditolak.',
-            'data' => $permit,
+            'data' => $permit->load('approvals.user:id,name'),
         ]);
     }
 
@@ -462,15 +527,16 @@ class WorkPermitController extends Controller
             ], 422);
         }
 
-        // Rule: Only eligible if remaining days <= 3
+        // Rule: Only eligible if remaining days <= extension_window_days
+        $extensionWindowDays = (int) SystemSetting::getValue('extension_window_days', 3);
         $endDate = Carbon::parse($parent->end_date)->startOfDay();
         $today = Carbon::today();
         $diffDays = $today->diffInDays($endDate, false);
 
-        if ($diffDays > 3) {
+        if ($diffDays > $extensionWindowDays) {
             return response()->json([
                 'success' => false,
-                'message' => 'Perpanjangan hanya dapat diajukan ketika masa berlaku permit tersisa 3 hari atau kurang (Sisa hari saat ini: ' . $diffDays . ' hari).'
+                'message' => "Perpanjangan hanya dapat diajukan ketika masa berlaku permit tersisa {$extensionWindowDays} hari atau kurang (Sisa hari saat ini: {$diffDays} hari)."
             ], 422);
         }
 

@@ -209,6 +209,13 @@ export const api = {
     });
   },
 
+  updatePermitTypePpes: async (id: number | string, ppeIds: number[]) => {
+    return apiRequest(`/master/permit-types/${id}/ppes`, {
+      method: 'PUT',
+      body: JSON.stringify({ ppe_ids: ppeIds }),
+    });
+  },
+
   deletePermitType: async (id: number | string) => {
     return apiRequest(`/master/permit-types/${id}`, {
       method: 'DELETE',
@@ -295,10 +302,41 @@ export const api = {
     return apiRequest('/master/workflow-stages');
   },
 
+  // 9b. System & Policy Settings (SIKA Rules)
+  getSettings: async (group?: string) => {
+    return apiRequest(`/master/settings${group ? '?group=' + group : ''}`);
+  },
+
+  updateSettings: async (settings: Array<{ key: string; value: any }>) => {
+    return apiRequest('/master/settings', {
+      method: 'PUT',
+      body: JSON.stringify({ settings }),
+    });
+  },
+
   // 10. Monitoring & K3
-  getFacilities: async (category?: string) => {
-    const query = category ? `?category=${category}` : '';
-    return apiRequest(`/monitoring/facilities${query}`);
+  getFacilities: async (category?: string, tipe_item?: string, search?: string) => {
+    const params = new URLSearchParams();
+    if (category) params.append('category', category);
+    if (tipe_item) params.append('tipe_item', tipe_item);
+    if (search) params.append('search', search);
+    const qs = params.toString();
+    return apiRequest(`/monitoring/facilities${qs ? '?' + qs : ''}`);
+  },
+
+  getFacilityByQrId: async (qrCodeId: string) => {
+    return apiRequest(`/monitoring/facilities/by-qr/${encodeURIComponent(qrCodeId)}`);
+  },
+
+  recordRefill: async (facilityId: number | string, payload: any) => {
+    return apiRequest(`/monitoring/facilities/${facilityId}/refill`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
+
+  getAlertsSummary: async () => {
+    return apiRequest('/monitoring/alerts-summary');
   },
 
   createFacility: async (payload: any) => {
@@ -346,3 +384,63 @@ export const api = {
     return apiRequest('/dashboard/ga');
   },
 };
+
+export interface ConsumableCycle {
+  id?: number;
+  facility_id?: number;
+  expired_at: string;
+  threshold_warning_hari: number;
+  status_exp?: string;
+  terakhir_refill_at?: string;
+}
+
+export interface ConditionSchedule {
+  id?: number;
+  facility_id?: number;
+  interval_pemeriksaan_hari: number;
+  terakhir_diperiksa_at?: string;
+  jadwal_berikutnya_at?: string;
+  status_kondisi_terakhir?: string;
+}
+
+export interface SafetyFacility {
+  id: number;
+  code: string;
+  qr_code_id?: string;
+  nama_item?: string;
+  name?: string;
+  category: string;
+  tipe_item: 'CONSUMABLE' | 'KONDISI';
+  location: any;
+  specifications?: any;
+  status: string;
+  status_aktif?: boolean;
+  calculated_status?: string;
+  days_until_expired?: number | null;
+  is_overdue?: boolean;
+  last_inspected_at?: string;
+  consumable_cycle?: ConsumableCycle;
+  condition_schedule?: ConditionSchedule;
+  refill_histories?: any[];
+  inspections?: any[];
+}
+
+export interface AlertsSummary {
+  consumable: {
+    total: number;
+    aman: number;
+    h30: number;
+    kadaluarsa: number;
+  };
+  kondisi: {
+    total: number;
+    baik: number;
+    perhatian: number;
+    perlu_perhatian?: number;
+    rusak: number;
+    terlewat: number;
+    jadwal_terlewat?: number;
+  };
+  alerts: any[];
+}
+

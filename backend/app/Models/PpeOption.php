@@ -12,10 +12,17 @@ class PpeOption extends Model
 
     protected $fillable = [
         'name',
+        'category',
+        'description',
         'is_active',
     ];
 
     protected $casts = [
         'is_active' => 'boolean',
     ];
+
+    public function permitTypes()
+    {
+        return $this->belongsToMany(PermitTypeOption::class, 'permit_type_default_ppes', 'ppe_option_id', 'permit_type_option_id');
+    }
 }

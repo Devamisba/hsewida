@@ -13,14 +13,17 @@ class FacilityInspection extends Model
         'facility_id',
         'inspector_id',
         'inspection_date',
+        'tipe_checklist',
         'checklist_results',
         'result_status',
         'notes',
+        'foto_bukti',
     ];
 
     protected $casts = [
         'inspection_date' => 'date',
         'checklist_results' => 'array',
+        'foto_bukti' => 'array',
     ];
 
     public function facility()

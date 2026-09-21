@@ -6,7 +6,16 @@ export function Step3TenagaKerja({ data, updateData }: { data: any, updateData: 
 
   // Sinkronisasi otomatis: memastikan jumlah baris pekerja selalu sesuai dengan 'totalTenagaKerja' dari Step 1
   useEffect(() => {
-    const targetCount = Math.max(1, parseInt(String(data.totalTenagaKerja)) || 1);
+    const rawVal = data.totalTenagaKerja;
+    // Jika nilai kosong (misal pengguna sedang menghapus untuk mengetik angka baru), jangan timpa
+    if (rawVal === "" || rawVal === undefined || rawVal === null) {
+      return;
+    }
+    const parsed = parseInt(String(rawVal), 10);
+    if (isNaN(parsed) || parsed < 1) {
+      return;
+    }
+    const targetCount = parsed;
     const current = data.pekerja || [];
     if (current.length !== targetCount) {
       if (current.length < targetCount) {
@@ -22,13 +31,11 @@ export function Step3TenagaKerja({ data, updateData }: { data: any, updateData: 
           })
         );
         updateData({
-          pekerja: [...current, ...additions],
-          totalTenagaKerja: String(targetCount)
+          pekerja: [...current, ...additions]
         });
       } else {
         updateData({
-          pekerja: current.slice(0, targetCount),
-          totalTenagaKerja: String(targetCount)
+          pekerja: current.slice(0, targetCount)
         });
       }
     }
@@ -141,7 +148,7 @@ export function Step3TenagaKerja({ data, updateData }: { data: any, updateData: 
       </div>
 
       {/* Table (Desktop) */}
-      <div className="hidden sm:block overflow-x-auto rounded-xl border border-gray-200 shadow-sm bg-white">
+      <div id="workers-section" className="hidden sm:block overflow-x-auto rounded-xl border border-gray-200 shadow-sm bg-white">
         <table className="w-full text-left border-collapse">
           <thead>
             <tr className="bg-gray-50 border-b border-gray-200">
@@ -166,6 +173,7 @@ export function Step3TenagaKerja({ data, updateData }: { data: any, updateData: 
                   <td className="px-4 py-3 text-sm text-gray-500 text-center font-medium">{idx + 1}</td>
                   <td className="px-4 py-3">
                     <input 
+                      id={`pekerja-nama-${idx}`}
                       type="text" 
                       required
                       value={p.nama} 
@@ -176,6 +184,7 @@ export function Step3TenagaKerja({ data, updateData }: { data: any, updateData: 
                   </td>
                   <td className="px-4 py-3">
                     <input 
+                      id={`pekerja-jabatan-${idx}`}
                       type="text" 
                       required
                       value={p.jabatan} 

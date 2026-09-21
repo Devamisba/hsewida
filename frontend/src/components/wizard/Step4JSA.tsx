@@ -45,7 +45,7 @@ export function Step4JSA({ data, updateData }: { data: any, updateData: any }) {
       </div>
 
       {/* Desktop Table */}
-      <div className="hidden lg:block overflow-x-auto rounded-xl border border-gray-200">
+      <div id="jsa-section" className="hidden lg:block overflow-x-auto rounded-xl border border-gray-200">
         <table className="w-full text-left border-collapse">
           <thead>
             <tr className="bg-gray-50 border-b border-gray-200">
@@ -70,7 +70,7 @@ export function Step4JSA({ data, updateData }: { data: any, updateData: any }) {
                 <tr key={j.id} className="hover:bg-gray-50/50">
                   <td className="px-2 py-3 text-sm text-gray-500 text-center align-top pt-5">{idx + 1}</td>
                   <td className="px-2 py-2 align-top">
-                    <textarea rows={3} value={j.tahapan} onChange={(e) => updateJsaRow(j.id, 'tahapan', e.target.value)} className="w-full px-3 py-2 rounded border border-gray-300 text-sm focus:ring-1 focus:ring-primary resize-none" placeholder="Uraian langkah kerja..." />
+                    <textarea id={`jsa-tahapan-${idx}`} rows={3} value={j.tahapan} onChange={(e) => updateJsaRow(j.id, 'tahapan', e.target.value)} className="w-full px-3 py-2 rounded border border-gray-300 text-sm focus:ring-1 focus:ring-primary resize-none" placeholder="Uraian langkah kerja..." />
                   </td>
                   <td className="px-2 py-2 align-top">
                     <textarea rows={3} value={j.peralatan} onChange={(e) => updateJsaRow(j.id, 'peralatan', e.target.value)} className="w-full px-3 py-2 rounded border border-gray-300 text-sm focus:ring-1 focus:ring-primary resize-none" placeholder="Alat..." />

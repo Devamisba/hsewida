@@ -8,6 +8,7 @@ use App\Models\Location;
 use App\Models\PermitTypeOption;
 use App\Models\PpeOption;
 use App\Models\Vendor;
+use App\Models\SystemSetting;
 
 class MasterDataController extends Controller
 {
@@ -53,7 +54,7 @@ class MasterDataController extends Controller
     // --- PERMIT TYPES ---
     public function getPermitTypes(Request $request)
     {
-        $query = PermitTypeOption::query();
+        $query = PermitTypeOption::with('defaultPpes');
         if ($request->boolean('active_only', false)) {
             $query->where('is_active', true);
         }
@@ -64,20 +65,68 @@ class MasterDataController extends Controller
     {
         $validated = $request->validate([
             'name' => 'required|string|unique:permit_type_options,name|max:100',
+            'risk_level' => 'sometimes|nullable|in:High Risk,General Risk',
+            'is_active' => 'sometimes|boolean',
+            'ppe_ids' => 'sometimes|nullable|array',
+            'ppe_ids.*' => 'exists:ppe_options,id',
         ]);
-        $pt = PermitTypeOption::create($validated);
-        return response()->json(['success' => true, 'message' => 'Opsi kategori ijin berhasil ditambahkan.', 'data' => $pt], 201);
+
+        $pt = PermitTypeOption::create([
+            'name' => $validated['name'],
+            'risk_level' => $validated['risk_level'] ?? 'General Risk',
+            'is_active' => $validated['is_active'] ?? true,
+        ]);
+
+        if (isset($validated['ppe_ids']) && is_array($validated['ppe_ids'])) {
+            $pt->defaultPpes()->sync($validated['ppe_ids']);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Opsi kategori ijin berhasil ditambahkan.',
+            'data' => $pt->load('defaultPpes')
+        ], 201);
     }
 
     public function updatePermitType(Request $request, $id)
     {
         $pt = PermitTypeOption::findOrFail($id);
         $validated = $request->validate([
-            'name' => 'required|string|max:100|unique:permit_type_options,name,' . $pt->id,
+            'name' => 'sometimes|required|string|max:100|unique:permit_type_options,name,' . $pt->id,
+            'risk_level' => 'sometimes|nullable|in:High Risk,General Risk',
             'is_active' => 'sometimes|boolean',
+            'ppe_ids' => 'sometimes|nullable|array',
+            'ppe_ids.*' => 'exists:ppe_options,id',
         ]);
-        $pt->update($validated);
-        return response()->json(['success' => true, 'message' => 'Kategori ijin berhasil diperbarui.', 'data' => $pt]);
+
+        $pt->update($request->only(['name', 'risk_level', 'is_active']));
+
+        if ($request->has('ppe_ids')) {
+            $pt->defaultPpes()->sync($request->input('ppe_ids', []));
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Kategori ijin berhasil diperbarui.',
+            'data' => $pt->load('defaultPpes')
+        ]);
+    }
+
+    public function updatePermitTypePpes(Request $request, $id)
+    {
+        $pt = PermitTypeOption::findOrFail($id);
+        $validated = $request->validate([
+            'ppe_ids' => 'present|array',
+            'ppe_ids.*' => 'exists:ppe_options,id',
+        ]);
+
+        $pt->defaultPpes()->sync($validated['ppe_ids']);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Standar APD wajib K3 berhasil diperbarui.',
+            'data' => $pt->load('defaultPpes'),
+        ]);
     }
 
     public function deletePermitType($id)
@@ -101,6 +150,9 @@ class MasterDataController extends Controller
     {
         $validated = $request->validate([
             'name' => 'required|string|unique:ppe_options,name|max:100',
+            'category' => 'nullable|string|max:100',
+            'description' => 'nullable|string|max:255',
+            'is_active' => 'sometimes|boolean',
         ]);
         $ppe = PpeOption::create($validated);
         return response()->json(['success' => true, 'message' => 'Opsi APD berhasil ditambahkan.', 'data' => $ppe], 201);
@@ -110,7 +162,9 @@ class MasterDataController extends Controller
     {
         $ppe = PpeOption::findOrFail($id);
         $validated = $request->validate([
-            'name' => 'required|string|max:100|unique:ppe_options,name,' . $ppe->id,
+            'name' => 'sometimes|required|string|max:100|unique:ppe_options,name,' . $ppe->id,
+            'category' => 'nullable|string|max:100',
+            'description' => 'nullable|string|max:255',
             'is_active' => 'sometimes|boolean',
         ]);
         $ppe->update($validated);
@@ -249,6 +303,80 @@ class MasterDataController extends Controller
             'data' => [
                 'stages' => $stages,
                 'terminal_statuses' => $terminalStatuses,
+            ]
+        ]);
+    }
+
+    // --- SYSTEM & POLICY SETTINGS ---
+    public function getSettings(Request $request)
+    {
+        $group = $request->query('group');
+        $query = SystemSetting::query();
+        if ($group) {
+            $query->where('group', $group);
+        }
+        $settings = $query->orderBy('id')->get();
+
+        $settingsMap = [];
+        foreach ($settings as $s) {
+            $settingsMap[$s->key] = $s->type === 'number' && is_numeric($s->value) ? (int)$s->value : $s->value;
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'list' => $settings,
+                'map' => $settingsMap,
+            ]
+        ]);
+    }
+
+    public function updateSettings(Request $request)
+    {
+        $validated = $request->validate([
+            'settings' => 'required|array',
+            'settings.*.key' => 'required|string',
+            'settings.*.value' => 'required',
+        ]);
+
+        foreach ($validated['settings'] as $item) {
+            $setting = SystemSetting::where('key', $item['key'])->first();
+            if ($setting) {
+                if ($item['key'] === 'max_permit_duration_days' && (int)$item['value'] < 0) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Masa berlaku maksimal izin kerja tidak boleh bernilai negatif.'
+                    ], 422);
+                }
+                if ($item['key'] === 'min_lead_time_days' && (int)$item['value'] < 0) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Lead time pengajuan izin tidak boleh bernilai negatif.'
+                    ], 422);
+                }
+                if ($item['key'] === 'extension_window_days' && (int)$item['value'] < 1) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Jendela perpanjangan izin minimal 1 hari sebelum kedaluwarsa.'
+                    ], 422);
+                }
+
+                $setting->update(['value' => (string)$item['value']]);
+            }
+        }
+
+        $allSettings = SystemSetting::orderBy('id')->get();
+        $settingsMap = [];
+        foreach ($allSettings as $s) {
+            $settingsMap[$s->key] = $s->type === 'number' && is_numeric($s->value) ? (int)$s->value : $s->value;
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Pengaturan kebijakan SIKA berhasil diperbarui.',
+            'data' => [
+                'list' => $allSettings,
+                'map' => $settingsMap,
             ]
         ]);
     }
