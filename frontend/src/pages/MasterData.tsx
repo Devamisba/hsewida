@@ -82,6 +82,20 @@ const PPE_CATEGORIES_INFO: Record<string, { label: string; desc: string; color: 
   }
 };
 
+const resolvePpeCategory = (category: string | null | undefined, name: string): string => {
+  if (category && PPE_CATEGORIES_INFO[category]) return category;
+  
+  const lowerName = name.toLowerCase();
+  if (lowerName.includes("helmet") || lowerName.includes("glasses") || lowerName.includes("face shield") || lowerName.includes("ear plug") || lowerName.includes("muff")) return "Head & Face";
+  if (lowerName.includes("shoes") || lowerName.includes("gloves")) return "Foot & Hand";
+  if (lowerName.includes("harness") || lowerName.includes("lifeline") || lowerName.includes("net")) return "Fall Protection";
+  if (lowerName.includes("respiratory") || lowerName.includes("breathing")) return "Respiratory";
+  if (lowerName.includes("fire extinguisher") || lowerName.includes("apar")) return "Fire & Safety";
+  if (lowerName.includes("barricade") || lowerName.includes("safety line") || lowerName.includes("sign") || lowerName.includes("scaffolding") || lowerName.includes("stairs")) return "Site & Area Safety";
+  
+  return "General PPE";
+};
+
 const getPpeCategoryIcon = (category?: string, name?: string) => {
   const cat = (category || "").toLowerCase();
   const n = (name || "").toLowerCase();
@@ -874,6 +888,28 @@ export default function MasterDataPage() {
                 (item.description || "").toLowerCase().includes(ppeSearch.toLowerCase());
               const matchCategory = !ppeCategoryFilter || item.category === ppeCategoryFilter;
               return matchSearch && matchCategory;
+            }).sort((a, b) => {
+              const colorOrder: Record<string, number> = {
+                "text-red-700": 1,
+                "text-rose-700": 2,
+                "text-orange-700": 3,
+                "text-amber-700": 4,
+                "text-blue-700": 5,
+                "text-purple-700": 6,
+                "text-emerald-700": 7,
+                "text-slate-700": 8
+              };
+              const catA = resolvePpeCategory(a.category, a.name);
+              const catB = resolvePpeCategory(b.category, b.name);
+              const colorA = PPE_CATEGORIES_INFO[catA]?.color || "text-slate-700";
+              const colorB = PPE_CATEGORIES_INFO[catB]?.color || "text-slate-700";
+              const weightA = colorOrder[colorA] || 99;
+              const weightB = colorOrder[colorB] || 99;
+              
+              if (weightA !== weightB) {
+                return weightA - weightB;
+              }
+              return (a.name || "").localeCompare(b.name || "");
             });
 
             return (
@@ -940,9 +976,8 @@ export default function MasterDataPage() {
                 {/* Grid Kartu APD */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3.5">
                   {filteredPpes.map((item) => {
-                    const catMeta = item.category && PPE_CATEGORIES_INFO[item.category]
-                      ? PPE_CATEGORIES_INFO[item.category]
-                      : {
+                    const resolvedCat = resolvePpeCategory(item.category, item.name);
+                    const catMeta = PPE_CATEGORIES_INFO[resolvedCat] || {
                           label: item.category || "Umum",
                           desc: "Alat keselamatan kerja",
                           color: "text-slate-700",
@@ -963,7 +998,7 @@ export default function MasterDataPage() {
                       >
                         {/* Baris Atas: Label Kategori & Tombol Aksi */}
                         <div className="flex items-center justify-between gap-2">
-                          <span className={`px-2 py-0.5 text-[10px] font-bold rounded-md border ${catMeta.bg} ${catMeta.color} ${catMeta.border} truncate max-w-[170px]`}>
+                          <span className="px-2 py-0.5 text-[10px] font-bold rounded-md border bg-slate-50 text-slate-600 border-slate-200 truncate max-w-[170px]">
                             {catMeta.label}
                           </span>
                           
@@ -996,7 +1031,7 @@ export default function MasterDataPage() {
                         {/* Baris Tengah: Icon + Nama APD & Deskripsi */}
                         <div className="flex items-start gap-2.5">
                           <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
-                            getPpeCategoryIcon(item.category, item.name)
+                            catMeta.bg + " " + catMeta.color
                           }`}>
                             <HardHat size={18} />
                           </div>
@@ -2125,9 +2160,8 @@ export default function MasterDataPage() {
       {/* DETAIL APD POP-UP MODAL */}
       {/* ========================================================================= */}
       {detailPpe && (() => {
-        const catMeta = detailPpe.category && PPE_CATEGORIES_INFO[detailPpe.category]
-          ? PPE_CATEGORIES_INFO[detailPpe.category]
-          : {
+        const resolvedCat = resolvePpeCategory(detailPpe.category, detailPpe.name);
+        const catMeta = PPE_CATEGORIES_INFO[resolvedCat] || {
               label: detailPpe.category || "Umum / General",
               desc: "Alat Pelindung Diri untuk menjaga standar keselamatan kerja operasional di PT Widatra Bhakti.",
               color: "text-slate-700",
@@ -2147,7 +2181,7 @@ export default function MasterDataPage() {
               <div className="p-5 border-b border-slate-100 flex items-start justify-between bg-gradient-to-r from-blue-50/80 via-indigo-50/40 to-white">
                 <div className="flex items-center gap-3">
                   <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shadow-sm ${
-                    getPpeCategoryIcon(detailPpe.category, detailPpe.name)
+                    catMeta.bg + " " + catMeta.color
                   }`}>
                     <HardHat size={24} />
                   </div>
@@ -2186,7 +2220,7 @@ export default function MasterDataPage() {
                     <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
                       Kategori Perlindungan K3
                     </span>
-                    <span className={`text-xs font-extrabold px-2.5 py-0.5 rounded-md ${catMeta.bg} ${catMeta.color} border ${catMeta.border}`}>
+                    <span className="text-xs font-extrabold px-2.5 py-0.5 rounded-md bg-slate-50 text-slate-600 border border-slate-200">
                       {catMeta.label}
                     </span>
                   </div>

@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import { Header } from "@/components/Header";
 import { Eye, Printer, FileText, X, Shield, Users, AlertTriangle, Briefcase, FileCheck, CheckCircle2, Lock, CalendarPlus } from "lucide-react";
 import { cn, calculateInclusiveDays } from "@/lib/utils";
@@ -84,11 +85,40 @@ const canPrintPermit = (status: string) => {
   return status === "Disetujui" || status === "Selesai";
 };
 
+const isEligibleForExtension = (selesaiKerja: string, status: string, windowDays: number = 3) => {
+  if (status !== "Disetujui") return false;
+  if (!selesaiKerja) return false;
+  const endDate = new Date(selesaiKerja);
+  endDate.setHours(23, 59, 59, 999);
+  const today = new Date();
+  const windowDate = new Date(endDate);
+  windowDate.setDate(windowDate.getDate() - windowDays);
+  windowDate.setHours(0, 0, 0, 0);
+  return today >= windowDate;
+};
+
 export default function HistoryPage() {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const filterExpiringSoon = (location.state as any)?.filterExpiringSoon === true;
+
   const [requests, setRequests] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedRequest, setSelectedRequest] = useState<any>(null);
   const [printModalPermit, setPrintModalPermit] = useState<any>(null);
+  const [showExpiringOnly, setShowExpiringOnly] = useState(filterExpiringSoon);
+  const [extensionWindowDays] = useState(3);
+
+  const handleExtend = (req: any) => {
+    navigate("/create-request", {
+      state: {
+        extendMode: true,
+        originalId: req.rawId || req.id,
+        permitNumber: req.id,
+        ...req
+      }
+    });
+  };
 
   const handleOpenPrintModal = (permit: any) => {
     if (!canPrintPermit(permit.status)) {
@@ -118,9 +148,22 @@ export default function HistoryPage() {
     fetchHistory();
   }, []);
 
+  // Hitung izin yang akan berakhir dalam 3 hari
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const expiringItems = requests.filter((req) => {
+    if (req.status !== "Disetujui") return false;
+    const end = new Date(req.selesaiKerja);
+    end.setHours(0, 0, 0, 0);
+    const diffDays = Math.ceil((end.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+    return diffDays >= 0 && diffDays <= 3;
+  });
+
+  const displayedRequests = showExpiringOnly ? expiringItems : requests;
+
   return (
     <div className="flex-1 flex flex-col h-full bg-background overflow-hidden relative">
-      <Header title="History" />
+      <Header title="Riwayat" />
       
       <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8">
         <div className="max-w-7xl mx-auto space-y-6">
@@ -131,6 +174,29 @@ export default function HistoryPage() {
             </div>
             {loading && <span className="text-xs text-primary font-medium animate-pulse">Memuat riwayat...</span>}
           </div>
+
+          {/* Banner filter segera berakhir */}
+          {expiringItems.length > 0 && (
+            <div className="flex items-center gap-3 bg-rose-50 border border-rose-200 rounded-xl px-4 py-3">
+              <AlertTriangle size={18} className="text-rose-500 shrink-0" />
+              <div className="flex-1">
+                <p className="text-sm font-semibold text-rose-700">
+                  {expiringItems.length} izin akan berakhir dalam 3 hari ke depan!
+                </p>
+                <p className="text-xs text-rose-500 mt-0.5">Segera ajukan perpanjangan sebelum izin habis masa berlakunya.</p>
+              </div>
+              <button
+                onClick={() => setShowExpiringOnly(!showExpiringOnly)}
+                className={`shrink-0 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${
+                  showExpiringOnly
+                    ? "bg-rose-600 text-white hover:bg-rose-700"
+                    : "bg-white border border-rose-300 text-rose-600 hover:bg-rose-50"
+                }`}
+              >
+                {showExpiringOnly ? "Tampilkan Semua" : "Lihat yang Berakhir"}
+              </button>
+            </div>
+          )}
 
           {/* Desktop Table (Boxed Data Table style) */}
           <div className="hidden sm:block bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
@@ -147,8 +213,8 @@ export default function HistoryPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
-                  {requests.length > 0 ? (
-                    requests.map((req) => (
+                  {displayedRequests.length > 0 ? (
+                    displayedRequests.map((req) => (
                       <tr key={req.id} className="hover:bg-gray-50/50 transition-colors">
                         <td className="px-5 py-4 text-sm font-bold text-gray-900 whitespace-nowrap">
                           <div className="font-mono text-gray-900">{req.id}</div>
@@ -180,6 +246,15 @@ export default function HistoryPage() {
                         </td>
                         <td className="px-5 py-4 text-right whitespace-nowrap">
                           <div className="flex items-center justify-end gap-2">
+                            {isEligibleForExtension(req.selesaiKerja, req.status, extensionWindowDays) && (
+                              <button
+                                onClick={() => handleExtend(req)}
+                                className="p-2 text-amber-600 hover:text-amber-700 hover:bg-amber-50 rounded-lg transition-colors cursor-pointer"
+                                title={`Perpanjang Ijin Kerja (H-${extensionWindowDays})`}
+                              >
+                                <CalendarPlus size={18} />
+                              </button>
+                            )}
                             <button 
                               onClick={() => setSelectedRequest(req)}
                               className="p-2 text-gray-400 hover:text-primary hover:bg-primary-container/50 rounded-lg transition-colors cursor-pointer" 
@@ -211,9 +286,22 @@ export default function HistoryPage() {
                   ) : (
                     <tr>
                       <td colSpan={6} className="px-6 py-12 text-center text-gray-500">
-                        <FileText size={40} className="mx-auto mb-3 opacity-20" />
-                        <p className="text-base font-medium text-gray-800">Belum Ada Riwayat Ijin Kerja</p>
-                        <p className="text-xs text-gray-500 mt-1">Data arsip dan riwayat izin kerja akan tercatat di sini setelah pengajuan diproses.</p>
+                        <AlertTriangle size={40} className="mx-auto mb-3 text-rose-300" />
+                        {showExpiringOnly ? (
+                          <>
+                            <p className="text-base font-medium text-gray-800">Tidak Ada Izin yang Segera Berakhir</p>
+                            <p className="text-xs text-gray-500 mt-1">Semua izin Anda masih aman, tidak ada yang berakhir dalam 3 hari ke depan.</p>
+                            <button onClick={() => setShowExpiringOnly(false)} className="mt-3 text-xs font-semibold text-primary hover:underline">
+                              Tampilkan semua riwayat
+                            </button>
+                          </>
+                        ) : (
+                          <>
+                            <FileText size={40} className="mx-auto mb-3 opacity-20" />
+                            <p className="text-base font-medium text-gray-800">Belum Ada Riwayat Ijin Kerja</p>
+                            <p className="text-xs text-gray-500 mt-1">Data arsip dan riwayat izin kerja akan tercatat di sini setelah pengajuan diproses.</p>
+                          </>
+                        )}
                       </td>
                     </tr>
                   )}
@@ -224,8 +312,8 @@ export default function HistoryPage() {
 
           {/* Mobile Card Layout */}
           <div className="sm:hidden space-y-4">
-            {requests.length > 0 ? (
-              requests.map((req) => (
+            {displayedRequests.length > 0 ? (
+              displayedRequests.map((req) => (
                 <div key={req.id} className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm relative space-y-4">
                   <div className="flex justify-between items-start">
                     <div className="flex items-center gap-2">
@@ -261,6 +349,15 @@ export default function HistoryPage() {
                       )}
                     </div>
                     <div className="flex gap-2">
+                      {isEligibleForExtension(req.selesaiKerja, req.status, extensionWindowDays) && (
+                        <button
+                          onClick={() => handleExtend(req)}
+                          className="p-2 text-amber-600 hover:text-amber-700 bg-amber-50 rounded-lg transition-colors cursor-pointer"
+                          title={`Perpanjang Ijin Kerja (H-${extensionWindowDays})`}
+                        >
+                          <CalendarPlus size={16} />
+                        </button>
+                      )}
                       <button 
                         onClick={() => setSelectedRequest(req)}
                         className="p-2 text-gray-500 hover:text-primary bg-gray-50 hover:bg-primary-container/30 rounded-lg transition-colors cursor-pointer"
@@ -291,8 +388,19 @@ export default function HistoryPage() {
             ) : (
               <div className="bg-white p-8 rounded-xl border border-gray-200 text-center text-gray-500">
                 <FileText size={32} className="mx-auto mb-2 opacity-20" />
-                <p className="text-sm font-semibold text-gray-700">Belum Ada Riwayat Ijin Kerja</p>
-                <p className="text-xs text-gray-400 mt-1">Data arsip dan riwayat izin kerja akan tampil di sini.</p>
+                {showExpiringOnly ? (
+                  <>
+                    <p className="text-sm font-semibold text-gray-700">Tidak Ada Izin yang Segera Berakhir</p>
+                    <button onClick={() => setShowExpiringOnly(false)} className="mt-2 text-xs font-semibold text-primary hover:underline">
+                      Tampilkan semua riwayat
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <p className="text-sm font-semibold text-gray-700">Belum Ada Riwayat Ijin Kerja</p>
+                    <p className="text-xs text-gray-400 mt-1">Data arsip dan riwayat izin kerja akan tampil di sini.</p>
+                  </>
+                )}
               </div>
             )}
           </div>

@@ -19,7 +19,7 @@ const kontraktorNav = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   { name: "Ijin Kerja Baru", href: "/create-request", icon: FilePlus2 },
   { name: "Ijin Saya", href: "/my-requests", icon: Files },
-  { name: "History", href: "/history", icon: Clock },
+  { name: "Riwayat", href: "/history", icon: Clock },
   { name: "Profil", href: "/profile", icon: User },
 ];
 
@@ -29,7 +29,7 @@ const hseNav = [
   { name: "Review Ijin", href: "/review", icon: CheckSquare },
   { name: "Monitoring K3", href: "/monitoring", icon: Activity },
   { name: "Master Data", href: "/master-data", icon: Database },
-  { name: "History", href: "/history", icon: Clock },
+  { name: "Riwayat", href: "/history", icon: Clock },
   { name: "Profil", href: "/profile", icon: User },
 ];
 
@@ -37,14 +37,14 @@ const gaNav = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   { name: "Review Ijin", href: "/review", icon: CheckSquare }, 
   { name: "Master Data", href: "/master-data", icon: Database },
-  { name: "History", href: "/history", icon: Clock },
+  { name: "Riwayat", href: "/history", icon: Clock },
   { name: "Profil", href: "/profile", icon: User },
 ];
 
 const picVendorNav = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   { name: "Review Ijin", href: "/review", icon: CheckSquare }, 
-  { name: "History", href: "/history", icon: Clock },
+  { name: "Riwayat", href: "/history", icon: Clock },
   { name: "Profil", href: "/profile", icon: User },
 ];
 
@@ -55,7 +55,7 @@ const adminNav = [
   { name: "Review Ijin", href: "/review", icon: CheckSquare },
   { name: "Monitoring K3", href: "/monitoring", icon: Activity },
   { name: "Master Data", href: "/master-data", icon: Database },
-  { name: "History", href: "/history", icon: Clock },
+  { name: "Riwayat", href: "/history", icon: Clock },
   { name: "Profil", href: "/profile", icon: User },
 ];
 

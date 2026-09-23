@@ -9,6 +9,7 @@ import { auth } from "@/lib/auth";
 
 export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
+  const [chartPeriod, setChartPeriod] = useState<'daily' | 'weekly' | 'monthly' | 'yearly'>('monthly');
   const [dashboardData, setDashboardData] = useState<any>({
     pendingCount: 0,
     activeCount: 0,
@@ -21,10 +22,11 @@ export default function DashboardPage() {
   const userName = auth.getUser()?.name || "Mitra Rekanan PT Widatra Bhakti";
 
   useEffect(() => {
-    const fetchDashboard = async () => {
+    const fetchDashboard = async (period = chartPeriod) => {
       setLoading(true);
       try {
-        const res = await api.getContractorDashboard();
+        // Jika API mendukung parameter period, kirimkan; kalau tidak, beri fallback ke data yang ada
+        const res = await api.getContractorDashboard({ period });
         if (res.success && res.data) {
           setDashboardData(res.data);
         }
@@ -35,7 +37,7 @@ export default function DashboardPage() {
       }
     };
     fetchDashboard();
-  }, []);
+  }, [chartPeriod]);
 
   if (loading) {
     return (
@@ -66,6 +68,16 @@ export default function DashboardPage() {
               <p className="text-sm text-gray-500 mt-1">Pantau status ijin kerja operasional Anda hari ini.</p>
             </div>
           </div>
+{/* Alert K3 */}
+{dashboardData.expiringSoonCount > 0 && (
+  <div className="flex items-center gap-2 bg-rose-50 border border-rose-200 text-rose-600 p-3 rounded-md mb-4">
+    <AlertTriangle size={20} />
+    <span className="font-medium">Ada izin yang akan berakhir dalam 3 hari ke depan. Segera periksa dan perpanjang!</span>
+    <button onClick={() => navigate('/history', { state: { filterExpiringSoon: true } })} className="ml-auto text-rose-600 hover:underline font-semibold">
+      Lihat Detail
+    </button>
+  </div>
+)}
 
           {/* Section 1: Summary Cards */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -123,7 +135,7 @@ export default function DashboardPage() {
                   <CalendarPlus size={28} className="mb-2 text-warning" />
                   <div className="text-left relative z-10">
                     <h3 className="font-bold text-lg">Perpanjang Ijin</h3>
-                    <p className="text-gray-500 text-xs mt-1">Cek Ijin H-3 di History</p>
+                    <p className="text-gray-500 text-xs mt-1">Cek Ijin H-3 di Riwayat</p>
                   </div>
                   <div className="absolute -right-4 -bottom-4 opacity-5 group-hover:scale-110 transition-transform">
                     <CalendarPlus size={100} />
@@ -182,6 +194,20 @@ export default function DashboardPage() {
               </div>
               
               <div className="flex-1 min-h-[250px] w-full">
+  <div className="flex gap-2 mt-2 mb-4">
+    {(['daily','weekly','monthly','yearly'] as const).map(p => (
+      <button
+        key={p}
+        onClick={() => setChartPeriod(p)}
+        className={cn(
+          "px-3 py-1 rounded text-sm font-medium",
+          p === chartPeriod ? "bg-primary text-on-primary" : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+        )}
+      >
+        {p.charAt(0).toUpperCase() + p.slice(1)}
+      </button>
+    ))}
+  </div>
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={dashboardData.chartData || []} margin={{ top: 0, right: 0, bottom: 0, left: -25 }}>
                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
