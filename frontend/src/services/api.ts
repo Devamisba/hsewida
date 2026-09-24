@@ -372,8 +372,9 @@ export const api = {
   },
 
   // 11. Real Role Dashboards
-  getContractorDashboard: async () => {
-    return apiRequest('/dashboard/contractor');
+  getContractorDashboard: async (params?: { period?: string }) => {
+    const query = params?.period ? `?period=${encodeURIComponent(params.period)}` : '';
+    return apiRequest(`/dashboard/contractor${query}`);
   },
 
   getHseDashboard: async () => {

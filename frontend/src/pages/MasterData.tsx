@@ -96,18 +96,6 @@ const resolvePpeCategory = (category: string | null | undefined, name: string): 
   return "General PPE";
 };
 
-const getPpeCategoryIcon = (category?: string, name?: string) => {
-  const cat = (category || "").toLowerCase();
-  const n = (name || "").toLowerCase();
-  if (cat.includes("fall") || n.includes("harness") || n.includes("lifeline")) return "bg-rose-50 text-rose-600";
-  if (cat.includes("respiratory") || n.includes("respiratory") || n.includes("breathing") || n.includes("masker")) return "bg-purple-50 text-purple-600";
-  if (cat.includes("fire") || n.includes("fire") || n.includes("extinguisher") || n.includes("apar")) return "bg-red-50 text-red-600";
-  if (cat.includes("foot") || cat.includes("hand") || n.includes("shoes") || n.includes("gloves") || n.includes("sepatu")) return "bg-amber-50 text-amber-600";
-  if (cat.includes("site") || n.includes("barricade") || n.includes("sign")) return "bg-orange-50 text-orange-600";
-  if (cat.includes("head") || n.includes("helmet") || n.includes("glasses") || n.includes("face")) return "bg-blue-50 text-blue-600";
-  return "bg-slate-100 text-slate-700";
-};
-
 type MainTab = "users_roles" | "permit_types" | "ppe" | "workflow" | "locations_vendors" | "policy_settings";
 
 export default function MasterDataPage() {
