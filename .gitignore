@@ -20,6 +20,7 @@
 /.next/
 /out/
 *.tsbuildinfo
+*.zip
 
 # --- Laravel Storage & Cache ---
 backend/storage/*.key

@@ -1,11 +1,21 @@
 import { auth } from '@/lib/auth';
 
-// API Base URL from env or dynamic hostname (supports localhost and mobile LAN access)
-export const API_BASE_URL = 
-  (import.meta as any).env?.VITE_API_BASE_URL || 
-  (typeof window !== 'undefined' && window.location.hostname && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1'
-    ? `${window.location.protocol}//${window.location.hostname}:8000/api/v1`
-    : 'http://localhost:8000/api/v1');
+// API Base URL from env or dynamic hostname (supports production Nginx, localhost, and mobile LAN access)
+export const API_BASE_URL = (() => {
+  if ((import.meta as any).env?.VITE_API_BASE_URL) {
+    return (import.meta as any).env.VITE_API_BASE_URL;
+  }
+  if (typeof window !== 'undefined' && window.location) {
+    const isViteDev = window.location.port === '5173' || window.location.port === '3000';
+    if (isViteDev) {
+      // Local development on Vite dev server (desktop or LAN IP on mobile)
+      return `${window.location.protocol}//${window.location.hostname}:8000/api/v1`;
+    }
+    // Production (served via Nginx on any port or domain e.g. 8686, 80, 443)
+    return `${window.location.origin}/api/v1`;
+  }
+  return 'http://localhost:8000/api/v1';
+})();
 
 // Helper for authenticated fetch
 export async function apiRequest<T = any>(endpoint: string, options: RequestInit = {}): Promise<T> {
