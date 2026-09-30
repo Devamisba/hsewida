@@ -782,7 +782,7 @@ class MonitoringController extends Controller
         $capa = InspectionCapa::findOrFail($id);
 
         $request->validate([
-            'capa_photo' => 'nullable|file|mimes:jpeg,png,jpg|max:3072',
+            'capa_photo' => 'nullable|file|mimes:jpeg,png,jpg|max:2048', // Max 2MB
             'note' => 'nullable|string',
         ]);
 

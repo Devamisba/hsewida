@@ -19,7 +19,7 @@ class PermitDocumentController extends Controller
 
         $request->validate([
             'document_type' => 'required|in:BPJS_TK,BPJS_Kesehatan,Asuransi_Lain',
-            'file' => 'required|file|mimes:jpeg,png,jpg,pdf|max:5120', // Max 5MB
+            'file' => 'required|file|mimes:jpeg,png,jpg,pdf|max:2048', // Max 2MB
         ]);
 
         $file = $request->file('file');
