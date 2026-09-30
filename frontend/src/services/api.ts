@@ -1,6 +1,6 @@
 import { auth } from '@/lib/auth';
 
-// API Base URL from env or dynamic hostname (supports production Nginx, localhost, and mobile LAN access)
+// API Base URL from env or dynamic hostname (supports reverse proxy Nginx, localhost, and mobile LAN access)
 export const API_BASE_URL = (() => {
   if ((import.meta as any).env?.VITE_API_BASE_URL) {
     return (import.meta as any).env.VITE_API_BASE_URL;
@@ -11,7 +11,7 @@ export const API_BASE_URL = (() => {
       // Local development on Vite dev server (desktop or LAN IP on mobile)
       return `${window.location.protocol}//${window.location.hostname}:8000/api/v1`;
     }
-    // Production (served via Nginx on any port or domain e.g. 8686, 80, 443)
+    // Production (calls /api/v1 on same origin, proxied by Nginx to backend 8787)
     return `${window.location.origin}/api/v1`;
   }
   return 'http://localhost:8000/api/v1';
