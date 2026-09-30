@@ -69,15 +69,35 @@ export function QrScanFieldModal({ isOpen, onClose, onScanSuccess }: QrScanField
     setError("");
 
     try {
-      const res = await api.getFacilityByQrId(code);
-      if (res.success && res.data?.facility) {
-        setScanSuccessMsg(`Alat ditemukan: ${res.data.facility.nama_item || res.data.facility.code}`);
+      let facility = null;
+      let displayName = "";
+
+      try {
+        const res = await api.getFacilityByQrId(code);
+        if (res.success && res.data?.facility) {
+          facility = res.data.facility;
+          displayName = facility.nama_item || facility.code;
+        }
+      } catch (_) {}
+
+      if (!facility) {
+        try {
+          const resApar = await api.getAparByScanCode(code);
+          if (resApar.success && resApar.data?.facility) {
+            facility = resApar.data.facility;
+            displayName = facility.nama_item || facility.code;
+          }
+        } catch (_) {}
+      }
+
+      if (facility) {
+        setScanSuccessMsg(`Alat ditemukan: ${displayName}`);
         setTimeout(() => {
-          onScanSuccess(res.data.facility);
+          onScanSuccess(facility);
           onClose();
-        }, 400);
+        }, 300);
       } else {
-        setError(res.message || `Alat K3 dengan kode "${code}" tidak ditemukan.`);
+        setError(`Alat K3 dengan kode "${code}" tidak ditemukan dalam sistem.`);
         isProcessingRef.current = false;
       }
     } catch (err: any) {
@@ -366,7 +386,7 @@ export function QrScanFieldModal({ isOpen, onClose, onScanSuccess }: QrScanField
                   <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                   <input
                     type="text"
-                    placeholder="Contoh: QR-AP001, AP-001, QR-HY001"
+                    placeholder="Contoh: A-01, A-02, QR-APAR-A-01"
                     value={manualCode}
                     onChange={(e) => setManualCode(e.target.value)}
                     className="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono font-bold outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white text-slate-900"
@@ -381,7 +401,7 @@ export function QrScanFieldModal({ isOpen, onClose, onScanSuccess }: QrScanField
                     <Loader2 size={14} className="animate-spin" />
                   ) : (
                     <>
-                      <span>Buka</span> <ArrowRight size={14} />
+                      <span>Buka Lapangan</span> <ArrowRight size={14} />
                     </>
                   )}
                 </button>
@@ -391,10 +411,10 @@ export function QrScanFieldModal({ isOpen, onClose, onScanSuccess }: QrScanField
             {/* Quick Sample Buttons for easy testing */}
             <div className="pt-2 border-t border-slate-100">
               <span className="text-[10px] text-slate-400 font-semibold block mb-1.5 uppercase">
-                Uji Coba Cepat (Klik Sampel QR):
+                Uji Coba Cepat (Klik Sampel Tabung APAR):
               </span>
               <div className="flex flex-wrap gap-1.5">
-                {['QR-AP001', 'QR-AP002', 'QR-AP003', 'QR-HY001', 'QR-FA001'].map((code) => (
+                {['A-01', 'A-02', 'A-03', 'A-04', 'A-05', 'A-10', 'QR-APAR-A-01'].map((code) => (
                   <button
                     key={code}
                     type="button"

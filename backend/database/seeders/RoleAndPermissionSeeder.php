@@ -28,13 +28,18 @@ class RoleAndPermissionSeeder extends Seeder
                 'description' => 'Melakukan review keselamatan tahap 2, validasi JSA, mitigasi risiko, inspeksi fasilitas K3, dan CAPA.',
             ],
             [
+                'code' => 'pic_k3',
+                'name' => 'PIC K3 (Monitoring & Inspeksi)',
+                'description' => 'Penanggung jawab pemantauan fasilitas K3 lapangan (APAR, Hydrant, P3K), verifikasi hasil inspeksi petugas, dan pelaporan K3.',
+            ],
+            [
                 'code' => 'ga_dept_head',
-                'name' => 'HRD & GA Dept Head',
+                'name' => 'Head Dept HRD&GA',
                 'description' => 'Melakukan review administratif tahap 3 (validasi data pekerja eksternal, asuransi/BPJS, akses area).',
             ],
             [
                 'code' => 'ga_div_head',
-                'name' => 'HRD & GA Div Head',
+                'name' => 'Head Division HRD&GA',
                 'description' => 'Melakukan validasi akhir tahap 4 (Final Sign-off) yang mengaktifkan status ijin kerja resmi.',
             ],
             [
@@ -59,8 +64,8 @@ class RoleAndPermissionSeeder extends Seeder
             ['code' => 'permits.view_own', 'name' => 'Lihat Ijin Kerja Milik Sendiri', 'group' => 'Work Permit'],
             ['code' => 'permits.review_pic', 'name' => 'Review Permit Tahap 1 (PIC Vendor)', 'group' => 'Work Permit'],
             ['code' => 'permits.review_hse', 'name' => 'Review Permit Tahap 2 (HSE)', 'group' => 'Work Permit'],
-            ['code' => 'permits.review_ga_dept', 'name' => 'Review Permit Tahap 3 (HRD & GA Dept Head)', 'group' => 'Work Permit'],
-            ['code' => 'permits.review_ga_div', 'name' => 'Review Permit Tahap 4 (HRD & GA Div Head)', 'group' => 'Work Permit'],
+            ['code' => 'permits.review_ga_dept', 'name' => 'Review Permit Tahap 3 (Head Dept HRD&GA)', 'group' => 'Work Permit'],
+            ['code' => 'permits.review_ga_div', 'name' => 'Review Permit Tahap 4 (Head Division HRD&GA)', 'group' => 'Work Permit'],
             ['code' => 'permits.view_all', 'name' => 'Lihat Seluruh Ijin Kerja & Riwayat', 'group' => 'Work Permit'],
             ['code' => 'permits.verify_qr', 'name' => 'Verifikasi Validitas Permit via QR Code', 'group' => 'Work Permit'],
             
@@ -115,6 +120,16 @@ class RoleAndPermissionSeeder extends Seeder
             $permissionModels['capa.manage']->id,
             $permissionModels['master.locations']->id,
             $permissionModels['master.permit_options']->id,
+        ]);
+
+        // PIC K3 (Monitoring & Inspeksi)
+        $roleModels['pic_k3']->permissions()->sync([
+            $permissionModels['monitoring.view']->id,
+            $permissionModels['inspections.create']->id,
+            $permissionModels['capa.manage']->id,
+            $permissionModels['permits.verify_qr']->id,
+            $permissionModels['permits.view_all']->id,
+            $permissionModels['master.locations']->id,
         ]);
 
         // GA Dept Head

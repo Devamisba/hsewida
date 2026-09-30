@@ -8,8 +8,9 @@ const DEMO_ACCOUNTS = [
   { role: "pemohon", label: "Vendor (Pemohon)", nik: "VN10001" },
   { role: "pic_vendor", label: "PIC Vendor", nik: "PC10002" },
   { role: "hse", label: "Tim K3 / HSE", nik: "HS10003" },
-  { role: "ga_dept_head", label: "GA Dept Head", nik: "GA10004" },
-  { role: "ga_div_head", label: "GA Div Head", nik: "GA10005" },
+  { role: "pic_k3", label: "PIC K3 (Monitoring)", nik: "PK10006" },
+  { role: "ga_dept_head", label: "Head Dept HRD&GA", nik: "GA10004" },
+  { role: "ga_div_head", label: "Head Division HRD&GA", nik: "GA10005" },
 ];
 
 export default function LoginPage() {

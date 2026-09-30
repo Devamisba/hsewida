@@ -227,31 +227,33 @@ export function Step1DataKontraktor({ data, updateData }: { data: any, updateDat
                   </div>
                   <div className="space-y-0.5">
                     <h5 className="text-xs font-bold text-amber-950 uppercase tracking-wide">
-                      Regulasi K3: Masa Aktif Perpanjangan & Kumulatif Proyek
+                      Regulasi K3: Perpanjangan Ijin Kerja {data.extensionPhase ? `Ke-${data.extensionPhase} (Fase ${data.extensionPhase})` : "Lanjutan"}
                     </h5>
                     <p className="text-[11px] text-amber-800 leading-relaxed">
-                      Berdasarkan standar K3 PT Widatra Bhakti, {maxPermitDays > 0 ? (
-                        <>1 surat ijin kerja berlaku maksimal <strong>{maxPermitDays} hari kalender</strong> (Dihitung per dokumen).</>
-                      ) : (
-                        <>durasi surat ijin kerja bersifat <strong>fleksibel tanpa batasan hari maksimal</strong>.</>
-                      )} Periode di atas adalah masa aktif lanjutan izin ini, dan sistem menghitung akumulasi total hari proyek secara otomatis.
+                      Berdasarkan standar K3 PT Widatra Bhakti, tiap 1 surat ijin kerja berlaku maksimal <strong>{maxPermitDays > 0 ? `${maxPermitDays} hari kalender` : "fleksibel"}</strong> per lembar pengajuan. Proyek ini dapat diperpanjang berfase-fase, dan sistem menghitung akumulasi total hari kalender sejak SIKA Induk pertama secara otomatis.
                     </p>
                   </div>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 border-t border-amber-200/80">
                   <div className="bg-white/90 p-2.5 rounded-lg border border-amber-200">
-                    <span className="text-[10px] uppercase font-bold text-amber-700 block">Ijin Acuan Induk</span>
+                    <span className="text-[10px] uppercase font-bold text-amber-700 block">
+                      {data.extensionPhase && data.extensionPhase > 1 ? "SIKA Induk & Acuan" : "Ijin Acuan Induk"}
+                    </span>
                     <strong className="text-slate-800 font-mono text-xs block truncate">
-                      {data.parentPermitNumber || "SIKA Sebelumnya"}
+                      {data.rootPermitNumber || data.parentPermitNumber || "SIKA Sebelumnya"}
                     </strong>
                     <span className="text-[10px] text-slate-500 block mt-0.5">
-                      {data.parentStartDate ? `Periode: ${data.parentStartDate} s/d ${data.parentEndDate || '-'}` : "Telah diverifikasi"}
+                      {data.extensionPhase && data.extensionPhase > 1 && data.parentPermitNumber && data.parentPermitNumber !== data.rootPermitNumber
+                        ? `Lanjutan dari: ${data.parentPermitNumber}`
+                        : (data.parentStartDate ? `Masa Awal: ${data.rootStartDate || data.parentStartDate}` : "Telah diverifikasi")}
                     </span>
                   </div>
 
                   <div className="bg-white/90 p-2.5 rounded-lg border border-amber-200">
-                    <span className="text-[10px] uppercase font-bold text-amber-700 block">Periode Aktif Lanjutan</span>
+                    <span className="text-[10px] uppercase font-bold text-amber-700 block">
+                      Periode Aktif {data.extensionPhase ? `Fase ${data.extensionPhase}` : "Lanjutan"}
+                    </span>
                     <strong className="text-blue-900 text-xs block">
                       {data.mulaiKerja ? `${data.mulaiKerja} s/d ${data.selesaiKerja || '...'}` : 'Pilih tanggal'}
                     </strong>
@@ -263,10 +265,10 @@ export function Step1DataKontraktor({ data, updateData }: { data: any, updateDat
                   <div className="bg-amber-100/90 p-2.5 rounded-lg border border-amber-300">
                     <span className="text-[10px] uppercase font-bold text-amber-900 block">Rentang Kumulatif Proyek</span>
                     <strong className="text-amber-950 text-xs font-bold font-mono block">
-                      {data.parentStartDate || data.mulaiKerja || '...'} s/d {data.selesaiKerja || '...'}
+                      {data.rootStartDate || data.parentStartDate || data.mulaiKerja || '...'} s/d {data.selesaiKerja || '...'}
                     </strong>
                     <span className="text-[10px] text-amber-800 font-semibold block mt-0.5">
-                      Total Akumulasi: {calculateInclusiveDays(data.parentStartDate || data.mulaiKerja, data.selesaiKerja)} Hari Kalender
+                      Total Akumulasi: {calculateInclusiveDays(data.rootStartDate || data.parentStartDate || data.mulaiKerja, data.selesaiKerja)} Hari Kalender
                     </span>
                   </div>
                 </div>

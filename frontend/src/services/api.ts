@@ -1,7 +1,11 @@
 import { auth } from '@/lib/auth';
 
-// API Base URL from env or default local Laravel server
-export const API_BASE_URL = (import.meta as any).env?.VITE_API_BASE_URL || 'http://localhost:8000/api/v1';
+// API Base URL from env or dynamic hostname (supports localhost and mobile LAN access)
+export const API_BASE_URL = 
+  (import.meta as any).env?.VITE_API_BASE_URL || 
+  (typeof window !== 'undefined' && window.location.hostname && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1'
+    ? `${window.location.protocol}//${window.location.hostname}:8000/api/v1`
+    : 'http://localhost:8000/api/v1');
 
 // Helper for authenticated fetch
 export async function apiRequest<T = any>(endpoint: string, options: RequestInit = {}): Promise<T> {
@@ -91,6 +95,10 @@ export const api = {
 
   getPermitDetail: async (id: string | number) => {
     return apiRequest(`/permits/${id}`);
+  },
+
+  checkExtendEligibility: async (id: string | number) => {
+    return apiRequest(`/permits/${id}/extend`);
   },
 
   approvePermit: async (id: string | number, note?: string) => {
@@ -315,13 +323,77 @@ export const api = {
   },
 
   // 10. Monitoring & K3
-  getFacilities: async (category?: string, tipe_item?: string, search?: string) => {
+  getFacilities: async (category?: string, tipe_item?: string, search?: string, area_zone?: string) => {
     const params = new URLSearchParams();
     if (category) params.append('category', category);
     if (tipe_item) params.append('tipe_item', tipe_item);
     if (search) params.append('search', search);
+    if (area_zone) params.append('area_zone', area_zone);
     const qs = params.toString();
     return apiRequest(`/monitoring/facilities${qs ? '?' + qs : ''}`);
+  },
+
+  getFacilityInspections: async (id: number | string) => {
+    return apiRequest(`/monitoring/facilities/${id}/inspections`);
+  },
+
+  getAllInspections: async (params?: {
+    category?: string;
+    area_zone?: string;
+    check_status?: string;
+    verification_status?: string;
+    result_status?: string;
+    date_range?: string;
+    search?: string;
+    sort_by?: string;
+    page?: number;
+    per_page?: number;
+  }) => {
+    const q = new URLSearchParams();
+    if (params) {
+      Object.entries(params).forEach(([key, val]) => {
+        if (val !== undefined && val !== null && val !== 'ALL' && val !== 'all' && val !== '') {
+          q.append(key, String(val));
+        }
+      });
+    }
+    const qs = q.toString();
+    return apiRequest(`/monitoring/inspections${qs ? '?' + qs : ''}`);
+  },
+
+  getAparByScanCode: async (code: string) => {
+    return apiRequest(`/monitoring/scan/${encodeURIComponent(code)}`);
+  },
+
+  submitPetugasInspection: async (code: string, payload: {
+    inspector_name: string;
+    notes: string;
+    tbg: boolean;
+    slg: boolean;
+    nozz: boolean;
+    sgl: boolean;
+    lev: boolean;
+    foto_bukti?: string;
+  }) => {
+    return apiRequest(`/monitoring/scan/${encodeURIComponent(code)}/petugas`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
+
+  submitPicVerification: async (code: string, payload: {
+    pic_name: string;
+    verification_status: 'VERIFIED' | 'REVISE' | 'REFILL_REQUESTED';
+    verification_notes?: string;
+  }) => {
+    return apiRequest(`/monitoring/scan/${encodeURIComponent(code)}/pic`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
+
+  getRefillSummary: async () => {
+    return apiRequest('/monitoring/refill-summary');
   },
 
   getFacilityByQrId: async (qrCodeId: string) => {
@@ -412,6 +484,7 @@ export interface SafetyFacility {
   name?: string;
   category: string;
   tipe_item: 'CONSUMABLE' | 'KONDISI';
+  area_zone?: string;
   location: any;
   specifications?: any;
   status: string;

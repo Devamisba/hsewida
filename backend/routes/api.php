@@ -18,6 +18,14 @@ Route::prefix('v1')->group(function () {
     Route::get('/permits/verify/{token}', [WorkPermitController::class, 'verifyQrToken']);
     Route::get('/master/settings', [MasterDataController::class, 'getSettings']);
 
+    // APAR Mobile QR Scanning & Dual-Tier HSE Inspection (Public Fast QR Access)
+    Route::get('/monitoring/scan/{code}', [MonitoringController::class, 'getAparByScanCode']);
+    Route::post('/monitoring/scan/{code}/petugas', [MonitoringController::class, 'submitPetugasInspection']);
+    Route::post('/monitoring/scan/{code}/pic', [MonitoringController::class, 'submitPicVerification']);
+    Route::get('/monitoring/refill-summary', [MonitoringController::class, 'getRefillSummary']);
+    Route::get('/monitoring/facilities/{id}/inspections', [MonitoringController::class, 'getFacilityInspections']);
+    Route::get('/monitoring/inspections', [MonitoringController::class, 'getAllInspections']);
+
     // --- PROTECTED ROUTES (SANCTUM) ---
     Route::middleware('auth:sanctum')->group(function () {
 

@@ -670,7 +670,7 @@ export default function MasterDataPage() {
                               <td className="px-5 py-4">
                                 <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold ${
                                   u.role?.code === 'admin' ? 'bg-purple-100 text-purple-800' :
-                                  u.role?.code === 'hse' ? 'bg-emerald-100 text-emerald-800' :
+                                  u.role?.code === 'hse' || u.role?.code === 'pic_k3' ? 'bg-emerald-100 text-emerald-800' :
                                   u.role?.code === 'ga_dept_head' || u.role?.code === 'ga_div_head' ? 'bg-amber-100 text-amber-800' :
                                   u.role?.code === 'pic_vendor' ? 'bg-indigo-100 text-indigo-800' : 'bg-blue-100 text-blue-800'
                                 }`}>

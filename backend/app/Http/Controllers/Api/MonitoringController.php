@@ -27,7 +27,7 @@ class MonitoringController extends Controller
             'consumableCycle',
             'conditionSchedule',
             'inspections' => function ($q) {
-                $q->latest()->limit(1)->with('inspector:id,name');
+                $q->latest()->limit(10)->with('inspector:id,name');
             },
             'refillHistories' => function ($q) {
                 $q->latest()->limit(1)->with('user:id,name');
@@ -40,6 +40,10 @@ class MonitoringController extends Controller
 
         if ($request->filled('tipe_item')) {
             $query->where('tipe_item', strtoupper($request->tipe_item));
+        }
+
+        if ($request->filled('area_zone') && $request->area_zone !== 'all') {
+            $query->where('area_zone', $request->area_zone);
         }
 
         if ($request->filled('search')) {
@@ -85,9 +89,12 @@ class MonitoringController extends Controller
             'refillHistories' => function ($q) {
                 $q->latest()->limit(5)->with('user:id,name');
             }
-        ])->where('qr_code_id', $qrCodeId)
-          ->orWhere('code', $qrCodeId)
-          ->first();
+        ])->where(function ($query) use ($qrCodeId) {
+            $clean = strtoupper(trim($qrCodeId));
+            $query->where('qr_code_id', $clean)
+                  ->orWhere('code', $clean)
+                  ->orWhere('qr_code_id', 'QR-APAR-' . $clean);
+          })->first();
 
         if (!$facility) {
             return response()->json([
@@ -118,6 +125,310 @@ class MonitoringController extends Controller
             'data' => [
                 'facility' => $facility,
                 'checklist_template' => $template,
+            ],
+        ]);
+    }
+
+    /**
+     * Get inspection history for a specific safety facility.
+     */
+    public function getFacilityInspections($id)
+    {
+        $facility = SafetyFacility::with(['location', 'consumableCycle', 'conditionSchedule'])->findOrFail($id);
+        $inspections = FacilityInspection::where('facility_id', $facility->id)
+            ->with('inspector:id,name')
+            ->latest()
+            ->get();
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'facility' => $facility,
+                'inspections' => $inspections,
+            ]
+        ]);
+    }
+
+    /**
+     * Get all facility inspection statuses with multi-criteria filtering (Modul Inspeksi).
+     * Encompasses the full facility fleet so inspectors know which are Checked vs Unchecked.
+     */
+    public function getAllInspections(Request $request)
+    {
+        $category = $request->input('category', 'all');
+        $areaZone = $request->input('area_zone', 'ALL');
+        $checkStatus = $request->input('check_status', 'ALL'); // ALL, UNCHECKED, CHECKED, PENDING, VERIFIED
+        $verificationStatus = $request->input('verification_status', 'ALL');
+        $resultStatus = $request->input('result_status', 'ALL');
+        $dateRange = $request->input('date_range', 'all');
+        $search = trim($request->input('search', ''));
+        $sortBy = $request->input('sort_by', 'code_asc'); // code_asc, unchecked_first, checked_first, latest
+
+        $query = SafetyFacility::with([
+            'location',
+            'consumableCycle',
+            'conditionSchedule',
+            'latestInspection.inspector:id,name',
+        ])->where('status_aktif', true);
+
+        // 1. Filter Category (apar, hydrant, emergency_door, p3k, safety_mirror, assembly_point, all)
+        if ($category && $category !== 'all' && $category !== 'ALL') {
+            $query->where('category', strtolower($category));
+        }
+
+        // 2. Filter Area Zone (UMUM, FACTORY 1, FACTORY 2 & WORKSHOP, WARE HOUSE)
+        if ($areaZone && $areaZone !== 'ALL' && $areaZone !== 'all') {
+            $query->where('area_zone', strtoupper($areaZone));
+        }
+
+        // 3. Search Keyword
+        if ($search !== '') {
+            $query->where(function ($q) use ($search) {
+                $q->where('code', 'like', "%{$search}%")
+                  ->orWhere('nama_item', 'like', "%{$search}%")
+                  ->orWhere('name', 'like', "%{$search}%")
+                  ->orWhere('qr_code_id', 'like', "%{$search}%")
+                  ->orWhereHas('location', function ($lq) use ($search) {
+                      $lq->where('name', 'like', "%{$search}%");
+                  })
+                  ->orWhereHas('latestInspection', function ($iq) use ($search) {
+                      $iq->where('inspector_name', 'like', "%{$search}%")
+                         ->orWhere('pic_name', 'like', "%{$search}%")
+                         ->orWhere('notes', 'like', "%{$search}%")
+                         ->orWhere('verification_notes', 'like', "%{$search}%");
+                  });
+            });
+        }
+
+        // 4. Filter Date Range on inspection
+        if ($dateRange !== 'all') {
+            $query->whereHas('latestInspection', function ($iq) use ($dateRange) {
+                if ($dateRange === 'today') {
+                    $iq->whereDate('created_at', Carbon::today());
+                } elseif ($dateRange === 'last_7_days') {
+                    $iq->whereDate('created_at', '>=', Carbon::today()->subDays(7));
+                } elseif ($dateRange === 'this_month') {
+                    $iq->whereMonth('created_at', Carbon::now()->month)
+                       ->whereYear('created_at', Carbon::now()->year);
+                }
+            });
+        }
+
+        // 5. Filter Check Status (UNCHECKED vs CHECKED)
+        if ($checkStatus === 'UNCHECKED') {
+            $query->doesntHave('latestInspection');
+        } elseif ($checkStatus === 'CHECKED') {
+            $query->has('latestInspection');
+        } elseif ($checkStatus === 'PENDING') {
+            $query->whereHas('latestInspection', function ($q) {
+                $q->where(function ($sq) {
+                    $sq->whereNull('verification_status')
+                       ->orWhere('verification_status', '!=', 'VERIFIED')
+                       ->orWhere('inspection_stage', 'PETUGAS')
+                       ->orWhere('inspection_stage', 'PETUGAS_SUBMITTED');
+                })->where('inspection_stage', '!=', 'PIC_VERIFIED');
+            });
+        } elseif ($checkStatus === 'VERIFIED') {
+            $query->whereHas('latestInspection', function ($q) {
+                $q->where('verification_status', 'VERIFIED')
+                  ->orWhere('inspection_stage', 'PIC_VERIFIED');
+            });
+        }
+
+        // 6. Filter verification_status (if passed specifically)
+        if ($verificationStatus && $verificationStatus !== 'ALL') {
+            $vst = strtoupper($verificationStatus);
+            if (in_array($vst, ['VERIFIED', 'TERVERIFIKASI'])) {
+                $query->whereHas('latestInspection', function ($q) {
+                    $q->where('verification_status', 'VERIFIED')
+                      ->orWhere('inspection_stage', 'PIC_VERIFIED');
+                });
+            } elseif (in_array($vst, ['PENDING', 'WAITING', 'MENUNGGU', 'MENUNGGU_VERIFIKASI'])) {
+                $query->whereHas('latestInspection', function ($q) {
+                    $q->where(function ($sq) {
+                        $sq->whereNull('verification_status')
+                           ->orWhere('verification_status', '!=', 'VERIFIED')
+                           ->orWhere('inspection_stage', 'PETUGAS')
+                           ->orWhere('inspection_stage', 'PETUGAS_SUBMITTED');
+                    })->where('inspection_stage', '!=', 'PIC_VERIFIED');
+                });
+            } elseif ($vst === 'REFILL_REQUESTED' || $vst === 'REVISE') {
+                $query->whereHas('latestInspection', fn($q) => $q->where('verification_status', $vst));
+            }
+        }
+
+        // 7. Filter result_status (Pass vs Fail)
+        if ($resultStatus && $resultStatus !== 'ALL') {
+            $query->whereHas('latestInspection', fn($q) => $q->where('result_status', $resultStatus));
+        }
+
+        // Calculate KPI summary on base query (category + zone)
+        $baseQuery = SafetyFacility::where('status_aktif', true);
+        if ($category && $category !== 'all' && $category !== 'ALL') {
+            $baseQuery->where('category', strtolower($category));
+        }
+        if ($areaZone && $areaZone !== 'ALL' && $areaZone !== 'all') {
+            $baseQuery->where('area_zone', strtoupper($areaZone));
+        }
+
+        $totalFacilities = (clone $baseQuery)->count();
+        $checkedFacilities = (clone $baseQuery)->has('latestInspection')->count();
+        $uncheckedFacilities = max(0, $totalFacilities - $checkedFacilities);
+
+        $verifiedCount = (clone $baseQuery)->whereHas('latestInspection', function ($q) {
+            $q->where('verification_status', 'VERIFIED')
+              ->orWhere('inspection_stage', 'PIC_VERIFIED');
+        })->count();
+
+        $pendingCount = (clone $baseQuery)->whereHas('latestInspection', function ($q) {
+            $q->where(function ($sq) {
+                $sq->whereNull('verification_status')
+                   ->orWhere('verification_status', '!=', 'VERIFIED')
+                   ->orWhere('inspection_stage', 'PETUGAS')
+                   ->orWhere('inspection_stage', 'PETUGAS_SUBMITTED');
+            })->where('inspection_stage', '!=', 'PIC_VERIFIED');
+        })->count();
+
+        $findingsCount = (clone $baseQuery)->whereHas('latestInspection', fn($q) => $q->where('result_status', 'Fail'))->count();
+        $passedCount = (clone $baseQuery)->whereHas('latestInspection', fn($q) => $q->where('result_status', 'Pass'))->count();
+
+        // Zone counts for active category
+        $zoneBase = SafetyFacility::where('status_aktif', true);
+        if ($category && $category !== 'all' && $category !== 'ALL') {
+            $zoneBase->where('category', strtolower($category));
+        }
+
+        $zoneCounts = [
+            'ALL' => (clone $zoneBase)->count(),
+            'UMUM' => (clone $zoneBase)->where('area_zone', 'UMUM')->count(),
+            'FACTORY 1' => (clone $zoneBase)->where('area_zone', 'FACTORY 1')->count(),
+            'FACTORY 2 & WORKSHOP' => (clone $zoneBase)->where('area_zone', 'FACTORY 2 & WORKSHOP')->count(),
+            'WARE HOUSE' => (clone $zoneBase)->where('area_zone', 'WARE HOUSE')->count(),
+        ];
+
+        // Category counts (Fleet wide)
+        $categoryCounts = [
+            'all' => SafetyFacility::where('status_aktif', true)->count(),
+            'apar' => SafetyFacility::where('status_aktif', true)->where('category', 'apar')->count(),
+            'hydrant' => SafetyFacility::where('status_aktif', true)->where('category', 'hydrant')->count(),
+            'emergency_door' => SafetyFacility::where('status_aktif', true)->where('category', 'emergency_door')->count(),
+            'p3k' => SafetyFacility::where('status_aktif', true)->where('category', 'p3k')->count(),
+            'safety_mirror' => SafetyFacility::where('status_aktif', true)->where('category', 'safety_mirror')->count(),
+            'assembly_point' => SafetyFacility::where('status_aktif', true)->where('category', 'assembly_point')->count(),
+        ];
+
+        // Apply Sorting (default: code_asc A-01, A-02, A-03...)
+        if ($sortBy === 'unchecked_first') {
+            $query->leftJoin('facility_inspections as fi_sort', 'fi_sort.facility_id', '=', 'safety_facilities.id')
+                  ->orderByRaw('CASE WHEN fi_sort.id IS NULL THEN 0 ELSE 1 END')
+                  ->orderBy('safety_facilities.code', 'asc')
+                  ->select('safety_facilities.*')
+                  ->distinct();
+        } elseif ($sortBy === 'checked_first') {
+            $query->leftJoin('facility_inspections as fi_sort', 'fi_sort.facility_id', '=', 'safety_facilities.id')
+                  ->orderByRaw('CASE WHEN fi_sort.id IS NOT NULL THEN 0 ELSE 1 END')
+                  ->orderBy('safety_facilities.code', 'asc')
+                  ->select('safety_facilities.*')
+                  ->distinct();
+        } elseif ($sortBy === 'latest') {
+            $query->leftJoin('facility_inspections as fi_sort', 'fi_sort.facility_id', '=', 'safety_facilities.id')
+                  ->orderByRaw('CASE WHEN fi_sort.id IS NOT NULL THEN 0 ELSE 1 END')
+                  ->orderByDesc('fi_sort.created_at')
+                  ->orderBy('safety_facilities.code', 'asc')
+                  ->select('safety_facilities.*')
+                  ->distinct();
+        } else {
+            // Default: strict alphabetical / natural code sorting
+            $query->orderBy('code', 'asc');
+        }
+
+        // Pagination
+        $perPage = (int) $request->input('per_page', 50);
+        $page = max(1, (int) $request->input('page', 1));
+
+        $totalFiltered = (clone $query)->count();
+        if ($perPage > 0) {
+            $facilities = $query->skip(($page - 1) * $perPage)->take($perPage)->get();
+        } else {
+            $facilities = $query->get();
+        }
+
+        // Transform into uniform inspection view items
+        $items = $facilities->map(function ($fac) {
+            $latest = $fac->latestInspection;
+            $hasInspection = !is_null($latest);
+
+            // Determine unified check status
+            $checkStatus = 'UNCHECKED';
+            $checkStatusLabel = 'Belum Dicek';
+            if ($hasInspection) {
+                if ($latest->verification_status === 'VERIFIED' || $latest->inspection_stage === 'PIC_VERIFIED') {
+                    $checkStatus = 'VERIFIED';
+                    $checkStatusLabel = 'Terverifikasi PIC';
+                } elseif ($latest->verification_status === 'REVISE') {
+                    $checkStatus = 'REVISE';
+                    $checkStatusLabel = 'Perlu Revisi';
+                } elseif ($latest->verification_status === 'REFILL_REQUESTED') {
+                    $checkStatus = 'REFILL_REQUESTED';
+                    $checkStatusLabel = 'Perlu Refill';
+                } else {
+                    $checkStatus = 'PENDING';
+                    $checkStatusLabel = 'Menunggu Verifikasi PIC';
+                }
+            }
+
+            return [
+                'facility_id' => $fac->id,
+                'facility_code' => $fac->code,
+                'facility_name' => $fac->nama_item,
+                'category' => $fac->category,
+                'area_zone' => $fac->area_zone,
+                'location_name' => $fac->location?->name ?? 'Pabrik Widatra',
+                'calculated_status' => $fac->calculated_status,
+                'has_inspection' => $hasInspection,
+                'check_status' => $checkStatus,
+                'check_status_label' => $checkStatusLabel,
+                // Latest inspection details (if inspected)
+                'inspection_id' => $latest?->id,
+                'inspection_date' => $latest?->inspection_date ?? $latest?->created_at,
+                'inspector_name' => $latest?->inspector_name ?? ($latest?->inspector?->name ?? null),
+                'pic_name' => $latest?->pic_name ?? null,
+                'tipe_checklist' => $latest?->tipe_checklist,
+                'checklist_results' => $latest?->checklist_results ?? [],
+                'result_status' => $latest?->result_status,
+                'inspection_stage' => $latest?->inspection_stage,
+                'verification_status' => $latest?->verification_status,
+                'verification_notes' => $latest?->verification_notes,
+                'verified_at' => $latest?->verified_at,
+                'notes' => $latest?->notes,
+                'foto_bukti' => $latest?->foto_bukti ?? [],
+                'facility' => $fac,
+            ];
+        });
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'items' => $items,
+                'inspections' => $items, // backward-compatible alias
+                'pagination' => [
+                    'total' => $totalFiltered,
+                    'per_page' => $perPage,
+                    'current_page' => $page,
+                    'last_page' => $perPage > 0 ? (int) ceil($totalFiltered / $perPage) : 1,
+                ],
+                'summary' => [
+                    'total' => $totalFacilities,
+                    'total_facilities' => $totalFacilities,
+                    'checked' => $checkedFacilities,
+                    'unchecked' => $uncheckedFacilities,
+                    'verified' => $verifiedCount,
+                    'pending_verification' => $pendingCount,
+                    'findings' => $findingsCount,
+                    'passed' => $passedCount,
+                ],
+                'category_counts' => $categoryCounts,
+                'zone_counts' => $zoneCounts,
             ],
         ]);
     }
@@ -520,6 +831,238 @@ class MonitoringController extends Controller
                 'safeDays' => 28,
                 'chartData' => $chartData,
             ],
+        ]);
+    }
+
+    /**
+     * Get APAR detail by scan code (code or QR code ID).
+     */
+    public function getAparByScanCode($code)
+    {
+        $cleanCode = strtoupper(trim($code));
+        $facility = SafetyFacility::with([
+            'location',
+            'consumableCycle',
+            'inspections' => function ($q) {
+                $q->latest()->limit(5)->with('inspector:id,name');
+            },
+            'refillHistories' => function ($q) {
+                $q->latest()->limit(5);
+            }
+        ])->where('code', $cleanCode)
+          ->orWhere('qr_code_id', $cleanCode)
+          ->orWhere('qr_code_id', 'QR-APAR-' . $cleanCode)
+          ->first();
+
+        if (!$facility) {
+            return response()->json([
+                'success' => false,
+                'message' => "Tabung APAR dengan kode '$code' tidak ditemukan dalam sistem.",
+            ], 404);
+        }
+
+        $latestInspection = $facility->inspections->first();
+        $specs = $facility->specifications ?? [];
+
+        $totalApar = SafetyFacility::where('category', 'apar')->count();
+        $monitoredCount = SafetyFacility::where('category', 'apar')
+            ->where(function ($q) {
+                $q->whereMonth('last_inspected_at', now()->month)
+                  ->whereYear('last_inspected_at', now()->year);
+            })->count();
+        $unmonitoredCount = max(0, $totalApar - $monitoredCount);
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'facility' => $facility,
+                'latest_inspection' => $latestInspection,
+                'latest_inspector_name' => $latestInspection?->inspector_name ?? ($specs['last_inspector_name'] ?? null),
+                'latest_pic_name' => $latestInspection?->pic_name ?? ($specs['last_pic_name'] ?? null),
+                'inspection_stage' => $latestInspection?->inspection_stage ?? ($specs['inspection_stage'] ?? 'INITIAL'),
+                'inspection_status_label' => $specs['inspection_status_label'] ?? null,
+                'is_refill_queue' => $specs['is_refill_queue'] ?? ($facility->calculated_status === 'KADALUARSA'),
+                'stats' => [
+                    'total_apar' => $totalApar,
+                    'monitored_count' => $monitoredCount,
+                    'unmonitored_count' => $unmonitoredCount,
+                ],
+            ],
+        ]);
+    }
+
+    /**
+     * FORM 1: Submit Petugas Tim HSE Inspection.
+     */
+    public function submitPetugasInspection(Request $request, $code)
+    {
+        $cleanCode = strtoupper(trim($code));
+        $facility = SafetyFacility::where('code', $cleanCode)
+            ->orWhere('qr_code_id', $cleanCode)
+            ->orWhere('qr_code_id', 'QR-APAR-' . $cleanCode)
+            ->firstOrFail();
+
+        $validated = $request->validate([
+            'inspector_name' => 'required|string|max:150', // Native text input
+            'notes' => 'required|string|min:3',           // Mandatory catatan
+            'tbg' => 'required|boolean',                  // Tabung
+            'slg' => 'required|boolean',                  // Selang
+            'nozz' => 'required|boolean',                 // Nozzle
+            'sgl' => 'required|boolean',                  // Segel & pin
+            'lev' => 'required|boolean',                  // Lever & tekanan
+            'foto_bukti' => 'nullable|string',            // Real-time camera photo
+        ]);
+
+        $allPassed = $validated['tbg'] && $validated['slg'] && $validated['nozz'] && $validated['sgl'] && $validated['lev'];
+        $resultStatus = $allPassed ? 'Pass' : 'Fail';
+
+        // Checklists breakdown matching official 5 parameters
+        $checklistResults = [
+            ['id' => 'tbg', 'code' => 'Tbg', 'label' => 'Kondisi Tabung', 'passed' => $validated['tbg'], 'jawaban' => $validated['tbg'] ? 'Baik' : 'Karat / Rusak'],
+            ['id' => 'slg', 'code' => 'Slg', 'label' => 'Selang (Hose)', 'passed' => $validated['slg'], 'jawaban' => $validated['slg'] ? 'Baik / Fleksibel' : 'Retak / Tersumbat'],
+            ['id' => 'nozz', 'code' => 'Nozz', 'label' => 'Nozzle (Corong)', 'passed' => $validated['nozz'], 'jawaban' => $validated['nozz'] ? 'Bersih / Utuh' : 'Pecah / Buntu'],
+            ['id' => 'sgl', 'code' => 'Sgl', 'label' => 'Segel & Pin', 'passed' => $validated['sgl'], 'jawaban' => $validated['sgl'] ? 'Utuh Terkunci' : 'Putus / Hilang'],
+            ['id' => 'lev', 'code' => 'Lev', 'label' => 'Lever & Tekanan', 'passed' => $validated['lev'], 'jawaban' => $validated['lev'] ? 'Normal (Zona Hijau)' : 'Kurang / Macet'],
+        ];
+
+        $photos = !empty($validated['foto_bukti']) ? [$validated['foto_bukti']] : [];
+
+        $inspection = FacilityInspection::create([
+            'facility_id' => $facility->id,
+            'inspector_id' => auth()->id(),
+            'inspector_name' => $validated['inspector_name'],
+            'inspection_date' => now()->toDateString(),
+            'tipe_checklist' => 'CONSUMABLE_CHECK',
+            'checklist_results' => $checklistResults,
+            'result_status' => $resultStatus,
+            'inspection_stage' => 'PETUGAS',
+            'notes' => $validated['notes'],
+            'foto_bukti' => $photos,
+        ]);
+
+        // Update facility specifications with tracking metadata
+        $specs = $facility->specifications ?? [];
+        $specs['last_inspector_name'] = $validated['inspector_name'];
+        $specs['inspection_stage'] = 'PETUGAS_SUBMITTED';
+        $specs['inspection_status_label'] = "Diinspeksi oleh {$validated['inspector_name']} — Menunggu Verifikasi PIC";
+        $specs['last_inspection_id'] = $inspection->id;
+
+        $facility->specifications = $specs;
+        $facility->last_inspected_at = now()->toDateString();
+        $facility->status = $allPassed ? 'Good' : 'Needs Attention';
+        $facility->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => "Inspeksi oleh Petugas {$validated['inspector_name']} berhasil disimpan. Menunggu verifikasi PIC.",
+            'data' => [
+                'facility' => $facility,
+                'inspection' => $inspection,
+            ]
+        ]);
+    }
+
+    /**
+     * FORM 2: Submit PIC HSE Verification.
+     */
+    public function submitPicVerification(Request $request, $code)
+    {
+        $cleanCode = strtoupper(trim($code));
+        $facility = SafetyFacility::where('code', $cleanCode)
+            ->orWhere('qr_code_id', $cleanCode)
+            ->orWhere('qr_code_id', 'QR-APAR-' . $cleanCode)
+            ->firstOrFail();
+
+        $validated = $request->validate([
+            'pic_name' => 'required|string|max:150', // Native text input
+            'verification_status' => 'required|in:VERIFIED,REVISE,REFILL_REQUESTED',
+            'verification_notes' => 'nullable|string',
+        ]);
+
+        $latestInspection = FacilityInspection::where('facility_id', $facility->id)
+            ->latest()
+            ->first();
+
+        $inspectorName = $latestInspection?->inspector_name
+            ?? ($facility->specifications['last_inspector_name'] ?? 'Petugas Lapangan');
+
+        if ($latestInspection) {
+            $latestInspection->update([
+                'pic_name' => $validated['pic_name'],
+                'inspection_stage' => 'PIC_VERIFIED',
+                'verified_at' => now(),
+                'verification_status' => $validated['verification_status'],
+                'verification_notes' => $validated['verification_notes'],
+            ]);
+        }
+
+        // Update facility specifications
+        $specs = $facility->specifications ?? [];
+        $specs['last_pic_name'] = $validated['pic_name'];
+        $specs['inspection_stage'] = 'PIC_VERIFIED';
+        $specs['inspection_status_label'] = "Terverifikasi Penuh oleh PIC {$validated['pic_name']} (Pemeriksa: {$inspectorName})";
+
+        if ($validated['verification_status'] === 'REFILL_REQUESTED') {
+            $specs['is_refill_queue'] = true;
+        }
+
+        $facility->specifications = $specs;
+        $facility->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => "Verifikasi oleh PIC {$validated['pic_name']} atas pemeriksaan {$inspectorName} berhasil disimpan.",
+            'data' => [
+                'facility' => $facility,
+                'status_label' => $specs['inspection_status_label'],
+            ]
+        ]);
+    }
+
+    /**
+     * Get Refill Tracker summary (27 units or any active refill queues).
+     */
+    public function getRefillSummary(Request $request)
+    {
+        $facilities = SafetyFacility::with(['location', 'consumableCycle', 'refillHistories'])
+            ->where('category', 'apar')
+            ->where('status_aktif', true)
+            ->get();
+
+        $refillList = $facilities->filter(function ($item) {
+            $specs = $item->specifications ?? [];
+            return !empty($specs['is_refill_queue']) || $item->calculated_status === 'KADALUARSA';
+        })->sort(function ($a, $b) {
+            $aKadaluarsa = $a->calculated_status === 'KADALUARSA' ? 1 : 0;
+            $bKadaluarsa = $b->calculated_status === 'KADALUARSA' ? 1 : 0;
+            if ($aKadaluarsa !== $bKadaluarsa) {
+                return $bKadaluarsa <=> $aKadaluarsa;
+            }
+            $aDate = $a->consumableCycle?->expired_at ? strtotime($a->consumableCycle->expired_at) : 0;
+            $bDate = $b->consumableCycle?->expired_at ? strtotime($b->consumableCycle->expired_at) : 0;
+            if ($aDate !== $bDate) {
+                return $aDate <=> $bDate;
+            }
+            return $b->id <=> $a->id;
+        })->values();
+
+        // Breakdown by media type and capacity
+        $breakdown = [];
+        foreach ($refillList as $item) {
+            $specs = $item->specifications ?? [];
+            $media = $specs['type'] ?? 'Dry Chemical Powder';
+            $cap = $specs['capacity'] ?? '3 Kg';
+            $key = $media . ' - ' . $cap;
+            $breakdown[$key] = ($breakdown[$key] ?? 0) + 1;
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'total_refill_needed' => $refillList->count(),
+                'breakdown' => $breakdown,
+                'list' => $refillList,
+            ]
         ]);
     }
 }

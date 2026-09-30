@@ -64,9 +64,21 @@ export default function CreateRequestPage() {
         } catch {}
       }
 
+      const prevPhase = typeof extendState.extensionPhase === 'number' 
+        ? extendState.extensionPhase 
+        : (typeof extendState.extension_phase === 'number' ? extendState.extension_phase : 0);
+      const nextPhase = prevPhase + 1;
+      const rootId = extendState.rootPermitId || extendState.root_permit_id || extendState.rawId || (typeof extendState.originalId === "number" ? extendState.originalId : null);
+      const rootNum = extendState.rootPermitNumber || extendState.rootPermit?.permitNumber || extendState.rootPermit?.permit_number || extendState.parentPermitNumber || extendState.permitNumber || extendState.id || "";
+      const rootStart = extendState.rootStartDate || extendState.rootPermit?.startDate || extendState.rootPermit?.start_date || extendState.cumulativeStartDate || extendState.parentStartDate || extendState.mulaiKerja || "";
+
       return {
         // Step 1
         requestType: "Perpanjangan",
+        extensionPhase: nextPhase,
+        rootPermitId: rootId,
+        rootPermitNumber: rootNum,
+        rootStartDate: rootStart,
         parentPermitId: extendState.rawId || (typeof extendState.originalId === "number" ? extendState.originalId : null),
         parentPermitNumber: extendState.permitNumber || extendState.id || "",
         parentStartDate: extendState.cumulativeStartDate || extendState.mulaiKerja || "",
@@ -104,6 +116,10 @@ export default function CreateRequestPage() {
     return {
       // Step 1
       requestType: "Baru",
+      extensionPhase: 0,
+      rootPermitId: null,
+      rootPermitNumber: "",
+      rootStartDate: "",
       parentPermitId: null,
       parentPermitNumber: "",
       parentStartDate: "",
@@ -400,11 +416,13 @@ export default function CreateRequestPage() {
           {/* Page Titles directly on background */}
           <div className="mb-6">
             <h2 className="text-2xl font-bold text-gray-900">
-              {extendState?.extendMode ? "Perpanjangan Ijin Kerja (Permit Extension)" : "Create Work Permit Request"}
+              {extendState?.extendMode 
+                ? `Perpanjangan Ijin Kerja Ke-${formData.extensionPhase || 1} (Fase ${formData.extensionPhase || 1})` 
+                : "Create Work Permit Request"}
             </h2>
             <p className="text-sm text-gray-500 mt-1">
               {extendState?.extendMode 
-                ? `Pengajuan perpanjangan masa berlaku untuk Surat Ijin Kerja ${extendState.permitNumber || extendState.id || ""}.`
+                ? `Pengajuan perpanjangan masa berlaku untuk Surat Ijin Kerja ${extendState.permitNumber || extendState.id || ""} (SIKA Induk: ${formData.rootPermitNumber || extendState.permitNumber}).`
                 : "Formulir digital Ijin Kerja, Safety Induction & JSA untuk vendor eksternal."}
             </p>
           </div>
@@ -416,9 +434,11 @@ export default function CreateRequestPage() {
                   <CalendarPlus size={20} />
                 </div>
                 <div>
-                  <p className="font-bold text-amber-900">Mode Perpanjangan Ijin Aktif</p>
+                  <p className="font-bold text-amber-900">
+                    Mode Perpanjangan Ijin Aktif &mdash; Fase {formData.extensionPhase || 1} (Perpanjangan Ke-{formData.extensionPhase || 1})
+                  </p>
                   <p className="text-xs text-amber-700 mt-0.5">
-                    Data perusahaan, personel, APD, dan dokumen JSA dari ijin <strong className="underline">{extendState.permitNumber || extendState.id}</strong> telah dimuat secara otomatis. Silakan periksa dan tentukan periode perpanjangan baru.
+                    Data perusahaan, personel, APD, dan dokumen JSA dari ijin <strong className="underline">{extendState.permitNumber || extendState.id}</strong> telah dimuat secara otomatis. Silakan periksa dan tentukan periode lanjutan kerja (maks. 6 hari).
                   </p>
                 </div>
               </div>

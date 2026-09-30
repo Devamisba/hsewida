@@ -1,5 +1,6 @@
 import { BrowserRouter as Router, Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import { Sidebar } from '@/components/Sidebar';
+import { SidebarProvider } from '@/context/SidebarContext';
 import { auth } from '@/lib/auth';
 import LoginPage from '@/pages/Login';
 import DashboardPage from '@/pages/Dashboard';
@@ -13,6 +14,7 @@ import MonitoringHSEPage from '@/pages/MonitoringHSE';
 import ProfilePage from '@/pages/Profile';
 import MasterDataPage from '@/pages/MasterData';
 import PublicQrVerifyPage from '@/pages/PublicQrVerify';
+import AparScanPage from '@/pages/AparScanPage';
 
 function ProtectedRoute() {
   if (!auth.isAuthenticated()) {
@@ -20,18 +22,20 @@ function ProtectedRoute() {
   }
 
   return (
-    <div className="h-screen flex bg-background text-gray-900 overflow-hidden font-sans antialiased">
-      <Sidebar />
-      <div className="flex-1 flex flex-col h-screen overflow-hidden">
-        <Outlet />
+    <SidebarProvider>
+      <div className="h-screen flex bg-background text-gray-900 overflow-hidden font-sans antialiased relative">
+        <Sidebar />
+        <div className="flex-1 flex flex-col h-screen overflow-hidden min-w-0 transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]">
+          <Outlet />
+        </div>
       </div>
-    </div>
+    </SidebarProvider>
   );
 }
 
 function RootDashboard() {
   const role = auth.getRole();
-  if (role === 'hse') return <DashboardHSEPage />;
+  if (role === 'hse' || role === 'pic_k3') return <DashboardHSEPage />;
   if (role === 'ga_dept_head' || role === 'ga_div_head') return <DashboardGAPage />;
   return <DashboardPage />;
 }
@@ -42,6 +46,7 @@ export default function App() {
       <Routes>
         <Route path="/login" element={<LoginPage />} />
         <Route path="/verify-permit/:token" element={<PublicQrVerifyPage />} />
+        <Route path="/scan/apar/:code" element={<AparScanPage />} />
         
         <Route path="/" element={<ProtectedRoute />}>
           <Route index element={<Navigate to="/dashboard" replace />} />

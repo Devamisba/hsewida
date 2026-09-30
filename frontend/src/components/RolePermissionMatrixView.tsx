@@ -79,7 +79,7 @@ const MATRIX_MODULES: MatrixModuleDef[] = [
   {
     id: "workflow",
     name: "Review & Otorisasi Berjenjang",
-    description: "Alur verifikasi bertahap PIC Vendor, HSE, GA Dept, dan GA Div Head",
+    description: "Alur verifikasi bertahap PIC Vendor, HSE, Head Dept HRD&GA, dan Head Division HRD&GA",
     icon: GitFork,
     actions: {
       view: ["permits.view_all"],
@@ -332,6 +332,7 @@ export function RolePermissionMatrixView({
       case "pemohon": return Briefcase;
       case "pic_vendor": return UserCheck;
       case "hse": return ShieldCheck;
+      case "pic_k3": return Activity;
       case "ga_dept_head": return Building;
       case "ga_div_head": return CheckCircle2;
       case "admin": return KeyRound;

@@ -1,4 +1,5 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import { Header } from "@/components/Header";
 import { 
   Flame, 
@@ -18,8 +19,9 @@ import {
   Clock,
   ShieldCheck,
   Tag,
-  ClipboardCheck,
-  X
+  X,
+  Layers,
+  ClipboardCheck
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer } from "recharts";
@@ -28,11 +30,15 @@ import { AddInspectionModal } from "@/components/AddInspectionModal";
 import { FacilityQrStickerModal } from "@/components/FacilityQrStickerModal";
 import { RecordRefillModal } from "@/components/RecordRefillModal";
 import { QrScanFieldModal } from "@/components/QrScanFieldModal";
+import { RefillQueueModal } from "@/components/RefillQueueModal";
+import { FacilityDetailActionModal } from "@/components/FacilityDetailActionModal";
+import { InspectionDataTable } from "@/components/InspectionDataTable";
 import { api, SafetyFacility, AlertsSummary } from "@/services/api";
 
 const TABS = [
   { id: "all", label: "Semua Unit", icon: ShieldCheck },
   { id: "apar", label: "APAR", icon: Flame },
+  { id: "inspeksi", label: "Inspeksi", icon: ClipboardCheck },
   { id: "hydrant", label: "Hydrant", icon: Droplet },
   { id: "emergency", label: "Pintu Emergency", icon: DoorOpen },
   { id: "p3k", label: "P3K", icon: Cross },
@@ -52,8 +58,10 @@ const TAB_TO_CATEGORY: Record<string, string | undefined> = {
 };
 
 export default function MonitoringHSEPage() {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("apar");
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
+  const [zoneFilter, setZoneFilter] = useState<string>("ALL");
   
   // Modals state
   const [modalOpen, setModalOpen] = useState(false);
@@ -61,6 +69,8 @@ export default function MonitoringHSEPage() {
   const [stickerModalOpen, setStickerModalOpen] = useState(false);
   const [refillModalOpen, setRefillModalOpen] = useState(false);
   const [scannerModalOpen, setScannerModalOpen] = useState(false);
+  const [refillQueueOpen, setRefillQueueOpen] = useState(false);
+  const [detailModalOpen, setDetailModalOpen] = useState(false);
 
   // Selected items
   const [selectedItem, setSelectedItem] = useState<any>(null);
@@ -69,6 +79,7 @@ export default function MonitoringHSEPage() {
   // Data state
   const [facilities, setFacilities] = useState<SafetyFacility[]>([]);
   const [alertsSummary, setAlertsSummary] = useState<AlertsSummary | null>(null);
+  const [refillCount, setRefillCount] = useState<number>(27);
   const [spiData, setSpiData] = useState<any>(null);
   const [loading, setLoading] = useState<boolean>(true);
 
@@ -99,11 +110,21 @@ export default function MonitoringHSEPage() {
         })
         .catch(err => console.error("Failed to load alerts summary:", err));
 
+      api.getRefillSummary()
+        .then(res => {
+          if (res.success && res.data) {
+            setRefillCount(res.data.total_refill_needed || 27);
+          }
+        })
+        .catch(err => console.error("Failed to load refill summary:", err));
+
       if (activeTab === "spi") {
         const res = await api.getSpiMetrics();
         if (res.success) {
           setSpiData(res.data);
         }
+      } else if (activeTab === "inspeksi") {
+        // Handled internally by InspectionDataTable
       } else {
         const category = TAB_TO_CATEGORY[activeTab];
         const res = await api.getFacilities(category);
@@ -141,9 +162,18 @@ export default function MonitoringHSEPage() {
     setRefillModalOpen(true);
   };
 
+  const handleOpenDetail = (facility: SafetyFacility) => {
+    setSelectedItem(facility);
+    setDetailModalOpen(true);
+  };
+
   const handleScanSuccess = (facility: SafetyFacility) => {
     setScannerModalOpen(false);
-    handleInspect(facility, getCategoryTitle(facility.category));
+    if (!facility.category || facility.category === "apar") {
+      navigate(`/scan/apar/${facility.code}`);
+    } else {
+      handleInspect(facility, getCategoryTitle(facility.category));
+    }
   };
 
   const handleToggleStatusFilter = (status: string, targetType: "CONSUMABLE" | "KONDISI") => {
@@ -190,7 +220,31 @@ export default function MonitoringHSEPage() {
               </p>
             </div>
             
-            <div className="flex items-center gap-2 shrink-0 self-end sm:self-auto">
+            <div className="flex items-center gap-2 shrink-0 self-end sm:self-auto flex-wrap">
+              {activeTab === "apar" && (
+                <>
+                  <button
+                    onClick={() => setRefillQueueOpen(true)}
+                    className="inline-flex items-center gap-1.5 bg-amber-600 hover:bg-amber-700 text-white px-3 py-2 rounded-lg transition-all text-xs font-bold shadow-xs cursor-pointer active:scale-95"
+                    title="Lihat 27 Unit Antrean Refill APAR"
+                  >
+                    <RefreshCw size={14} />
+                    <span>Antrean Refill ({refillCount})</span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      setSelectedItem(facilities[0] || null);
+                      setStickerModalOpen(true);
+                    }}
+                    className="inline-flex items-center gap-1.5 bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 rounded-lg transition-all text-xs font-bold shadow-xs cursor-pointer active:scale-95"
+                    title="Cetak Stiker Label QR per Zona"
+                  >
+                    <Layers size={14} />
+                    <span>Cetak Label Zona</span>
+                  </button>
+                </>
+              )}
+
               <button
                 onClick={() => setScannerModalOpen(true)}
                 className="inline-flex items-center gap-1.5 bg-slate-900 hover:bg-slate-800 text-white px-3 py-2 rounded-lg transition-all text-xs font-bold shadow-xs cursor-pointer active:scale-95"
@@ -210,7 +264,7 @@ export default function MonitoringHSEPage() {
                 <span>Refresh</span>
               </button>
 
-              {activeTab !== "spi" && (
+              {activeTab !== "spi" && activeTab !== "inspeksi" && (
                 <button 
                   onClick={() => setAddModalOpen(true)}
                   className="inline-flex items-center gap-1.5 bg-primary hover:opacity-90 text-on-primary px-3 py-2 rounded-lg transition-all text-xs font-bold shadow-xs whitespace-nowrap active:scale-[0.98] cursor-pointer"
@@ -223,7 +277,7 @@ export default function MonitoringHSEPage() {
           </div>
 
           {/* §6. Dashboard & Rekap Status: 2 Dual Interactive Summary Cards (Clean, Clickable) */}
-          {alertsSummary && (
+          {activeTab !== "inspeksi" && alertsSummary && (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               {/* Card 1: Consumable (APAR / P3K) */}
               <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm flex flex-col justify-between">
@@ -401,7 +455,7 @@ export default function MonitoringHSEPage() {
           )}
 
           {/* Active Alerts Banner if needed */}
-          {alertsSummary?.alerts && alertsSummary.alerts.length > 0 && (
+          {activeTab !== "inspeksi" && alertsSummary?.alerts && alertsSummary.alerts.length > 0 && (
             <div className="bg-amber-50/90 border border-amber-200 rounded-xl p-3.5 flex items-center justify-between text-amber-900">
               <div className="flex items-center gap-2.5">
                 <AlertTriangle size={18} className="text-amber-600 shrink-0" />
@@ -430,6 +484,8 @@ export default function MonitoringHSEPage() {
                   activeClass = "bg-amber-50 text-amber-600 border-amber-200 shadow-sm font-bold";
                 } else if (tab.id === 'all') {
                   activeClass = "bg-blue-50 text-blue-700 border-blue-200 shadow-sm font-bold";
+                } else if (tab.id === 'inspeksi') {
+                  activeClass = "bg-indigo-50 text-indigo-700 border-indigo-200 shadow-sm font-bold";
                 }
               }
               return (
@@ -450,30 +506,49 @@ export default function MonitoringHSEPage() {
           </div>
 
           {/* Tab Contents */}
-          <div id="facilities-table-section" className="flex-1 flex flex-col bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden min-h-[420px]">
-            {loading ? (
-              <div className="flex-1 flex flex-col items-center justify-center py-24 text-gray-400">
-                <Loader2 className="w-8 h-8 animate-spin text-primary mb-3" />
-                <p className="text-sm font-medium">Memuat data fasilitas K3...</p>
-              </div>
-            ) : (
-              <>
-                {activeTab === "spi" ? (
-                  <SPIMonitoring spiData={spiData} />
-                ) : (
-                  <FacilityDataTable 
-                    category={activeTab}
-                    facilities={facilities}
-                    statusFilter={statusFilter}
-                    onStatusFilterChange={setStatusFilter}
-                    onInspect={(f) => handleInspect(f, getCategoryTitle(f.category))}
-                    onShowSticker={handleShowSticker}
-                    onRefill={handleRefill}
-                  />
-                )}
-              </>
-            )}
-          </div>
+          {activeTab === "inspeksi" ? (
+            <div id="inspeksi-section" className="flex-1 flex flex-col min-h-[420px]">
+              <InspectionDataTable 
+                onOpenFacilityDetail={handleOpenDetail} 
+                onShowSticker={handleShowSticker}
+                onInspectFacility={(f) => {
+                  if (!f.category || f.category === "apar") {
+                    navigate(`/scan/apar/${f.code}`);
+                  } else {
+                    handleInspect(f, getCategoryTitle(f.category));
+                  }
+                }}
+              />
+            </div>
+          ) : (
+            <div id="facilities-table-section" className="flex-1 flex flex-col bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden min-h-[420px]">
+              {loading ? (
+                <div className="flex-1 flex flex-col items-center justify-center py-24 text-gray-400">
+                  <Loader2 className="w-8 h-8 animate-spin text-primary mb-3" />
+                  <p className="text-sm font-medium">Memuat data fasilitas K3...</p>
+                </div>
+              ) : (
+                <>
+                  {activeTab === "spi" ? (
+                    <SPIMonitoring spiData={spiData} />
+                  ) : (
+                    <FacilityDataTable 
+                      category={activeTab}
+                      facilities={facilities}
+                      statusFilter={statusFilter}
+                      onStatusFilterChange={setStatusFilter}
+                      zoneFilter={zoneFilter}
+                      onZoneFilterChange={setZoneFilter}
+                      refillCount={refillCount}
+                      onOpenRefillQueue={() => setRefillQueueOpen(true)}
+                      onOpenDetail={handleOpenDetail}
+                      onShowSticker={handleShowSticker}
+                    />
+                  )}
+                </>
+              )}
+            </div>
+          )}
 
         </div>
       </main>
@@ -500,6 +575,7 @@ export default function MonitoringHSEPage() {
         isOpen={stickerModalOpen}
         onClose={() => setStickerModalOpen(false)}
         facility={selectedItem}
+        allFacilities={facilities}
       />
 
       {/* 4. Modal Catat Refill / Ganti Baru (§2.2) */}
@@ -516,6 +592,23 @@ export default function MonitoringHSEPage() {
         onClose={() => setScannerModalOpen(false)}
         onScanSuccess={handleScanSuccess}
       />
+
+      {/* 6. Modal Antrean Refill APAR 27 Unit */}
+      <RefillQueueModal
+        isOpen={refillQueueOpen}
+        onClose={() => setRefillQueueOpen(false)}
+        onSelectFacilityForRefill={handleRefill}
+      />
+
+      {/* 7. Modal Bundel Aksi & Riwayat Monitoring Fasilitas */}
+      <FacilityDetailActionModal
+        isOpen={detailModalOpen}
+        onClose={() => setDetailModalOpen(false)}
+        facility={selectedItem}
+        onInspect={(f) => handleInspect(f, getCategoryTitle(f.category))}
+        onShowSticker={handleShowSticker}
+        onRefill={handleRefill}
+      />
     </div>
   );
 }
@@ -529,9 +622,12 @@ interface FacilityDataTableProps {
   facilities: SafetyFacility[];
   statusFilter: string | null;
   onStatusFilterChange: (s: string | null) => void;
-  onInspect: (f: SafetyFacility) => void;
+  zoneFilter?: string;
+  onZoneFilterChange?: (z: string) => void;
+  refillCount?: number;
+  onOpenRefillQueue?: () => void;
+  onOpenDetail: (f: SafetyFacility) => void;
   onShowSticker: (f: SafetyFacility) => void;
-  onRefill: (f: SafetyFacility) => void;
 }
 
 function FacilityDataTable({
@@ -539,12 +635,29 @@ function FacilityDataTable({
   facilities,
   statusFilter,
   onStatusFilterChange,
-  onInspect,
-  onShowSticker,
-  onRefill
+  zoneFilter = "ALL",
+  onZoneFilterChange,
+  refillCount = 0,
+  onOpenRefillQueue,
+  onOpenDetail,
+  onShowSticker
 }: FacilityDataTableProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [typeFilter, setTypeFilter] = useState<"ALL" | "CONSUMABLE" | "KONDISI">("ALL");
+
+  // Zone Breakdown for APAR
+  const zoneCounts = useMemo(() => {
+    let all = 0, umum = 0, f1 = 0, f2 = 0, wh = 0;
+    facilities.forEach((f) => {
+      all++;
+      const z = (f.area_zone || "").toUpperCase();
+      if (z.includes("UMUM")) umum++;
+      else if (z.includes("FACTORY 1")) f1++;
+      else if (z.includes("FACTORY 2")) f2++;
+      else if (z.includes("WARE HOUSE") || z.includes("WAREHOUSE")) wh++;
+    });
+    return { all, umum, f1, f2, wh };
+  }, [facilities]);
 
   const getStatusLabel = (status: string) => {
     switch (status) {
@@ -563,6 +676,15 @@ function FacilityDataTable({
     // Type filter
     if (typeFilter !== "ALL" && f.tipe_item !== typeFilter) {
       return false;
+    }
+
+    // Zone filter for APAR
+    if (category === "apar" && zoneFilter && zoneFilter !== "ALL") {
+      const z = (f.area_zone || "").toUpperCase();
+      if (zoneFilter === "UMUM" && !z.includes("UMUM")) return false;
+      if (zoneFilter === "FACTORY 1" && !z.includes("FACTORY 1")) return false;
+      if (zoneFilter === "FACTORY 2 & WORKSHOP" && !z.includes("FACTORY 2")) return false;
+      if (zoneFilter === "WARE HOUSE" && !z.includes("WARE HOUSE") && !z.includes("WAREHOUSE")) return false;
     }
 
     // Status filter from summary cards
@@ -698,6 +820,50 @@ function FacilityDataTable({
         </div>
       </div>
 
+      {/* Area Zone Filters for APAR (PT Widatra Bhakti 266 units) */}
+      {category === "apar" && onZoneFilterChange && (
+        <div className="px-4 py-2.5 bg-slate-50 border-b border-gray-200/80 flex items-center justify-between gap-3 overflow-x-auto">
+          <div className="flex items-center gap-1.5 flex-nowrap shrink-0">
+            <span className="text-xs font-black text-slate-700 mr-1 flex items-center gap-1">
+              <MapPin size={13} className="text-rose-600" />
+              Zona APAR:
+            </span>
+            {[
+              { id: "ALL", label: `Semua Area (${zoneCounts.all})` },
+              { id: "UMUM", label: `Umum (${zoneCounts.umum})` },
+              { id: "FACTORY 1", label: `Factory 1 (${zoneCounts.f1})` },
+              { id: "FACTORY 2 & WORKSHOP", label: `Factory 2 & Workshop (${zoneCounts.f2})` },
+              { id: "WARE HOUSE", label: `Warehouse (${zoneCounts.wh})` },
+            ].map((z) => (
+              <button
+                key={z.id}
+                type="button"
+                onClick={() => onZoneFilterChange(z.id)}
+                className={cn(
+                  "px-3 py-1.5 rounded-lg text-xs font-bold transition whitespace-nowrap cursor-pointer",
+                  zoneFilter === z.id
+                    ? "bg-rose-600 text-white shadow-xs"
+                    : "bg-white text-slate-700 hover:bg-slate-100 border border-slate-200"
+                )}
+              >
+                {z.label}
+              </button>
+            ))}
+          </div>
+
+          {onOpenRefillQueue && (
+            <button
+              type="button"
+              onClick={onOpenRefillQueue}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 text-amber-800 border border-amber-300 hover:bg-amber-100 rounded-lg text-xs font-extrabold transition shrink-0 cursor-pointer shadow-2xs"
+            >
+              <RefreshCw size={13} className="text-amber-600" />
+              <span>Antrean Refill: {refillCount} Tabung</span>
+            </button>
+          )}
+        </div>
+      )}
+
       {/* Facilities Table */}
       <div className="overflow-x-auto p-0">
         <table className="w-full text-left text-sm">
@@ -771,6 +937,11 @@ function FacilityDataTable({
                         <div className="text-xs text-gray-500 truncate mt-0.5" title={locationName || "-"}>
                           {locationName || "-"}
                         </div>
+                        {facility.area_zone && (
+                          <span className="inline-block px-1.5 py-0.5 rounded text-[10px] font-extrabold uppercase bg-slate-100 text-slate-700 border border-slate-200 mt-1">
+                            {facility.area_zone}
+                          </span>
+                        )}
                       </div>
                     </td>
 
@@ -819,40 +990,28 @@ function FacilityDataTable({
                       <MonitoringStatusBadge status={facility.calculated_status || facility.status} />
                     </td>
 
-                    {/* Action Buttons */}
+                    {/* Action Buttons: Cetak QR + Kelola & Riwayat */}
                     <td className="px-4 py-3 text-right whitespace-nowrap">
-                      <div className="inline-flex items-center gap-1.5 justify-end">
-                        {/* 1. Inspect Button */}
-                        <button 
-                          onClick={() => onInspect(facility)} 
-                          title="Lakukan Checklist Inspeksi"
-                          className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-sky-50 text-sky-700 border border-sky-200 hover:bg-sky-100 rounded-lg text-xs font-bold transition-colors shadow-xs"
-                        >
-                          <ClipboardCheck size={13} />
-                          Inspect
-                        </button>
-
-                        {/* 2. Cetak Label QR Sticker */}
-                        <button 
-                          onClick={() => onShowSticker(facility)} 
-                          title="Cetak Stiker Label QR Fisik"
-                          className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-purple-50 text-purple-700 border border-purple-200 hover:bg-purple-100 rounded-lg text-xs font-bold transition-colors shadow-xs"
+                      <div className="flex items-center justify-end gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => onShowSticker(facility)}
+                          title={`Cetak Label QR Stiker ${facility.code}`}
+                          className="inline-flex items-center gap-1.5 px-2.5 py-1.5 bg-white border border-purple-200 hover:border-purple-300 hover:bg-purple-50 text-purple-700 rounded-lg text-xs font-bold transition shadow-2xs cursor-pointer active:scale-95"
                         >
                           <QrCode size={13} />
-                          Label
+                          <span>Cetak QR</span>
                         </button>
 
-                        {/* 3. Refill / Ganti (Khusus Consumable) */}
-                        {isConsumable && (
-                          <button 
-                            onClick={() => onRefill(facility)} 
-                            title="Catat Refill Media / Ganti Baru"
-                            className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 rounded-lg text-xs font-bold transition-colors shadow-xs"
-                          >
-                            <RefreshCw size={13} />
-                            Refill
-                          </button>
-                        )}
+                        <button 
+                          type="button"
+                          onClick={() => onOpenDetail(facility)} 
+                          title="Buka Menu Aksi & Riwayat Monitoring"
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-300 hover:border-slate-400 hover:bg-slate-50 text-slate-800 rounded-lg text-xs font-bold transition shadow-xs cursor-pointer active:scale-95"
+                        >
+                          <Eye size={13} className="text-slate-500" />
+                          <span>Kelola & Riwayat</span>
+                        </button>
                       </div>
                     </td>
                   </tr>

@@ -12,10 +12,16 @@ class FacilityInspection extends Model
     protected $fillable = [
         'facility_id',
         'inspector_id',
+        'inspector_name',
+        'pic_name',
         'inspection_date',
         'tipe_checklist',
         'checklist_results',
         'result_status',
+        'inspection_stage',
+        'verified_at',
+        'verification_notes',
+        'verification_status',
         'notes',
         'foto_bukti',
     ];

@@ -19,6 +19,7 @@ class SafetyFacility extends Model
         'qr_code_id',
         'tanggal_daftar',
         'location_id',
+        'area_zone',
         'specifications',
         'status',
         'status_aktif',
@@ -46,6 +47,11 @@ class SafetyFacility extends Model
     public function inspections()
     {
         return $this->hasMany(FacilityInspection::class, 'facility_id')->latest();
+    }
+
+    public function latestInspection()
+    {
+        return $this->hasOne(FacilityInspection::class, 'facility_id')->latestOfMany();
     }
 
     public function consumableCycle()

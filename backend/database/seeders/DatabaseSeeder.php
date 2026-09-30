@@ -17,6 +17,7 @@ class DatabaseSeeder extends Seeder
             UserSeeder::class,
             VendorSeeder::class,
             SafetyFacilitySeeder::class,
+            RealAparWidatraSeeder::class,
             WorkPermitSeeder::class,
         ]);
     }

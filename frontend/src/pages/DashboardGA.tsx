@@ -50,14 +50,14 @@ export default function DashboardGAPage() {
 
   return (
     <div className="flex-1 flex flex-col h-full bg-background overflow-hidden">
-      <Header title="GA/HRD Dashboard" />
+      <Header title="Dashboard HRD & GA" />
       
       <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 space-y-6">
         <div className="max-w-7xl mx-auto space-y-6">
           
           <div className="flex flex-col lg:flex-row gap-4 justify-between items-start lg:items-center">
             <div>
-              <h2 className="text-2xl font-bold text-gray-900">Portal General Affairs (GA) & Legal</h2>
+              <h2 className="text-2xl font-bold text-gray-900">Portal HRD & GA (Persetujuan Ijin Kerja)</h2>
               <p className="text-sm text-gray-500 mt-1">Validasi data pekerja pihak ketiga, kepatuhan K3, dan akses masuk area pabrik.</p>
             </div>
           </div>

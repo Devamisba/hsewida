@@ -267,9 +267,9 @@ class MasterDataController extends Controller
             [
                 'step' => 4,
                 'stage_code' => 'ga_dept_review',
-                'status_name' => 'Menunggu GA Dept Head',
+                'status_name' => 'Menunggu Head Dept HRD&GA',
                 'reviewer_role' => 'ga_dept_head',
-                'role_name' => 'HRD & GA Department Head',
+                'role_name' => 'Head Dept HRD&GA',
                 'sla_hours' => 24,
                 'sla_label' => '24 Jam Kerja',
                 'description' => 'Validasi ketersediaan area kerja pabrik, izin akses fasilitas industri, serta koordinasi utilitas dan personil pengawas operasional.',
@@ -279,9 +279,9 @@ class MasterDataController extends Controller
             [
                 'step' => 5,
                 'stage_code' => 'ga_div_final',
-                'status_name' => 'Menunggu GA Div Head',
+                'status_name' => 'Menunggu Head Division HRD&GA',
                 'reviewer_role' => 'ga_div_head',
-                'role_name' => 'HRD & GA Division Head',
+                'role_name' => 'Head Division HRD&GA',
                 'sla_hours' => 24,
                 'sla_label' => '24 Jam Kerja',
                 'description' => 'Persetujuan eksekutif final (Final Sign-off) yang mengaktifkan status ijin kerja secara resmi dan menerbitkan QR Code terenkripsi.',
@@ -293,7 +293,7 @@ class MasterDataController extends Controller
         $terminalStatuses = [
             ['code' => 'Disetujui', 'name' => 'Ijin Kerja Disetujui (Aktif)', 'type' => 'active', 'description' => 'Permit aktif dan pekerjaan di lapangan diizinkan berjalan sesuai tanggal & jam kerja.'],
             ['code' => 'Ditolak', 'name' => 'Permohonan Ditolak', 'type' => 'rejected', 'description' => 'Ijin kerja ditolak pada salah satu tahap verifikasi disertai alasan penolakan wajib.'],
-            ['code' => 'Perpanjangan', 'name' => 'Pengajuan Perpanjangan', 'type' => 'extension', 'description' => 'Permohonan penambahan durasi kerja sebelum tanggal berakhir (maksimal total 6 hari).'],
+            ['code' => 'Perpanjangan', 'name' => 'Pengajuan Perpanjangan Berfase', 'type' => 'extension', 'description' => 'Permohonan penambahan durasi kerja berfase (maksimal 6 hari kalender per lembar SIKA).'],
             ['code' => 'Selesai', 'name' => 'Ijin Kerja Ditutup / Selesai', 'type' => 'closed', 'description' => 'Pekerjaan fisik selesai, area telah dibersihkan (housekeeping), dan inspeksi akhir HSE terpenuhi.'],
             ['code' => 'Kadaluwarsa', 'name' => 'Masa Berlaku Habis', 'type' => 'expired', 'description' => 'Tanggal selesai permit telah terlewati otomatis tanpa perpanjangan.'],
         ];

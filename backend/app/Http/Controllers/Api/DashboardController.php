@@ -21,7 +21,14 @@ class DashboardController extends Controller
         $threeDaysLater = Carbon::today()->addDays(3)->toDateString();
 
         $pendingCount = WorkPermit::where('user_id', $user->id)
-            ->whereIn('status', ['Menunggu PIC Vendor', 'Menunggu HSE', 'Menunggu GA Dept Head', 'Menunggu GA Div Head'])
+            ->whereIn('status', [
+                'Menunggu PIC Vendor', 
+                'Menunggu HSE', 
+                'Menunggu Head Dept HRD&GA', 
+                'Menunggu Head Division HRD&GA',
+                'Menunggu GA Dept Head', 
+                'Menunggu GA Div Head'
+            ])
             ->count();
 
         $activeToday = WorkPermit::with('location')
@@ -29,6 +36,8 @@ class DashboardController extends Controller
             ->where('status', 'Disetujui')
             ->where('start_date', '<=', $today)
             ->where('end_date', '>=', $today)
+            ->orderBy('created_at', 'desc')
+            ->orderBy('id', 'desc')
             ->get();
 
         $expiringSoonCount = WorkPermit::where('user_id', $user->id)
@@ -73,6 +82,8 @@ class DashboardController extends Controller
 
         $pendingReview = WorkPermit::with(['location', 'vendor'])
             ->where('status', 'Menunggu HSE')
+            ->orderBy('created_at', 'desc')
+            ->orderBy('id', 'desc')
             ->get();
 
         $activeTotal = WorkPermit::where('status', 'Disetujui')
@@ -85,6 +96,8 @@ class DashboardController extends Controller
             ->where('risk_level', 'Tinggi')
             ->where('start_date', '<=', $today)
             ->where('end_date', '>=', $today)
+            ->orderBy('created_at', 'desc')
+            ->orderBy('id', 'desc')
             ->get();
 
         $activeVendorsCount = WorkPermit::where('status', 'Disetujui')
@@ -133,12 +146,15 @@ class DashboardController extends Controller
     {
         $today = Carbon::today()->toDateString();
         $user = $request->user();
-        $roleCode = $user->role ? $user->role->code : 'ga_dept_head';
-
-        $statusToReview = ($roleCode === 'ga_div_head') ? 'Menunggu GA Div Head' : 'Menunggu GA Dept Head';
+        $roleCode = ($user && $user->role) ? $user->role->code : '';
+        $targetStatuses = ($roleCode === 'ga_div_head') 
+            ? ['Menunggu Head Division HRD&GA', 'Menunggu GA Div Head'] 
+            : ['Menunggu Head Dept HRD&GA', 'Menunggu GA Dept Head'];
 
         $pendingValidation = WorkPermit::with(['vendor', 'workers'])
-            ->where('status', $statusToReview)
+            ->whereIn('status', $targetStatuses)
+            ->orderBy('created_at', 'desc')
+            ->orderBy('id', 'desc')
             ->get();
 
         $activeWorkers = PermitWorker::whereHas('workPermit', function ($q) use ($today) {

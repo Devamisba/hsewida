@@ -24,9 +24,16 @@ export function PrintPermitModal({ permit, onClose }: PrintPermitModalProps) {
     permit?.parent_permit ||
     permit?.parent_permit_id
   );
-  const parentNumber = permit?.parentPermit?.permit_number || permit?.parent_permit?.permit_number;
-  const parentStartDate = permit?.parentPermit?.start_date || permit?.parent_permit?.start_date;
-  const cumulativeStart = permit?.cumulativeStartDate || parentStartDate || permit?.mulaiKerja || permit?.start_date;
+  const extensionPhase = typeof permit?.extensionPhase === 'number' 
+    ? permit.extensionPhase 
+    : (typeof permit?.extension_phase === 'number' ? permit.extension_phase : (isExtension ? 1 : 0));
+
+  const parentNumber = permit?.parentPermit?.permit_number || permit?.parentPermit?.permitNumber || permit?.parent_permit?.permit_number;
+  const parentStartDate = permit?.parentPermit?.start_date || permit?.parentPermit?.startDate || permit?.parent_permit?.start_date;
+  const rootNumber = permit?.rootPermit?.permit_number || permit?.rootPermit?.permitNumber || permit?.rootPermitNumber || parentNumber;
+  const rootStartDate = permit?.rootPermit?.start_date || permit?.rootPermit?.startDate || parentStartDate;
+
+  const cumulativeStart = permit?.cumulativeStartDate || rootStartDate || parentStartDate || permit?.mulaiKerja || permit?.start_date;
   const cumulativeEnd = permit?.cumulativeEndDate || permit?.selesaiKerja || permit?.end_date;
   const cumulativeDays = calculateInclusiveDays(cumulativeStart, cumulativeEnd);
 
@@ -54,7 +61,7 @@ export function PrintPermitModal({ permit, onClose }: PrintPermitModalProps) {
     if (!printContentRef.current || isGenerating) return;
     
     if (!isApproved) {
-      alert("Peringatan K3: Dokumen Surat Ijin Kerja Aman (SIKA) ini belum disetujui resmi oleh HRD & GA Div Head dan belum dapat diunduh.");
+      alert("Peringatan K3: Dokumen Surat Ijin Kerja Aman (SIKA) ini belum disetujui resmi oleh Head Division HRD&GA dan belum dapat diunduh.");
       return;
     }
 
@@ -108,7 +115,7 @@ export function PrintPermitModal({ permit, onClose }: PrintPermitModalProps) {
 
   const handlePrint = () => {
     if (!isApproved) {
-      alert("Peringatan K3: Dokumen Surat Ijin Kerja Aman (SIKA) ini belum disetujui resmi oleh HRD & GA Div Head dan belum dapat dicetak.");
+      alert("Peringatan K3: Dokumen Surat Ijin Kerja Aman (SIKA) ini belum disetujui resmi oleh Head Division HRD&GA dan belum dapat dicetak.");
       return;
     }
     window.print();
@@ -172,7 +179,7 @@ export function PrintPermitModal({ permit, onClose }: PrintPermitModalProps) {
                     ? "bg-slate-700 text-slate-400 cursor-not-allowed opacity-60"
                     : "bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 cursor-pointer"
                 )}
-                title={!isApproved ? "Cetak terkunci: Menunggu persetujuan akhir dari GA Div Head" : "Unduh PDF"}
+                title={!isApproved ? "Cetak terkunci: Menunggu persetujuan akhir dari Head Division HRD&GA" : "Unduh PDF"}
               >
                 {isGenerating ? (
                   <>
@@ -254,7 +261,7 @@ export function PrintPermitModal({ permit, onClose }: PrintPermitModalProps) {
                   )}
                   <div>
                     <div className="text-[10px] uppercase font-bold text-slate-500">
-                      SURAT IJIN KERJA AMAN {isExtension ? "(PERPANJANGAN)" : ""}
+                      SURAT IJIN KERJA AMAN {extensionPhase > 0 ? `(PERPANJANGAN KE-${extensionPhase})` : ""}
                     </div>
                     <div className="text-base font-black font-mono text-blue-900">{permit.id || permit.permit_number}</div>
                     <div className={cn("text-[10px] font-bold", isApproved ? "text-emerald-700" : "text-amber-700")}>
@@ -270,7 +277,7 @@ export function PrintPermitModal({ permit, onClose }: PrintPermitModalProps) {
               <span>I. DATA PERMOHONAN & PELAKSANA PEKERJAAN</span>
               {isExtension && (
                 <span className="text-[10px] font-bold text-amber-800 bg-amber-100 px-2.5 py-0.5 rounded-full border border-amber-300">
-                  SIKA Perpanjangan {parentNumber ? `(Induk: ${parentNumber})` : ""}
+                  SIKA Perpanjangan {extensionPhase > 0 ? `Ke-${extensionPhase}` : ""} {rootNumber ? `(Induk: ${rootNumber})` : ""}
                 </span>
               )}
             </div>
@@ -279,7 +286,9 @@ export function PrintPermitModal({ permit, onClose }: PrintPermitModalProps) {
               <div><span className="text-slate-500 block">Jenis / Judul Pekerjaan:</span><strong className="text-sm">{permit.jenisPekerjaan || '-'}</strong></div>
               <div><span className="text-slate-500 block">Lokasi / Area Pabrik:</span><strong>{permit.lokasi || '-'}</strong></div>
               <div>
-                <span className="text-slate-500 block">Masa Berlaku Ijin (Periode Aktif):</span>
+                <span className="text-slate-500 block">
+                  Masa Berlaku Ijin {extensionPhase > 0 ? `(Fase ${extensionPhase} Aktif)` : "(Periode Aktif)"}:
+                </span>
                 <strong>{permit.mulaiKerja} s/d {permit.selesaiKerja} ({permit.jamKerjaMulai} - {permit.jamKerjaAkhir} WIB)</strong>
                 {isExtension && (
                   <div className="mt-1.5 p-2 bg-amber-50/90 border border-amber-200 rounded-md text-[11px] text-amber-900 leading-tight">
@@ -290,9 +299,12 @@ export function PrintPermitModal({ permit, onClose }: PrintPermitModalProps) {
                         Total {cumulativeDays} Hari Kalender
                       </span>
                     </div>
-                    {parentNumber && (
+                    {rootNumber && (
                       <div className="text-[10px] text-amber-700 mt-1">
-                        Izin Induk SIKA: <span className="font-mono font-semibold">{parentNumber}</span> (Awal: {parentStartDate || '-'})
+                        SIKA Induk Pertama: <span className="font-mono font-semibold">{rootNumber}</span>
+                        {parentNumber && parentNumber !== rootNumber && (
+                          <span className="ml-2">| SIKA Sebelumnya: <span className="font-mono font-semibold">{parentNumber}</span></span>
+                        )}
                       </div>
                     )}
                   </div>
@@ -392,14 +404,14 @@ export function PrintPermitModal({ permit, onClose }: PrintPermitModalProps) {
                 <span className="text-[10px] text-slate-500 block border-t pt-1 border-slate-200">HSE Department</span>
               </div>
               <div className="p-3 space-y-8">
-                <span className="font-bold text-slate-600 text-[11px] block">3. HRD & GA Dept Head</span>
+                <span className="font-bold text-slate-600 text-[11px] block">3. Head Dept HRD&GA</span>
                 <div className="font-bold text-emerald-700 text-xs">TERVERIFIKASI SISTEM</div>
-                <span className="text-[10px] text-slate-500 block border-t pt-1 border-slate-200">GA Department Head</span>
+                <span className="text-[10px] text-slate-500 block border-t pt-1 border-slate-200">Head Dept HRD & GA</span>
               </div>
               <div className="p-3 space-y-8">
-                <span className="font-bold text-slate-600 text-[11px] block">4. HRD & GA Div Head</span>
+                <span className="font-bold text-slate-600 text-[11px] block">4. Head Division HRD&GA</span>
                 <div className="font-bold text-emerald-700 text-xs">DISAHKAN DIGITAL</div>
-                <span className="text-[10px] text-slate-500 block border-t pt-1 border-slate-200">GA Division Head</span>
+                <span className="text-[10px] text-slate-500 block border-t pt-1 border-slate-200">Head Division HRD & GA</span>
               </div>
             </div>
           </div>
@@ -454,7 +466,7 @@ export function PrintPermitModal({ permit, onClose }: PrintPermitModalProps) {
             <button
               disabled
               className="px-4 py-2 bg-gray-200 text-gray-500 text-xs font-bold rounded-lg flex items-center gap-1.5 cursor-not-allowed opacity-75"
-              title="Dokumen belum disetujui resmi oleh GA Div Head"
+              title="Dokumen belum disetujui resmi oleh Head Division HRD&GA"
             >
               <Lock size={14} />
               <span>Belum Disetujui (Cetak Terkunci)</span>

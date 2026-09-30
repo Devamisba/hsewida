@@ -44,9 +44,20 @@ class WorkPermitController extends Controller
     {
         $user = $request->user();
 
-        $permits = WorkPermit::with(['location', 'vendor', 'permitTypes', 'ppes', 'workers', 'jsas', 'parentPermit:id,permit_number,start_date,end_date,job_title,request_type'])
+        $permits = WorkPermit::with([
+            'location', 
+            'vendor', 
+            'permitTypes', 
+            'ppes', 
+            'workers', 
+            'jsas', 
+            'parentPermit:id,permit_number,start_date,end_date,job_title,request_type,extension_phase',
+            'rootPermit:id,permit_number,start_date,end_date,job_title,status',
+            'childPermits:id,parent_permit_id,permit_number,status,request_type,extension_phase'
+        ])
             ->where('user_id', $user->id)
             ->orderBy('created_at', 'desc')
+            ->orderBy('id', 'desc')
             ->get();
 
         return response()->json([
@@ -63,7 +74,19 @@ class WorkPermitController extends Controller
         $user = $request->user();
         $roleCode = $user->role ? $user->role->code : '';
 
-        $query = WorkPermit::with(['location', 'vendor', 'permitTypes', 'ppes', 'workers', 'jsas', 'user:id,name,company_name', 'approvals.user:id,name', 'parentPermit:id,permit_number,start_date,end_date,job_title,request_type']);
+        $query = WorkPermit::with([
+            'location', 
+            'vendor', 
+            'permitTypes', 
+            'ppes', 
+            'workers', 
+            'jsas', 
+            'user:id,name,company_name', 
+            'approvals.user:id,name', 
+            'parentPermit:id,permit_number,start_date,end_date,job_title,request_type,extension_phase',
+            'rootPermit:id,permit_number,start_date,end_date,job_title,status',
+            'childPermits:id,parent_permit_id,permit_number,status,request_type,extension_phase'
+        ]);
 
         switch ($roleCode) {
             case 'pic_vendor':
@@ -73,15 +96,17 @@ class WorkPermitController extends Controller
                 $query->where('status', 'Menunggu HSE');
                 break;
             case 'ga_dept_head':
-                $query->where('status', 'Menunggu GA Dept Head');
+                $query->whereIn('status', ['Menunggu Head Dept HRD&GA', 'Menunggu GA Dept Head']);
                 break;
             case 'ga_div_head':
-                $query->where('status', 'Menunggu GA Div Head');
+                $query->whereIn('status', ['Menunggu Head Division HRD&GA', 'Menunggu GA Div Head']);
                 break;
             case 'admin':
                 $query->whereIn('status', [
                     'Menunggu PIC Vendor', 
                     'Menunggu HSE', 
+                    'Menunggu Head Dept HRD&GA', 
+                    'Menunggu Head Division HRD&GA',
                     'Menunggu GA Dept Head', 
                     'Menunggu GA Div Head'
                 ]);
@@ -90,7 +115,9 @@ class WorkPermitController extends Controller
                 return response()->json(['success' => true, 'data' => []]);
         }
 
-        $permits = $query->orderBy('created_at', 'asc')->get();
+        $permits = $query->orderBy('created_at', 'desc')
+            ->orderBy('id', 'desc')
+            ->get();
 
         return response()->json([
             'success' => true,
@@ -106,7 +133,18 @@ class WorkPermitController extends Controller
         $user = $request->user();
         $roleCode = $user->role ? $user->role->code : '';
 
-        $query = WorkPermit::with(['location', 'vendor', 'permitTypes', 'ppes', 'workers', 'jsas', 'approvals.user:id,name', 'parentPermit:id,permit_number,start_date,end_date,job_title,request_type']);
+        $query = WorkPermit::with([
+            'location', 
+            'vendor', 
+            'permitTypes', 
+            'ppes', 
+            'workers', 
+            'jsas', 
+            'approvals.user:id,name', 
+            'parentPermit:id,permit_number,start_date,end_date,job_title,request_type,extension_phase',
+            'rootPermit:id,permit_number,start_date,end_date,job_title,status',
+            'childPermits:id,parent_permit_id,permit_number,status,request_type,extension_phase'
+        ]);
 
         if ($roleCode === 'pemohon') {
             $query->where('user_id', $user->id);
@@ -116,7 +154,9 @@ class WorkPermitController extends Controller
             $query->where('status', $request->status);
         }
 
-        $permits = $query->orderBy('created_at', 'desc')->get();
+        $permits = $query->orderBy('created_at', 'desc')
+            ->orderBy('id', 'desc')
+            ->get();
 
         return response()->json([
             'success' => true,
@@ -262,10 +302,52 @@ class WorkPermitController extends Controller
                 break;
             }
         }
-        $riskLevel = $hasHighRisk ? 'Tinggi' : 'Rendah';
+        $riskLevel = $hasHighRisk ? 'Tinggi' : 'Sedang';
+
+        // Multi-Phase Extension Validation & Anti-Branching
+        $rootPermitId = null;
+        $extensionPhase = 0;
+
+        if ($validated['requestType'] === 'Perpanjangan') {
+            if (empty($validated['parentPermitId'])) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Permohonan perpanjangan wajib menyertakan ID dokumen ijin acuan (parentPermitId).'
+                ], 422);
+            }
+
+            $parentPermit = WorkPermit::find($validated['parentPermitId']);
+            if (!$parentPermit) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Dokumen ijin kerja acuan tidak ditemukan di sistem.'
+                ], 422);
+            }
+
+            if ($parentPermit->status !== 'Disetujui') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Hanya ijin kerja berstatus Disetujui yang dapat diajukan perpanjangan.'
+                ], 422);
+            }
+
+            // Anti-branching check: ensure parent permit has no active child extension
+            $activeChild = WorkPermit::where('parent_permit_id', $parentPermit->id)
+                ->whereNotIn('status', ['Ditolak'])
+                ->first();
+            if ($activeChild) {
+                return response()->json([
+                    'success' => false,
+                    'message' => "Ijin kerja {$parentPermit->permit_number} sudah memiliki pengajuan perpanjangan aktif ({$activeChild->permit_number} - Status: {$activeChild->status}). Silakan lanjutkan proses dari ijin perpanjangan tersebut."
+                ], 422);
+            }
+
+            $extensionPhase = ($parentPermit->extension_phase ?: 0) + 1;
+            $rootPermitId = $parentPermit->root_permit_id ?: $parentPermit->id;
+        }
 
         // Execute Database Insertion in a Transaction
-        return DB::transaction(function () use ($validated, $user, $vendor, $locationId, $riskLevel) {
+        return DB::transaction(function () use ($validated, $user, $vendor, $locationId, $riskLevel, $rootPermitId, $extensionPhase) {
             $permitNumber = $this->generatePermitNumber();
             $qrToken = 'QR-' . $permitNumber . '-' . Str::random(8);
 
@@ -275,6 +357,8 @@ class WorkPermitController extends Controller
                 'vendor_id' => $vendor->id,
                 'request_type' => $validated['requestType'],
                 'parent_permit_id' => $validated['parentPermitId'] ?? null,
+                'root_permit_id' => $rootPermitId,
+                'extension_phase' => $extensionPhase,
                 'job_title' => $validated['jenisPekerjaan'],
                 'location_id' => $locationId,
                 'start_date' => $validated['mulaiKerja'],
@@ -292,6 +376,12 @@ class WorkPermitController extends Controller
                 'status' => 'Menunggu PIC Vendor',
                 'qr_code_token' => $qrToken,
             ]);
+
+            // If new permit (Fase 0), set root_permit_id to self
+            if ($validated['requestType'] === 'Baru') {
+                $permit->root_permit_id = $permit->id;
+                $permit->save();
+            }
 
             // Sync Permit Types
             foreach ($validated['permitTypes'] as $ptName) {
@@ -370,7 +460,9 @@ class WorkPermitController extends Controller
             'workers.documents',
             'jsas',
             'approvals.user:id,name',
-            'parentPermit:id,permit_number,start_date,end_date,job_title,request_type'
+            'parentPermit:id,permit_number,start_date,end_date,job_title,request_type,extension_phase',
+            'rootPermit:id,permit_number,start_date,end_date,job_title,status',
+            'childPermits:id,parent_permit_id,permit_number,status,request_type,extension_phase'
         ])->findOrFail($id);
 
         return response()->json([
@@ -391,8 +483,8 @@ class WorkPermitController extends Controller
         $requiredRole = match ($permit->status) {
             'Menunggu PIC Vendor' => 'pic_vendor',
             'Menunggu HSE' => 'hse',
-            'Menunggu GA Dept Head' => 'ga_dept_head',
-            'Menunggu GA Div Head' => 'ga_div_head',
+            'Menunggu Head Dept HRD&GA', 'Menunggu GA Dept Head' => 'ga_dept_head',
+            'Menunggu Head Division HRD&GA', 'Menunggu GA Div Head' => 'ga_div_head',
             default => null,
         };
 
@@ -413,9 +505,9 @@ class WorkPermitController extends Controller
 
         $nextStatus = match ($permit->status) {
             'Menunggu PIC Vendor' => 'Menunggu HSE',
-            'Menunggu HSE' => 'Menunggu GA Dept Head',
-            'Menunggu GA Dept Head' => 'Menunggu GA Div Head',
-            'Menunggu GA Div Head' => 'Disetujui',
+            'Menunggu HSE' => 'Menunggu Head Dept HRD&GA',
+            'Menunggu Head Dept HRD&GA', 'Menunggu GA Dept Head' => 'Menunggu Head Division HRD&GA',
+            'Menunggu Head Division HRD&GA', 'Menunggu GA Div Head' => 'Disetujui',
             default => null,
         };
 
@@ -465,8 +557,8 @@ class WorkPermitController extends Controller
         $requiredRole = match ($permit->status) {
             'Menunggu PIC Vendor' => 'pic_vendor',
             'Menunggu HSE' => 'hse',
-            'Menunggu GA Dept Head' => 'ga_dept_head',
-            'Menunggu GA Div Head' => 'ga_div_head',
+            'Menunggu Head Dept HRD&GA', 'Menunggu GA Dept Head' => 'ga_dept_head',
+            'Menunggu Head Division HRD&GA', 'Menunggu GA Div Head' => 'ga_div_head',
             default => null,
         };
 
@@ -527,8 +619,22 @@ class WorkPermitController extends Controller
             ], 422);
         }
 
+        // Anti-branching check: ensure this permit has no active child extension
+        $activeChild = WorkPermit::where('parent_permit_id', $parent->id)
+            ->whereNotIn('status', ['Ditolak'])
+            ->first();
+        if ($activeChild) {
+            return response()->json([
+                'success' => false,
+                'message' => "Ijin kerja {$parent->permit_number} sudah memiliki pengajuan perpanjangan aktif ({$activeChild->permit_number} - Status: {$activeChild->status}). Silakan lanjutkan dari ijin perpanjangan tersebut."
+            ], 422);
+        }
+
         // Rule: Only eligible if remaining days <= extension_window_days
         $extensionWindowDays = (int) SystemSetting::getValue('extension_window_days', 3);
+        $maxPermitDays = (int) SystemSetting::getValue('max_permit_duration_days', 6);
+        $durationToAdd = $maxPermitDays > 0 ? ($maxPermitDays - 1) : 5;
+
         $endDate = Carbon::parse($parent->end_date)->startOfDay();
         $today = Carbon::today();
         $diffDays = $today->diffInDays($endDate, false);
@@ -540,13 +646,24 @@ class WorkPermitController extends Controller
             ], 422);
         }
 
+        $nextPhase = ($parent->extension_phase ?: 0) + 1;
+        $rootPermit = $parent->root_permit_id ? WorkPermit::find($parent->root_permit_id) : $parent;
+
         return response()->json([
             'success' => true,
             'message' => 'Permit valid untuk diajukan perpanjangan.',
             'data' => [
                 'parent_permit' => $parent->load(['location', 'permitTypes', 'ppes', 'workers', 'jsas']),
+                'root_permit' => $rootPermit ? [
+                    'id' => $rootPermit->id,
+                    'permit_number' => $rootPermit->permit_number,
+                    'start_date' => $rootPermit->start_date ? $rootPermit->start_date->format('Y-m-d') : null,
+                    'end_date' => $rootPermit->end_date ? $rootPermit->end_date->format('Y-m-d') : null,
+                ] : null,
+                'next_phase' => $nextPhase,
                 'suggested_start_date' => $endDate->copy()->addDay()->toDateString(),
-                'suggested_end_date' => $endDate->copy()->addDays(6)->toDateString(),
+                'suggested_end_date' => $endDate->copy()->addDays(1 + $durationToAdd)->toDateString(),
+                'project_chain' => $parent->project_chain,
             ]
         ]);
     }

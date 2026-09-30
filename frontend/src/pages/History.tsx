@@ -1,24 +1,76 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Header } from "@/components/Header";
-import { Eye, Printer, FileText, X, Shield, Users, AlertTriangle, Briefcase, FileCheck, CheckCircle2, Lock, CalendarPlus } from "lucide-react";
+import { 
+  Eye, 
+  Printer, 
+  FileText, 
+  X, 
+  Shield, 
+  Users, 
+  AlertTriangle, 
+  Briefcase, 
+  FileCheck, 
+  CheckCircle2, 
+  Lock, 
+  CalendarPlus, 
+  ClipboardCheck,
+  Calendar,
+  History as HistoryIcon,
+  CalendarRange,
+  Layers,
+  Infinity as InfinityIcon,
+  Hourglass,
+  XCircle,
+  ShieldCheck,
+  FileSpreadsheet,
+  Search,
+  RotateCcw
+} from "lucide-react";
 import { cn, calculateInclusiveDays } from "@/lib/utils";
 import { api } from "@/services/api";
+import { auth } from "@/lib/auth";
 import { PrintPermitModal } from "@/components/PrintPermitModal";
 import { ApprovalWorkflowStepper } from "@/components/ApprovalWorkflowStepper";
+import { InspectionDataTable } from "@/components/InspectionDataTable";
+import { ProjectPhaseTimeline } from "@/components/ProjectPhaseTimeline";
+import { exportWorkPermitsToExcel } from "@/utils/exportPermitExcel";
 
 function mapApiToHistory(item: any) {
   const parent = item.parent_permit || item.parentPermit || null;
+  const root = item.root_permit || item.rootPermit || null;
   const parentStartDate = parent?.start_date ? parent.start_date.substring(0, 10) : (parent?.startDate || null);
   const parentEndDate = parent?.end_date ? parent.end_date.substring(0, 10) : (parent?.endDate || null);
+  const rootStartDate = root?.start_date ? root.start_date.substring(0, 10) : (root?.startDate || null);
+  const rootEndDate = root?.end_date ? root.end_date.substring(0, 10) : (root?.endDate || null);
   const currentStart = item.start_date ? item.start_date.substring(0, 10) : item.mulaiKerja;
   const currentEnd = item.end_date ? item.end_date.substring(0, 10) : item.selesaiKerja;
+
+  const childPermits = item.child_permits || item.childPermits || [];
+  const hasActiveChild = item.has_active_child_extension !== undefined
+    ? Boolean(item.has_active_child_extension)
+    : childPermits.some((c: any) => c.status !== 'Ditolak');
+
+  const extensionPhase = typeof item.extension_phase === 'number' 
+    ? item.extension_phase 
+    : (item.request_type === 'Perpanjangan' ? 1 : 0);
+
+  const cumulativeStartDate = rootStartDate || item.cumulative_start_date || parentStartDate || currentStart;
 
   return {
     id: item.permit_number || `WP-${item.id}`,
     rawId: item.id,
     status: item.status,
     requestType: item.request_type || "Baru",
+    extensionPhase,
+    rootPermitId: item.root_permit_id || (root?.id ?? null),
+    rootPermit: root ? {
+      id: root.id,
+      permitNumber: root.permit_number || root.permitNumber || `WP-${root.id}`,
+      startDate: rootStartDate,
+      endDate: rootEndDate,
+      jobTitle: root.job_title || root.jobTitle || "",
+    } : null,
     parentPermitId: item.parent_permit_id || item.parentPermitId || (parent?.id ?? null),
     parentPermit: parent ? {
       id: parent.id,
@@ -26,8 +78,12 @@ function mapApiToHistory(item: any) {
       startDate: parentStartDate,
       endDate: parentEndDate,
       jobTitle: parent.job_title || parent.jobTitle || "",
+      extensionPhase: parent.extension_phase ?? 0,
     } : null,
-    cumulativeStartDate: parentStartDate || currentStart,
+    childPermits,
+    hasActiveChild,
+    projectChain: item.project_chain || [],
+    cumulativeStartDate,
     cumulativeEndDate: currentEnd,
     namaKontraktor: item.vendor?.company_name || item.user?.company_name || "PT Vendor",
     jenisPekerjaan: item.job_title || item.jenisPekerjaan || "Pekerjaan Vendor",
@@ -64,6 +120,8 @@ function mapApiToHistory(item: any) {
     alasanPenolakan: item.reject_reason,
     qrToken: item.qr_code_token,
     approvals: item.approvals || [],
+    createdAt: item.created_at || item.createdAt,
+    riskLevel: item.risk_level || item.riskLevel || "Sedang",
   };
 }
 
@@ -71,6 +129,8 @@ const getStatusBadge = (status: string) => {
   switch (status) {
     case "Menunggu PIC Vendor": 
     case "Menunggu HSE": 
+    case "Menunggu Head Dept HRD&GA":
+    case "Menunggu Head Division HRD&GA":
     case "Menunggu GA Dept Head": 
     case "Menunggu GA Div Head": 
       return "bg-warning-container text-on-warning-container";
@@ -109,12 +169,27 @@ export default function HistoryPage() {
   const [showExpiringOnly, setShowExpiringOnly] = useState(filterExpiringSoon);
   const [extensionWindowDays] = useState(3);
 
+  const userRole = auth.getRole();
+  const [historyTab, setHistoryTab] = useState<"permits" | "inspections">(
+    userRole === "pic_k3" ? "inspections" : "permits"
+  );
+
   const handleExtend = (req: any) => {
+    if (req.hasActiveChild) {
+      alert("Ijin kerja ini sudah pernah diajukan perpanjangan ke fase berikutnya. Silakan lanjutkan dari dokumen perpanjangan terbaru.");
+      return;
+    }
     navigate("/create-request", {
       state: {
         extendMode: true,
         originalId: req.rawId || req.id,
         permitNumber: req.id,
+        extensionPhase: req.extensionPhase,
+        rootPermitId: req.rootPermitId,
+        rootPermitNumber: req.rootPermit?.permitNumber || req.parentPermit?.permitNumber || req.id,
+        rootStartDate: req.cumulativeStartDate || req.rootPermit?.startDate || req.mulaiKerja,
+        parentPermitId: req.rawId,
+        parentPermitNumber: req.id,
         ...req
       }
     });
@@ -122,7 +197,7 @@ export default function HistoryPage() {
 
   const handleOpenPrintModal = (permit: any) => {
     if (!canPrintPermit(permit.status)) {
-      alert("Surat Ijin Kerja Aman (SIKA) resmi hanya dapat dicetak setelah disetujui penuh oleh seluruh pihak berwenang (hingga HRD & GA Div Head).");
+      alert("Surat Ijin Kerja Aman (SIKA) resmi hanya dapat dicetak setelah disetujui penuh oleh seluruh pihak berwenang (hingga Head Division HRD&GA).");
       return;
     }
     setPrintModalPermit(permit);
@@ -134,7 +209,9 @@ export default function HistoryPage() {
       try {
         const res = await api.getPermitHistory();
         if (res.success && res.data) {
-          setRequests(res.data.map(mapApiToHistory));
+          const mapped = res.data.map(mapApiToHistory);
+          mapped.sort((a: any, b: any) => (b.rawId || 0) - (a.rawId || 0));
+          setRequests(mapped);
         } else {
           setRequests([]);
         }
@@ -159,7 +236,141 @@ export default function HistoryPage() {
     return diffDays >= 0 && diffDays <= 3;
   });
 
-  const displayedRequests = showExpiringOnly ? expiringItems : requests;
+  // Filter States sesuai Foto Referensi
+  const [timePeriod, setTimePeriod] = useState<"all" | "today" | "this_week" | "this_month" | "last_month" | "custom">("all");
+  const [statusFilter, setStatusFilter] = useState<"ALL" | "Disetujui" | "Selesai" | "PENDING" | "Ditolak">("ALL");
+  const [customStartDate, setCustomStartDate] = useState<string>("");
+  const [customEndDate, setCustomEndDate] = useState<string>("");
+  const [searchQuery, setSearchQuery] = useState<string>("");
+
+  // Counter badge dinamis untuk baris Status
+  const statusCounts = useMemo(() => {
+    return {
+      all: requests.length,
+      disetujui: requests.filter((r) => r.status === "Disetujui").length,
+      selesai: requests.filter((r) => r.status === "Selesai").length,
+      pending: requests.filter((r) => r.status && r.status.startsWith("Menunggu")).length,
+      ditolak: requests.filter((r) => r.status === "Ditolak").length,
+    };
+  }, [requests]);
+
+  // Logika Filter Data
+  const filteredRequests = useMemo(() => {
+    return requests.filter((req) => {
+      // 1. Filter Banner Segera Berakhir jika aktif
+      if (showExpiringOnly) {
+        if (req.status !== "Disetujui") return false;
+        const end = new Date(req.selesaiKerja);
+        end.setHours(0, 0, 0, 0);
+        const diffDays = Math.ceil((end.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+        if (diffDays < 0 || diffDays > 3) return false;
+      }
+
+      // 2. Filter Status Ijin Kerja
+      if (statusFilter !== "ALL") {
+        if (statusFilter === "PENDING") {
+          if (!req.status?.startsWith("Menunggu")) return false;
+        } else if (req.status !== statusFilter) {
+          return false;
+        }
+      }
+
+      // 3. Filter Periode Waktu
+      const permitDate = req.mulaiKerja || (req.createdAt ? req.createdAt.substring(0, 10) : "");
+      if (permitDate) {
+        const pDate = new Date(permitDate);
+        const pad = (n: number) => String(n).padStart(2, "0");
+
+        if (timePeriod === "today") {
+          const now = new Date();
+          const todayStr = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+          const isToday = permitDate === todayStr || req.selesaiKerja === todayStr || (req.createdAt && req.createdAt.startsWith(todayStr));
+          if (!isToday) return false;
+        } else if (timePeriod === "this_week") {
+          const now = new Date();
+          const startOfWeek = new Date(now);
+          const day = startOfWeek.getDay() || 7;
+          startOfWeek.setDate(startOfWeek.getDate() - day + 1);
+          startOfWeek.setHours(0, 0, 0, 0);
+          const endOfWeek = new Date(startOfWeek);
+          endOfWeek.setDate(endOfWeek.getDate() + 6);
+          endOfWeek.setHours(23, 59, 59, 999);
+          if (pDate < startOfWeek || pDate > endOfWeek) return false;
+        } else if (timePeriod === "this_month") {
+          const now = new Date();
+          const thisMonthStr = `${now.getFullYear()}-${pad(now.getMonth() + 1)}`;
+          if (!permitDate.startsWith(thisMonthStr) && !(req.createdAt && req.createdAt.startsWith(thisMonthStr))) {
+            return false;
+          }
+        } else if (timePeriod === "last_month") {
+          const now = new Date();
+          const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+          const lastMonthStr = `${lastMonth.getFullYear()}-${pad(lastMonth.getMonth() + 1)}`;
+          if (!permitDate.startsWith(lastMonthStr) && !(req.createdAt && req.createdAt.startsWith(lastMonthStr))) {
+            return false;
+          }
+        } else if (timePeriod === "custom") {
+          if (customStartDate && permitDate < customStartDate) return false;
+          if (customEndDate && permitDate > customEndDate) return false;
+        }
+      }
+
+      // 4. Pencarian Teks
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase().trim();
+        const idMatch = req.id?.toLowerCase().includes(q);
+        const contractorMatch = req.namaKontraktor?.toLowerCase().includes(q);
+        const jobMatch = req.jenisPekerjaan?.toLowerCase().includes(q);
+        const locMatch = req.lokasi?.toLowerCase().includes(q);
+        const pjMatch = req.penanggungJawab?.toLowerCase().includes(q);
+        if (!idMatch && !contractorMatch && !jobMatch && !locMatch && !pjMatch) {
+          return false;
+        }
+      }
+
+      return true;
+    });
+  }, [requests, showExpiringOnly, statusFilter, timePeriod, customStartDate, customEndDate, searchQuery, today]);
+
+  const displayedRequests = filteredRequests;
+
+  const handleResetFilters = () => {
+    setTimePeriod("all");
+    setStatusFilter("ALL");
+    setCustomStartDate("");
+    setCustomEndDate("");
+    setSearchQuery("");
+    setShowExpiringOnly(false);
+  };
+
+  const hasActiveFilters = timePeriod !== "all" || statusFilter !== "ALL" || !!customStartDate || !!customEndDate || !!searchQuery.trim() || showExpiringOnly;
+
+  const handleExportExcel = () => {
+    let periodLabel = "Semua Waktu";
+    if (timePeriod === "today") periodLabel = "Hari Ini";
+    else if (timePeriod === "this_week") periodLabel = "Minggu Ini";
+    else if (timePeriod === "this_month") periodLabel = "Bulan Ini";
+    else if (timePeriod === "last_month") periodLabel = "Bulan Lalu";
+    else if (timePeriod === "custom") periodLabel = "Rentang Kustom";
+
+    let statusLabel = "Semua Status";
+    if (statusFilter === "Disetujui") statusLabel = "Disetujui";
+    else if (statusFilter === "Selesai") statusLabel = "Selesai";
+    else if (statusFilter === "PENDING") statusLabel = "Menunggu Approval";
+    else if (statusFilter === "Ditolak") statusLabel = "Ditolak";
+
+    let customRange = "";
+    if (timePeriod === "custom" && (customStartDate || customEndDate)) {
+      customRange = `${customStartDate || "Awal"} s.d ${customEndDate || "Akhir"}`;
+    }
+
+    exportWorkPermitsToExcel(filteredRequests, {
+      periodLabel,
+      statusLabel,
+      customDateRange: customRange,
+      searchKeyword: searchQuery.trim() || undefined,
+    });
+  };
 
   return (
     <div className="flex-1 flex flex-col h-full bg-background overflow-hidden relative">
@@ -167,13 +378,56 @@ export default function HistoryPage() {
       
       <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8">
         <div className="max-w-7xl mx-auto space-y-6">
-          <div className="flex justify-between items-end">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div>
-              <h2 className="text-2xl font-bold text-gray-900">Riwayat Ijin Kerja</h2>
-              <p className="text-sm text-gray-500 mt-1">Arsip dan pencatatan seluruh riwayat ijin kerja yang telah diajukan.</p>
+              <h2 className="text-2xl font-bold text-gray-900">
+                {historyTab === "permits" ? "Riwayat Ijin Kerja" : "Inspeksi K3 & APAR"}
+              </h2>
+              <p className="text-sm text-gray-500 mt-1">
+                {historyTab === "permits" 
+                  ? "Arsip dan pencatatan seluruh riwayat ijin kerja yang telah diajukan."
+                  : "Daftar seluruh riwayat inspeksi berkala APAR dan fasilitas keselamatan kerja."}
+              </p>
             </div>
-            {loading && <span className="text-xs text-primary font-medium animate-pulse">Memuat riwayat...</span>}
+            <div className="flex items-center gap-3">
+              {loading && historyTab === "permits" && <span className="text-xs text-primary font-medium animate-pulse">Memuat riwayat...</span>}
+              {(userRole === "hse" || userRole === "pic_k3" || userRole === "admin" || userRole === "ga_dept_head" || userRole === "ga_div_head") && (
+                <div className="flex items-center gap-1.5 bg-slate-100 p-1 rounded-xl border border-slate-200">
+                  <button
+                    type="button"
+                    onClick={() => setHistoryTab("permits")}
+                    className={cn(
+                      "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer",
+                      historyTab === "permits"
+                        ? "bg-white text-slate-900 shadow-xs"
+                        : "text-slate-600 hover:text-slate-900"
+                    )}
+                  >
+                    <FileText size={14} />
+                    <span>Ijin Kerja (SIKA)</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setHistoryTab("inspections")}
+                    className={cn(
+                      "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer",
+                      historyTab === "inspections"
+                        ? "bg-white text-slate-900 shadow-xs"
+                        : "text-slate-600 hover:text-slate-900"
+                    )}
+                  >
+                    <ClipboardCheck size={14} />
+                    <span>Inspeksi K3 & APAR</span>
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
+
+          {historyTab === "inspections" ? (
+            <InspectionDataTable />
+          ) : (
+            <>
 
           {/* Banner filter segera berakhir */}
           {expiringItems.length > 0 && (
@@ -197,6 +451,315 @@ export default function HistoryPage() {
               </button>
             </div>
           )}
+          {/* PANEL FILTER & EXPORT WORK PERMIT MONITORING (SESUAI FOTO REFERENSI) */}
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-xs p-4 sm:p-5 space-y-4">
+            {/* Baris 1: PERIODE WAKTU */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 text-xs font-bold text-slate-700 tracking-wider">
+                  <Calendar size={15} className="text-primary" />
+                  <span>PERIODE WAKTU:</span>
+                </div>
+                {timePeriod !== "all" && (
+                  <button
+                    type="button"
+                    onClick={() => { setTimePeriod("all"); setCustomStartDate(""); setCustomEndDate(""); }}
+                    className="text-[11px] text-slate-500 hover:text-rose-600 flex items-center gap-1 cursor-pointer"
+                  >
+                    <RotateCcw size={11} />
+                    <span>Reset Waktu</span>
+                  </button>
+                )}
+              </div>
+              
+              <div className="flex flex-wrap items-center gap-2">
+                {/* Semua Waktu */}
+                <button
+                  type="button"
+                  onClick={() => setTimePeriod("all")}
+                  className={cn(
+                    "inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer",
+                    timePeriod === "all"
+                      ? "bg-[#162f65] text-white shadow-xs"
+                      : "bg-white text-slate-700 border border-slate-200 hover:bg-slate-50"
+                  )}
+                >
+                  <InfinityIcon size={14} />
+                  <span>Semua Waktu</span>
+                </button>
+
+                {/* Hari Ini */}
+                <button
+                  type="button"
+                  onClick={() => setTimePeriod("today")}
+                  className={cn(
+                    "inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer",
+                    timePeriod === "today"
+                      ? "bg-[#162f65] text-white shadow-xs"
+                      : "bg-white text-slate-700 border border-slate-200 hover:bg-slate-50"
+                  )}
+                >
+                  <Calendar size={13} />
+                  <span>Hari Ini</span>
+                </button>
+
+                {/* Minggu Ini */}
+                <button
+                  type="button"
+                  onClick={() => setTimePeriod("this_week")}
+                  className={cn(
+                    "inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer",
+                    timePeriod === "this_week"
+                      ? "bg-[#162f65] text-white shadow-xs"
+                      : "bg-white text-slate-700 border border-slate-200 hover:bg-slate-50"
+                  )}
+                >
+                  <Calendar size={13} />
+                  <span>Minggu Ini</span>
+                </button>
+
+                {/* Bulan Ini */}
+                <button
+                  type="button"
+                  onClick={() => setTimePeriod("this_month")}
+                  className={cn(
+                    "inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer",
+                    timePeriod === "this_month"
+                      ? "bg-[#162f65] text-white shadow-xs"
+                      : "bg-white text-slate-700 border border-slate-200 hover:bg-slate-50"
+                  )}
+                >
+                  <Calendar size={13} />
+                  <span>Bulan Ini</span>
+                </button>
+
+                {/* Bulan Lalu */}
+                <button
+                  type="button"
+                  onClick={() => setTimePeriod("last_month")}
+                  className={cn(
+                    "inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer",
+                    timePeriod === "last_month"
+                      ? "bg-[#162f65] text-white shadow-xs"
+                      : "bg-white text-slate-700 border border-slate-200 hover:bg-slate-50"
+                  )}
+                >
+                  <HistoryIcon size={13} />
+                  <span>Bulan Lalu</span>
+                </button>
+
+                {/* Rentang Kustom */}
+                <button
+                  type="button"
+                  onClick={() => setTimePeriod("custom")}
+                  className={cn(
+                    "inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer",
+                    timePeriod === "custom"
+                      ? "bg-[#162f65] text-white shadow-xs"
+                      : "bg-white text-slate-700 border border-slate-200 hover:bg-slate-50"
+                  )}
+                >
+                  <CalendarRange size={13} />
+                  <span>Rentang Kustom</span>
+                </button>
+              </div>
+
+              {/* Form Input Rentang Kustom */}
+              {timePeriod === "custom" && (
+                <div className="flex items-center gap-2 pt-2 text-xs flex-wrap bg-slate-50 p-3 rounded-xl border border-slate-200">
+                  <span className="font-semibold text-slate-600">Dari:</span>
+                  <input
+                    type="date"
+                    value={customStartDate}
+                    onChange={(e) => setCustomStartDate(e.target.value)}
+                    className="px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg text-xs focus:outline-none focus:border-primary font-medium"
+                  />
+                  <span className="font-semibold text-slate-600">Sampai:</span>
+                  <input
+                    type="date"
+                    value={customEndDate}
+                    onChange={(e) => setCustomEndDate(e.target.value)}
+                    className="px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg text-xs focus:outline-none focus:border-primary font-medium"
+                  />
+                  {(customStartDate || customEndDate) && (
+                    <button
+                      type="button"
+                      onClick={() => { setCustomStartDate(""); setCustomEndDate(""); }}
+                      className="text-xs text-rose-600 hover:underline font-semibold ml-2 cursor-pointer"
+                    >
+                      Reset Tanggal
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Baris 2: STATUS IJIN KERJA */}
+            <div className="space-y-2 pt-2 border-t border-slate-100">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 text-xs font-bold text-slate-700 tracking-wider">
+                  <ShieldCheck size={15} className="text-emerald-600" />
+                  <span>STATUS IJIN KERJA:</span>
+                </div>
+                {statusFilter !== "ALL" && (
+                  <button
+                    type="button"
+                    onClick={() => setStatusFilter("ALL")}
+                    className="text-[11px] text-slate-500 hover:text-rose-600 flex items-center gap-1 cursor-pointer"
+                  >
+                    <RotateCcw size={11} />
+                    <span>Reset Status</span>
+                  </button>
+                )}
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2">
+                {/* Semua Status */}
+                <button
+                  type="button"
+                  onClick={() => setStatusFilter("ALL")}
+                  className={cn(
+                    "inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer",
+                    statusFilter === "ALL"
+                      ? "bg-[#162f65] text-white shadow-xs"
+                      : "bg-white text-slate-700 border border-slate-200 hover:bg-slate-50"
+                  )}
+                >
+                  <Layers size={13} />
+                  <span>Semua Status</span>
+                  <span className={cn(
+                    "px-1.5 py-0.2 rounded-full text-[10px] font-mono font-bold",
+                    statusFilter === "ALL" ? "bg-white/20 text-white" : "bg-slate-100 text-slate-600"
+                  )}>
+                    {statusCounts.all}
+                  </span>
+                </button>
+
+                {/* Disetujui */}
+                <button
+                  type="button"
+                  onClick={() => setStatusFilter("Disetujui")}
+                  className={cn(
+                    "inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer",
+                    statusFilter === "Disetujui"
+                      ? "bg-[#162f65] text-white shadow-xs"
+                      : "bg-white text-slate-700 border border-slate-200 hover:bg-slate-50"
+                  )}
+                >
+                  <ShieldCheck size={13} className={statusFilter === "Disetujui" ? "text-white" : "text-emerald-600"} />
+                  <span>Disetujui</span>
+                  <span className={cn(
+                    "px-1.5 py-0.2 rounded-full text-[10px] font-mono font-bold",
+                    statusFilter === "Disetujui" ? "bg-white/20 text-white" : "bg-slate-100 text-slate-600"
+                  )}>
+                    {statusCounts.disetujui}
+                  </span>
+                </button>
+
+                {/* Selesai */}
+                <button
+                  type="button"
+                  onClick={() => setStatusFilter("Selesai")}
+                  className={cn(
+                    "inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer",
+                    statusFilter === "Selesai"
+                      ? "bg-[#162f65] text-white shadow-xs"
+                      : "bg-white text-slate-700 border border-slate-200 hover:bg-slate-50"
+                  )}
+                >
+                  <CheckCircle2 size={13} className={statusFilter === "Selesai" ? "text-white" : "text-blue-600"} />
+                  <span>Selesai</span>
+                  <span className={cn(
+                    "px-1.5 py-0.2 rounded-full text-[10px] font-mono font-bold",
+                    statusFilter === "Selesai" ? "bg-white/20 text-white" : "bg-slate-100 text-slate-600"
+                  )}>
+                    {statusCounts.selesai}
+                  </span>
+                </button>
+
+                {/* Menunggu / Pending */}
+                <button
+                  type="button"
+                  onClick={() => setStatusFilter("PENDING")}
+                  className={cn(
+                    "inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer",
+                    statusFilter === "PENDING"
+                      ? "bg-[#162f65] text-white shadow-xs"
+                      : "bg-white text-slate-700 border border-slate-200 hover:bg-slate-50"
+                  )}
+                >
+                  <Hourglass size={13} className={statusFilter === "PENDING" ? "text-white" : "text-amber-600"} />
+                  <span>Menunggu / Pending</span>
+                  <span className={cn(
+                    "px-1.5 py-0.2 rounded-full text-[10px] font-mono font-bold",
+                    statusFilter === "PENDING" ? "bg-white/20 text-white" : "bg-slate-100 text-slate-600"
+                  )}>
+                    {statusCounts.pending}
+                  </span>
+                </button>
+
+                {/* Ditolak */}
+                <button
+                  type="button"
+                  onClick={() => setStatusFilter("Ditolak")}
+                  className={cn(
+                    "inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer",
+                    statusFilter === "Ditolak"
+                      ? "bg-[#162f65] text-white shadow-xs"
+                      : "bg-white text-slate-700 border border-slate-200 hover:bg-slate-50"
+                  )}
+                >
+                  <XCircle size={13} className={statusFilter === "Ditolak" ? "text-white" : "text-rose-600"} />
+                  <span>Ditolak</span>
+                  <span className={cn(
+                    "px-1.5 py-0.2 rounded-full text-[10px] font-mono font-bold",
+                    statusFilter === "Ditolak" ? "bg-white/20 text-white" : "bg-slate-100 text-slate-600"
+                  )}>
+                    {statusCounts.ditolak}
+                  </span>
+                </button>
+              </div>
+            </div>
+
+            {/* Baris 3: Search Box & Tombol Export Excel */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-3 border-t border-slate-100">
+              <div className="relative flex-1 max-w-md">
+                <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Cari nomor ijin (WP-...), kontraktor, pekerjaan, lokasi..."
+                  className="w-full pl-9 pr-8 py-2 text-xs border border-slate-300 rounded-xl focus:outline-none focus:border-primary bg-slate-50/50"
+                />
+                {searchQuery && (
+                  <button
+                    type="button"
+                    onClick={() => setSearchQuery("")}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 text-xs cursor-pointer p-0.5"
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
+
+              <div className="flex items-center justify-between sm:justify-end gap-3">
+                <span className="text-xs text-slate-500 font-medium">
+                  Menampilkan <strong>{filteredRequests.length}</strong> dari {requests.length} ijin
+                </span>
+
+                <button
+                  type="button"
+                  onClick={handleExportExcel}
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold text-white bg-emerald-700 hover:bg-emerald-800 transition-colors shadow-xs cursor-pointer select-none"
+                  title="Export Dokumen Work Permit Monitoring ke Excel (.xlsx) sesuai format whiteboard"
+                >
+                  <FileSpreadsheet size={16} />
+                  <span>Export Excel ({filteredRequests.length})</span>
+                </button>
+              </div>
+            </div>
+          </div>
 
           {/* Desktop Table (Boxed Data Table style) */}
           <div className="hidden sm:block bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
@@ -219,10 +782,15 @@ export default function HistoryPage() {
                         <td className="px-5 py-4 text-sm font-bold text-gray-900 whitespace-nowrap">
                           <div className="font-mono text-gray-900">{req.id}</div>
                           {req.requestType === 'Perpanjangan' && (
-                            <div className="mt-1">
+                            <div className="mt-1 flex flex-col gap-0.5">
                               <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-amber-50 text-amber-800 border border-amber-200" title={`Diperpanjang dari izin ${req.parentPermit?.permitNumber || req.parentPermitId}`}>
-                                Perpanjangan: {req.parentPermit?.permitNumber || (req.parentPermitId ? `ID #${req.parentPermitId}` : "SIKA Induk")}
+                                Perpanjangan Ke-{req.extensionPhase || 1}
                               </span>
+                              {req.hasActiveChild && (
+                                <span className="text-[9px] text-blue-600 font-medium">
+                                  ✓ Dilanjutkan ke Fase berikutnya
+                                </span>
+                              )}
                             </div>
                           )}
                         </td>
@@ -246,11 +814,11 @@ export default function HistoryPage() {
                         </td>
                         <td className="px-5 py-4 text-right whitespace-nowrap">
                           <div className="flex items-center justify-end gap-2">
-                            {isEligibleForExtension(req.selesaiKerja, req.status, extensionWindowDays) && (
+                            {isEligibleForExtension(req.selesaiKerja, req.status, extensionWindowDays) && !req.hasActiveChild && (
                               <button
                                 onClick={() => handleExtend(req)}
                                 className="p-2 text-amber-600 hover:text-amber-700 hover:bg-amber-50 rounded-lg transition-colors cursor-pointer"
-                                title={`Perpanjang Ijin Kerja (H-${extensionWindowDays})`}
+                                title={`Perpanjang Ijin Kerja (Fase ${(req.extensionPhase || 0) + 1})`}
                               >
                                 <CalendarPlus size={18} />
                               </button>
@@ -274,7 +842,7 @@ export default function HistoryPage() {
                               <button 
                                 disabled
                                 className="p-2 text-gray-300 bg-gray-50 rounded-lg cursor-not-allowed opacity-60" 
-                                title={`Cetak Terkunci: Menunggu persetujuan akhir dari GA Div Head (Status: ${req.status})`}
+                                title={`Cetak Terkunci: Menunggu persetujuan akhir dari Head Division HRD&GA (Status: ${req.status})`}
                               >
                                 <Lock size={18} className="text-gray-400" />
                               </button>
@@ -293,6 +861,19 @@ export default function HistoryPage() {
                             <p className="text-xs text-gray-500 mt-1">Semua izin Anda masih aman, tidak ada yang berakhir dalam 3 hari ke depan.</p>
                             <button onClick={() => setShowExpiringOnly(false)} className="mt-3 text-xs font-semibold text-primary hover:underline">
                               Tampilkan semua riwayat
+                            </button>
+                          </>
+                        ) : hasActiveFilters ? (
+                          <>
+                            <p className="text-base font-medium text-gray-800">Tidak Ada Ijin Kerja yang Cocok</p>
+                            <p className="text-xs text-gray-500 mt-1">Tidak ada data yang sesuai dengan kombinasi periode waktu, status, atau kata kunci pencarian Anda.</p>
+                            <button 
+                              type="button"
+                              onClick={handleResetFilters} 
+                              className="mt-3 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-white bg-slate-800 hover:bg-slate-900 transition-colors cursor-pointer"
+                            >
+                              <RotateCcw size={12} />
+                              <span>Reset Semua Filter</span>
                             </button>
                           </>
                         ) : (
@@ -321,10 +902,15 @@ export default function HistoryPage() {
                       <div>
                         <span className="text-sm font-bold text-gray-900 font-mono">{req.id}</span>
                         {req.requestType === 'Perpanjangan' && (
-                          <div className="mt-0.5">
+                          <div className="mt-0.5 flex flex-col gap-0.5">
                             <span className="inline-block px-1.5 py-0.2 rounded text-[10px] font-bold bg-amber-50 text-amber-800 border border-amber-200">
-                              Perpanjangan: {req.parentPermit?.permitNumber || (req.parentPermitId ? `ID #${req.parentPermitId}` : "Induk")}
+                              Perpanjangan Ke-{req.extensionPhase || 1}
                             </span>
+                            {req.hasActiveChild && (
+                              <span className="text-[9px] text-blue-600 font-medium">
+                                ✓ Dilanjutkan ke Fase berikutnya
+                              </span>
+                            )}
                           </div>
                         )}
                       </div>
@@ -349,11 +935,11 @@ export default function HistoryPage() {
                       )}
                     </div>
                     <div className="flex gap-2">
-                      {isEligibleForExtension(req.selesaiKerja, req.status, extensionWindowDays) && (
+                      {isEligibleForExtension(req.selesaiKerja, req.status, extensionWindowDays) && !req.hasActiveChild && (
                         <button
                           onClick={() => handleExtend(req)}
                           className="p-2 text-amber-600 hover:text-amber-700 bg-amber-50 rounded-lg transition-colors cursor-pointer"
-                          title={`Perpanjang Ijin Kerja (H-${extensionWindowDays})`}
+                          title={`Perpanjang Ijin Kerja (Fase ${(req.extensionPhase || 0) + 1})`}
                         >
                           <CalendarPlus size={16} />
                         </button>
@@ -376,7 +962,7 @@ export default function HistoryPage() {
                         <button 
                           disabled
                           className="p-2 text-gray-300 bg-gray-50 rounded-lg cursor-not-allowed opacity-60"
-                          title="Cetak Terkunci: Menunggu persetujuan akhir GA Div Head"
+                          title="Cetak Terkunci: Menunggu persetujuan akhir Head Division HRD&GA"
                         >
                           <Lock size={16} className="text-gray-400" />
                         </button>
@@ -386,24 +972,40 @@ export default function HistoryPage() {
                 </div>
               ))
             ) : (
-              <div className="bg-white p-8 rounded-xl border border-gray-200 text-center text-gray-500">
-                <FileText size={32} className="mx-auto mb-2 opacity-20" />
+              <div className="bg-white p-8 rounded-xl border border-gray-200 text-center text-gray-500 space-y-2">
+                <AlertTriangle size={32} className="mx-auto text-amber-400" />
                 {showExpiringOnly ? (
                   <>
-                    <p className="text-sm font-semibold text-gray-700">Tidak Ada Izin yang Segera Berakhir</p>
-                    <button onClick={() => setShowExpiringOnly(false)} className="mt-2 text-xs font-semibold text-primary hover:underline">
+                    <p className="text-sm font-semibold text-gray-800">Tidak Ada Izin yang Segera Berakhir</p>
+                    <button onClick={() => setShowExpiringOnly(false)} className="mt-2 text-xs font-semibold text-primary hover:underline cursor-pointer">
                       Tampilkan semua riwayat
+                    </button>
+                  </>
+                ) : hasActiveFilters ? (
+                  <>
+                    <p className="text-sm font-semibold text-gray-800">Tidak Ada Ijin Kerja yang Cocok</p>
+                    <p className="text-xs text-gray-400">Tidak ada data yang sesuai dengan filter periode atau status yang Anda pilih.</p>
+                    <button 
+                      type="button"
+                      onClick={handleResetFilters} 
+                      className="mt-2 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-white bg-slate-800 hover:bg-slate-900 transition-colors cursor-pointer"
+                    >
+                      <RotateCcw size={12} />
+                      <span>Reset Semua Filter</span>
                     </button>
                   </>
                 ) : (
                   <>
-                    <p className="text-sm font-semibold text-gray-700">Belum Ada Riwayat Ijin Kerja</p>
+                    <FileText size={32} className="mx-auto mb-2 opacity-20" />
+                    <p className="text-sm font-semibold text-gray-800">Belum Ada Riwayat Ijin Kerja</p>
                     <p className="text-xs text-gray-400 mt-1">Data arsip dan riwayat izin kerja akan tampil di sini.</p>
                   </>
                 )}
               </div>
             )}
           </div>
+            </>
+          )}
 
         </div>
       </main>
@@ -446,6 +1048,36 @@ export default function HistoryPage() {
                   rejectReason={selectedRequest.alasanPenolakan}
                 />
 
+                {/* 0.4. Timeline Rantai Fase Proyek */}
+                {(selectedRequest.extensionPhase > 0 || (selectedRequest.projectChain && selectedRequest.projectChain.length > 1) || selectedRequest.hasActiveChild) && (
+                  <ProjectPhaseTimeline
+                    currentPermitId={selectedRequest.rawId || selectedRequest.id}
+                    phases={selectedRequest.projectChain?.length ? selectedRequest.projectChain : [
+                      ...(selectedRequest.rootPermit ? [{
+                        id: selectedRequest.rootPermit.id,
+                        permit_number: selectedRequest.rootPermit.permitNumber,
+                        request_type: "Baru",
+                        extension_phase: 0,
+                        start_date: selectedRequest.rootPermit.startDate,
+                        end_date: selectedRequest.rootPermit.endDate,
+                        status: "Disetujui"
+                      }] : []),
+                      {
+                        id: selectedRequest.rawId,
+                        permit_number: selectedRequest.id,
+                        request_type: selectedRequest.requestType,
+                        extension_phase: selectedRequest.extensionPhase,
+                        start_date: selectedRequest.mulaiKerja,
+                        end_date: selectedRequest.selesaiKerja,
+                        status: selectedRequest.status
+                      }
+                    ]}
+                    rootPermitNumber={selectedRequest.rootPermit?.permitNumber || selectedRequest.parentPermit?.permitNumber || selectedRequest.id}
+                    cumulativeStartDate={selectedRequest.cumulativeStartDate}
+                    cumulativeEndDate={selectedRequest.cumulativeEndDate}
+                  />
+                )}
+
                 {/* 0.5. Info Audit Jejak Perpanjangan Ijin (Khusus Tipe Perpanjangan) */}
                 {selectedRequest.requestType === 'Perpanjangan' && (
                   <div className="bg-amber-50/90 border border-amber-200 rounded-xl p-4 sm:p-5 shadow-sm space-y-3 animate-in fade-in">
@@ -454,33 +1086,39 @@ export default function HistoryPage() {
                         <CalendarPlus size={20} />
                       </div>
                       <div>
-                        <h4 className="text-sm font-bold text-amber-950">Informasi Audit Perpanjangan Ijin Kerja</h4>
-                        <p className="text-xs text-amber-800 mt-0.5">Ijin ini dicatat sebagai kelanjutan legal dari izin kerja sebelumnya.</p>
+                        <h4 className="text-sm font-bold text-amber-950">
+                          Informasi Audit Perpanjangan Ijin Kerja Ke-{selectedRequest.extensionPhase || 1}
+                        </h4>
+                        <p className="text-xs text-amber-800 mt-0.5">
+                          Ijin ini dicatat sebagai kelanjutan legal Fase {selectedRequest.extensionPhase || 1} dari proyek SIKA.
+                        </p>
                       </div>
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 border-t border-amber-200/70 text-xs">
                       <div className="bg-white/90 p-3 rounded-lg border border-amber-200">
-                        <span className="text-gray-500 block font-medium">Ijin Induk Awal:</span>
+                        <span className="text-gray-500 block font-medium">SIKA Induk & Acuan:</span>
                         <strong className="text-sm text-gray-900 block font-mono mt-0.5">
-                          {selectedRequest.parentPermit?.permitNumber || (selectedRequest.parentPermitId ? `ID #${selectedRequest.parentPermitId}` : "SIKA Induk")}
+                          {selectedRequest.rootPermit?.permitNumber || selectedRequest.parentPermit?.permitNumber || "SIKA Induk"}
                         </strong>
-                        {selectedRequest.parentPermit?.startDate && (
-                          <span className="text-gray-500 text-[11px] block mt-1">
-                            Masa Awal: {selectedRequest.parentPermit.startDate} s.d {selectedRequest.parentPermit.endDate}
-                          </span>
-                        )}
+                        <span className="text-gray-500 text-[11px] block mt-1">
+                          {selectedRequest.parentPermit?.permitNumber && selectedRequest.parentPermit.permitNumber !== (selectedRequest.rootPermit?.permitNumber || '')
+                            ? `Fase sebelumnya: ${selectedRequest.parentPermit.permitNumber}`
+                            : `Mulai Awal: ${selectedRequest.cumulativeStartDate || '-'}`}
+                        </span>
                       </div>
                       <div className="bg-white/90 p-3 rounded-lg border border-amber-200">
-                        <span className="text-gray-500 block font-medium">Periode Perpanjangan Aktif:</span>
+                        <span className="text-gray-500 block font-medium">
+                          Periode Aktif Fase {selectedRequest.extensionPhase || 1}:
+                        </span>
                         <strong className="text-sm text-amber-900 block mt-0.5 font-mono">
                           {selectedRequest.mulaiKerja} s.d {selectedRequest.selesaiKerja}
                         </strong>
                         <span className="text-amber-800 text-[11px] font-medium block mt-1">
-                          Tambahan: {calculateInclusiveDays(selectedRequest.mulaiKerja, selectedRequest.selesaiKerja)} Hari Kerja
+                          Durasi: {calculateInclusiveDays(selectedRequest.mulaiKerja, selectedRequest.selesaiKerja)} Hari Kalender (Maks. 6)
                         </span>
                       </div>
                       <div className="bg-amber-100/70 p-3 rounded-lg border border-amber-300">
-                        <span className="text-amber-900 block font-bold">Rentang Kumulatif Pekerjaan:</span>
+                        <span className="text-amber-900 block font-bold">Rentang Kumulatif Proyek:</span>
                         <strong className="text-sm text-amber-950 block mt-0.5 font-mono">
                           {selectedRequest.cumulativeStartDate} s.d {selectedRequest.cumulativeEndDate}
                         </strong>
@@ -642,7 +1280,7 @@ export default function HistoryPage() {
                 {!canPrintPermit(selectedRequest.status) && (
                   <div className="flex items-center gap-2 text-xs text-amber-800 bg-amber-50 border border-amber-200 px-3 py-1.5 rounded-lg">
                     <Lock size={14} className="shrink-0 text-amber-600" />
-                    <span>Dokumen resmi baru dapat dicetak setelah disetujui penuh oleh <strong>HRD & GA Div Head</strong>.</span>
+                    <span>Dokumen resmi baru dapat dicetak setelah disetujui penuh oleh <strong>Head Division HRD&GA</strong>.</span>
                   </div>
                 )}
               </div>
@@ -664,7 +1302,7 @@ export default function HistoryPage() {
                   <button 
                     disabled
                     className="px-5 py-2.5 text-sm font-medium text-gray-400 bg-gray-100 border border-gray-200 rounded-lg flex items-center gap-2 cursor-not-allowed opacity-75"
-                    title="Ijin kerja belum dapat dicetak karena belum disetujui penuh oleh GA Div Head"
+                    title="Ijin kerja belum dapat dicetak karena belum disetujui penuh oleh Head Division HRD&GA"
                   >
                     <Lock size={16} /> Menunggu Approval Akhir (Terkunci)
                   </button>

@@ -16,6 +16,8 @@ class WorkPermit extends Model
         'vendor_id',
         'request_type',
         'parent_permit_id',
+        'root_permit_id',
+        'extension_phase',
         'job_title',
         'location_id',
         'start_date',
@@ -39,6 +41,12 @@ class WorkPermit extends Model
         'start_date' => 'date',
         'end_date' => 'date',
         'total_workers' => 'integer',
+        'extension_phase' => 'integer',
+    ];
+
+    protected $appends = [
+        'cumulative_start_date',
+        'has_active_child_extension',
     ];
 
     public function user()
@@ -59,6 +67,51 @@ class WorkPermit extends Model
     public function parentPermit()
     {
         return $this->belongsTo(WorkPermit::class, 'parent_permit_id');
+    }
+
+    public function rootPermit()
+    {
+        return $this->belongsTo(WorkPermit::class, 'root_permit_id');
+    }
+
+    public function childPermits()
+    {
+        return $this->hasMany(WorkPermit::class, 'parent_permit_id');
+    }
+
+    public function activeChildPermit()
+    {
+        return $this->hasOne(WorkPermit::class, 'parent_permit_id')->whereNotIn('status', ['Ditolak']);
+    }
+
+    public function getProjectChainAttribute()
+    {
+        $rootId = $this->root_permit_id ?: $this->id;
+        return self::where('root_permit_id', $rootId)
+            ->orWhere('id', $rootId)
+            ->select('id', 'permit_number', 'request_type', 'extension_phase', 'start_date', 'end_date', 'status', 'created_at')
+            ->orderBy('extension_phase', 'asc')
+            ->orderBy('id', 'asc')
+            ->get();
+    }
+
+    public function getCumulativeStartDateAttribute()
+    {
+        if ($this->root_permit_id && $this->root_permit_id !== $this->id) {
+            $root = $this->relationLoaded('rootPermit') ? $this->rootPermit : WorkPermit::find($this->root_permit_id);
+            if ($root && $root->start_date) {
+                return $root->start_date->format('Y-m-d');
+            }
+        }
+        return $this->start_date ? $this->start_date->format('Y-m-d') : null;
+    }
+
+    public function getHasActiveChildExtensionAttribute()
+    {
+        if ($this->relationLoaded('childPermits')) {
+            return $this->childPermits->contains(fn($c) => $c->status !== 'Ditolak');
+        }
+        return $this->childPermits()->whereNotIn('status', ['Ditolak'])->exists();
     }
 
     public function permitTypes()

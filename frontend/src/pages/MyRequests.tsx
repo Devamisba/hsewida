@@ -6,19 +6,43 @@ import { cn, calculateInclusiveDays } from "@/lib/utils";
 import { api } from "@/services/api";
 import { PrintPermitModal } from "@/components/PrintPermitModal";
 import { ApprovalWorkflowStepper } from "@/components/ApprovalWorkflowStepper";
+import { ProjectPhaseTimeline } from "@/components/ProjectPhaseTimeline";
 
 function mapApiToRequest(item: any) {
   const parent = item.parent_permit || item.parentPermit || null;
+  const root = item.root_permit || item.rootPermit || null;
   const parentStartDate = parent?.start_date ? parent.start_date.substring(0, 10) : (parent?.startDate || null);
   const parentEndDate = parent?.end_date ? parent.end_date.substring(0, 10) : (parent?.endDate || null);
+  const rootStartDate = root?.start_date ? root.start_date.substring(0, 10) : (root?.startDate || null);
+  const rootEndDate = root?.end_date ? root.end_date.substring(0, 10) : (root?.endDate || null);
   const currentStart = item.start_date ? item.start_date.substring(0, 10) : item.mulaiKerja;
   const currentEnd = item.end_date ? item.end_date.substring(0, 10) : item.selesaiKerja;
+
+  const childPermits = item.child_permits || item.childPermits || [];
+  const hasActiveChild = item.has_active_child_extension !== undefined
+    ? Boolean(item.has_active_child_extension)
+    : childPermits.some((c: any) => c.status !== 'Ditolak');
+
+  const extensionPhase = typeof item.extension_phase === 'number' 
+    ? item.extension_phase 
+    : (item.request_type === 'Perpanjangan' ? 1 : 0);
+
+  const cumulativeStartDate = rootStartDate || item.cumulative_start_date || parentStartDate || currentStart;
 
   return {
     id: item.permit_number || `WP-${item.id}`,
     rawId: item.id,
     status: item.status,
     requestType: item.request_type || "Baru",
+    extensionPhase,
+    rootPermitId: item.root_permit_id || (root?.id ?? null),
+    rootPermit: root ? {
+      id: root.id,
+      permitNumber: root.permit_number || root.permitNumber || `WP-${root.id}`,
+      startDate: rootStartDate,
+      endDate: rootEndDate,
+      jobTitle: root.job_title || root.jobTitle || "",
+    } : null,
     parentPermitId: item.parent_permit_id || item.parentPermitId || (parent?.id ?? null),
     parentPermit: parent ? {
       id: parent.id,
@@ -26,8 +50,12 @@ function mapApiToRequest(item: any) {
       startDate: parentStartDate,
       endDate: parentEndDate,
       jobTitle: parent.job_title || parent.jobTitle || "",
+      extensionPhase: parent.extension_phase ?? 0,
     } : null,
-    cumulativeStartDate: parentStartDate || currentStart,
+    childPermits,
+    hasActiveChild,
+    projectChain: item.project_chain || [],
+    cumulativeStartDate,
     cumulativeEndDate: currentEnd,
     namaKontraktor: item.vendor?.company_name || item.user?.company_name || "PT Vendor",
     jenisPekerjaan: item.job_title || item.jenisPekerjaan || "Pekerjaan Vendor",
@@ -71,6 +99,8 @@ const getStatusBadge = (status: string) => {
   switch (status) {
     case "Menunggu PIC Vendor": 
     case "Menunggu HSE": 
+    case "Menunggu Head Dept HRD&GA":
+    case "Menunggu Head Division HRD&GA":
     case "Menunggu GA Dept Head": 
     case "Menunggu GA Div Head": 
       return "bg-warning-container text-on-warning-container";
@@ -110,11 +140,21 @@ export default function MyRequestsPage() {
   const [extensionWindowDays, setExtensionWindowDays] = useState(3);
 
   const handleExtend = (req: any) => {
+    if (req.hasActiveChild) {
+      alert("Ijin kerja ini sudah pernah diajukan perpanjangan ke fase berikutnya. Silakan lanjutkan dari dokumen perpanjangan terbaru.");
+      return;
+    }
     navigate("/create-request", { 
       state: { 
         extendMode: true, 
         originalId: req.rawId || req.id, 
         permitNumber: req.id,
+        extensionPhase: req.extensionPhase,
+        rootPermitId: req.rootPermitId,
+        rootPermitNumber: req.rootPermit?.permitNumber || req.parentPermit?.permitNumber || req.id,
+        rootStartDate: req.cumulativeStartDate || req.rootPermit?.startDate || req.mulaiKerja,
+        parentPermitId: req.rawId,
+        parentPermitNumber: req.id,
         ...req 
       } 
     });
@@ -122,7 +162,7 @@ export default function MyRequestsPage() {
 
   const handleOpenPrintModal = (permit: any) => {
     if (!canPrintPermit(permit.status)) {
-      alert("Surat Ijin Kerja Aman (SIKA) resmi hanya dapat dicetak setelah disetujui penuh oleh seluruh pihak berwenang (hingga HRD & GA Div Head).");
+      alert("Surat Ijin Kerja Aman (SIKA) resmi hanya dapat dicetak setelah disetujui penuh oleh seluruh pihak berwenang (hingga Head Division HRD&GA).");
       return;
     }
     setPrintModalPermit(permit);
@@ -141,7 +181,9 @@ export default function MyRequestsPage() {
       try {
         const res = await api.getMyRequests();
         if (res.success && res.data) {
-          setRequests(res.data.map(mapApiToRequest));
+          const mapped = res.data.map(mapApiToRequest);
+          mapped.sort((a: any, b: any) => (b.rawId || 0) - (a.rawId || 0));
+          setRequests(mapped);
         } else {
           setRequests([]);
         }
@@ -190,10 +232,15 @@ export default function MyRequestsPage() {
                         <td className="px-5 py-4 text-sm font-bold text-gray-900 whitespace-nowrap">
                           <div className="font-mono text-gray-900">{req.id}</div>
                           {req.requestType === 'Perpanjangan' && (
-                            <div className="mt-1">
+                            <div className="mt-1 flex flex-col gap-0.5">
                               <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-amber-50 text-amber-800 border border-amber-200" title={`Diperpanjang dari izin ${req.parentPermit?.permitNumber || req.parentPermitId}`}>
-                                Perpanjangan: {req.parentPermit?.permitNumber || (req.parentPermitId ? `ID #${req.parentPermitId}` : "SIKA Induk")}
+                                Perpanjangan Ke-{req.extensionPhase || 1}
                               </span>
+                              {req.hasActiveChild && (
+                                <span className="text-[9px] text-blue-600 font-medium">
+                                  ✓ Dilanjutkan ke Fase berikutnya
+                                </span>
+                              )}
                             </div>
                           )}
                         </td>
@@ -217,11 +264,11 @@ export default function MyRequestsPage() {
                         </td>
                         <td className="px-5 py-4 text-right whitespace-nowrap">
                           <div className="flex items-center justify-end gap-2">
-                            {isEligibleForExtension(req.selesaiKerja, req.status, extensionWindowDays) && (
+                            {isEligibleForExtension(req.selesaiKerja, req.status, extensionWindowDays) && !req.hasActiveChild && (
                               <button 
                                 onClick={() => handleExtend(req)}
                                 className="p-2 text-amber-600 hover:text-amber-700 hover:bg-amber-50 rounded-lg transition-colors cursor-pointer" 
-                                title={`Perpanjang Ijin Kerja (Masa H-${extensionWindowDays})`}
+                                title={`Perpanjang Ijin Kerja (Fase ${(req.extensionPhase || 0) + 1})`}
                               >
                                 <CalendarPlus size={18} />
                               </button>
@@ -245,7 +292,7 @@ export default function MyRequestsPage() {
                               <button 
                                 disabled
                                 className="p-2 text-gray-300 bg-gray-50 rounded-lg cursor-not-allowed opacity-60" 
-                                title={`Cetak Terkunci: Menunggu persetujuan akhir dari GA Div Head (Status: ${req.status})`}
+                                title={`Cetak Terkunci: Menunggu persetujuan akhir dari Head Division HRD&GA (Status: ${req.status})`}
                               >
                                 <Lock size={18} className="text-gray-400" />
                               </button>
@@ -279,10 +326,15 @@ export default function MyRequestsPage() {
                     <div>
                       <span className="text-sm font-bold text-gray-900 font-mono">{req.id}</span>
                       {req.requestType === 'Perpanjangan' && (
-                        <div className="mt-0.5">
+                        <div className="mt-0.5 flex flex-col gap-0.5">
                           <span className="inline-block px-1.5 py-0.2 rounded text-[10px] font-bold bg-amber-50 text-amber-800 border border-amber-200">
-                            Perpanjangan: {req.parentPermit?.permitNumber || (req.parentPermitId ? `ID #${req.parentPermitId}` : "Induk")}
+                            Perpanjangan Ke-{req.extensionPhase || 1}
                           </span>
+                          {req.hasActiveChild && (
+                            <span className="text-[9px] text-blue-600 font-medium">
+                              ✓ Dilanjutkan ke Fase berikutnya
+                            </span>
+                          )}
                         </div>
                       )}
                     </div>
@@ -307,11 +359,11 @@ export default function MyRequestsPage() {
                     )}
                   </div>
                   <div className="flex gap-2">
-                    {isEligibleForExtension(req.selesaiKerja, req.status, extensionWindowDays) && (
+                    {isEligibleForExtension(req.selesaiKerja, req.status, extensionWindowDays) && !req.hasActiveChild && (
                       <button 
                         onClick={() => handleExtend(req)}
                         className="p-2 text-amber-600 hover:text-amber-700 bg-amber-50 rounded-lg transition-colors cursor-pointer"
-                        title={`Perpanjang Ijin Kerja (Masa H-${extensionWindowDays})`}
+                        title={`Perpanjang Ijin Kerja (Fase ${(req.extensionPhase || 0) + 1})`}
                       >
                         <CalendarPlus size={16} />
                       </button>
@@ -334,7 +386,7 @@ export default function MyRequestsPage() {
                       <button 
                         disabled
                         className="p-2 text-gray-300 bg-gray-50 rounded-lg cursor-not-allowed opacity-60"
-                        title="Cetak Terkunci: Menunggu persetujuan akhir GA Div Head"
+                        title="Cetak Terkunci: Menunggu persetujuan akhir Head Division HRD&GA"
                       >
                         <Lock size={16} className="text-gray-400" />
                       </button>
@@ -393,6 +445,36 @@ export default function MyRequestsPage() {
                   rejectReason={selectedRequest.rejectReason}
                 />
 
+                {/* 0.4. Timeline Rantai Fase Proyek */}
+                {(selectedRequest.extensionPhase > 0 || (selectedRequest.projectChain && selectedRequest.projectChain.length > 1) || selectedRequest.hasActiveChild) && (
+                  <ProjectPhaseTimeline
+                    currentPermitId={selectedRequest.rawId || selectedRequest.id}
+                    phases={selectedRequest.projectChain?.length ? selectedRequest.projectChain : [
+                      ...(selectedRequest.rootPermit ? [{
+                        id: selectedRequest.rootPermit.id,
+                        permit_number: selectedRequest.rootPermit.permitNumber,
+                        request_type: "Baru",
+                        extension_phase: 0,
+                        start_date: selectedRequest.rootPermit.startDate,
+                        end_date: selectedRequest.rootPermit.endDate,
+                        status: "Disetujui"
+                      }] : []),
+                      {
+                        id: selectedRequest.rawId,
+                        permit_number: selectedRequest.id,
+                        request_type: selectedRequest.requestType,
+                        extension_phase: selectedRequest.extensionPhase,
+                        start_date: selectedRequest.mulaiKerja,
+                        end_date: selectedRequest.selesaiKerja,
+                        status: selectedRequest.status
+                      }
+                    ]}
+                    rootPermitNumber={selectedRequest.rootPermit?.permitNumber || selectedRequest.parentPermit?.permitNumber || selectedRequest.id}
+                    cumulativeStartDate={selectedRequest.cumulativeStartDate}
+                    cumulativeEndDate={selectedRequest.cumulativeEndDate}
+                  />
+                )}
+
                 {/* 0.5. Info Audit Jejak Perpanjangan Ijin (Khusus Tipe Perpanjangan) */}
                 {selectedRequest.requestType === 'Perpanjangan' && (
                   <div className="bg-amber-50/90 border border-amber-200 rounded-xl p-4 sm:p-5 shadow-sm space-y-3 animate-in fade-in">
@@ -401,33 +483,39 @@ export default function MyRequestsPage() {
                         <CalendarPlus size={20} />
                       </div>
                       <div>
-                        <h4 className="text-sm font-bold text-amber-950">Informasi Audit Perpanjangan Ijin Kerja</h4>
-                        <p className="text-xs text-amber-800 mt-0.5">Ijin ini diterbitkan sebagai kelanjutan legal dari izin kerja sebelumnya.</p>
+                        <h4 className="text-sm font-bold text-amber-950">
+                          Informasi Audit Perpanjangan Ijin Kerja Ke-{selectedRequest.extensionPhase || 1}
+                        </h4>
+                        <p className="text-xs text-amber-800 mt-0.5">
+                          Ijin ini diterbitkan sebagai kelanjutan legal Fase {selectedRequest.extensionPhase || 1} dari proyek SIKA.
+                        </p>
                       </div>
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 border-t border-amber-200/70 text-xs">
                       <div className="bg-white/90 p-3 rounded-lg border border-amber-200">
-                        <span className="text-gray-500 block font-medium">Ijin Induk Awal:</span>
+                        <span className="text-gray-500 block font-medium">SIKA Induk & Acuan:</span>
                         <strong className="text-sm text-gray-900 block font-mono mt-0.5">
-                          {selectedRequest.parentPermit?.permitNumber || (selectedRequest.parentPermitId ? `ID #${selectedRequest.parentPermitId}` : "SIKA Induk")}
+                          {selectedRequest.rootPermit?.permitNumber || selectedRequest.parentPermit?.permitNumber || "SIKA Induk"}
                         </strong>
-                        {selectedRequest.parentPermit?.startDate && (
-                          <span className="text-gray-500 text-[11px] block mt-1">
-                            Masa Awal: {selectedRequest.parentPermit.startDate} s.d {selectedRequest.parentPermit.endDate}
-                          </span>
-                        )}
+                        <span className="text-gray-500 text-[11px] block mt-1">
+                          {selectedRequest.parentPermit?.permitNumber && selectedRequest.parentPermit.permitNumber !== (selectedRequest.rootPermit?.permitNumber || '')
+                            ? `Fase sebelumnya: ${selectedRequest.parentPermit.permitNumber}`
+                            : `Mulai Awal: ${selectedRequest.cumulativeStartDate || '-'}`}
+                        </span>
                       </div>
                       <div className="bg-white/90 p-3 rounded-lg border border-amber-200">
-                        <span className="text-gray-500 block font-medium">Periode Perpanjangan Aktif:</span>
+                        <span className="text-gray-500 block font-medium">
+                          Periode Aktif Fase {selectedRequest.extensionPhase || 1}:
+                        </span>
                         <strong className="text-sm text-amber-900 block mt-0.5 font-mono">
                           {selectedRequest.mulaiKerja} s.d {selectedRequest.selesaiKerja}
                         </strong>
                         <span className="text-amber-800 text-[11px] font-medium block mt-1">
-                          Tambahan: {calculateInclusiveDays(selectedRequest.mulaiKerja, selectedRequest.selesaiKerja)} Hari Kerja
+                          Durasi: {calculateInclusiveDays(selectedRequest.mulaiKerja, selectedRequest.selesaiKerja)} Hari Kalender (Maks. 6)
                         </span>
                       </div>
                       <div className="bg-amber-100/70 p-3 rounded-lg border border-amber-300">
-                        <span className="text-amber-900 block font-bold">Rentang Kumulatif Pekerjaan:</span>
+                        <span className="text-amber-900 block font-bold">Rentang Kumulatif Proyek:</span>
                         <strong className="text-sm text-amber-950 block mt-0.5 font-mono">
                           {selectedRequest.cumulativeStartDate} s.d {selectedRequest.cumulativeEndDate}
                         </strong>
@@ -604,7 +692,7 @@ export default function MyRequestsPage() {
                 {!canPrintPermit(selectedRequest.status) && (
                   <div className="flex items-center gap-2 text-xs text-amber-800 bg-amber-50 border border-amber-200 px-3 py-1.5 rounded-lg">
                     <Lock size={14} className="shrink-0 text-amber-600" />
-                    <span>Dokumen resmi baru dapat dicetak setelah disetujui penuh oleh <strong>HRD & GA Div Head</strong>.</span>
+                    <span>Dokumen resmi baru dapat dicetak setelah disetujui penuh oleh <strong>Head Division HRD&GA</strong>.</span>
                   </div>
                 )}
               </div>
@@ -639,7 +727,7 @@ export default function MyRequestsPage() {
                   <button 
                     disabled
                     className="px-5 py-2.5 text-sm font-medium text-gray-400 bg-gray-100 border border-gray-200 rounded-lg flex items-center gap-2 cursor-not-allowed opacity-75"
-                    title="Ijin kerja belum dapat dicetak karena belum disetujui penuh oleh GA Div Head"
+                    title="Ijin kerja belum dapat dicetak karena belum disetujui penuh oleh Head Division HRD&GA"
                   >
                     <Lock size={16} /> Menunggu Approval Akhir (Terkunci)
                   </button>
