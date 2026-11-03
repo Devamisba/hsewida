@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate, Navigate } from "react-router-dom";
 import { Header } from "@/components/Header";
 import { 
   Eye, 
@@ -160,6 +160,14 @@ const isEligibleForExtension = (selesaiKerja: string, status: string, windowDays
 export default function HistoryPage() {
   const location = useLocation();
   const navigate = useNavigate();
+  const userRole = auth.getRole();
+  const isVendorRole = ["pemohon", "vendor", "kontraktor", "contractor"].includes((userRole || "").toLowerCase().trim());
+
+  // Redirect vendor users to combined 'Ijin Saya' page
+  if (isVendorRole) {
+    return <Navigate to="/my-requests" replace />;
+  }
+
   const filterExpiringSoon = (location.state as any)?.filterExpiringSoon === true;
 
   const [requests, setRequests] = useState<any[]>([]);
@@ -169,7 +177,6 @@ export default function HistoryPage() {
   const [showExpiringOnly, setShowExpiringOnly] = useState(filterExpiringSoon);
   const [extensionWindowDays] = useState(3);
 
-  const userRole = auth.getRole();
   const [historyTab, setHistoryTab] = useState<"permits" | "inspections">(
     userRole === "pic_k3" ? "inspections" : "permits"
   );
@@ -748,15 +755,17 @@ export default function HistoryPage() {
                   Menampilkan <strong>{filteredRequests.length}</strong> dari {requests.length} ijin
                 </span>
 
-                <button
-                  type="button"
-                  onClick={handleExportExcel}
-                  className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold text-white bg-emerald-700 hover:bg-emerald-800 transition-colors shadow-xs cursor-pointer select-none"
-                  title="Export Dokumen Work Permit Monitoring ke Excel (.xlsx) sesuai format whiteboard"
-                >
-                  <FileSpreadsheet size={16} />
-                  <span>Export Excel ({filteredRequests.length})</span>
-                </button>
+                {!isVendorRole && (
+                  <button
+                    type="button"
+                    onClick={handleExportExcel}
+                    className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold text-white bg-emerald-700 hover:bg-emerald-800 transition-colors shadow-xs cursor-pointer select-none"
+                    title="Export Dokumen Work Permit Monitoring ke Excel (.xlsx) sesuai format whiteboard"
+                  >
+                    <FileSpreadsheet size={16} />
+                    <span>Export Excel ({filteredRequests.length})</span>
+                  </button>
+                )}
               </div>
             </div>
           </div>

@@ -1,7 +1,25 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { Header } from "@/components/Header";
-import { Eye, Printer, FileText, X, Shield, Users, AlertTriangle, Briefcase, FileCheck, CheckCircle2, Lock, CalendarPlus } from "lucide-react";
+import { 
+  Eye, 
+  Printer, 
+  FileText, 
+  X, 
+  Shield, 
+  Users, 
+  AlertTriangle, 
+  Briefcase, 
+  FileCheck, 
+  CheckCircle2, 
+  Lock, 
+  CalendarPlus,
+  Search,
+  Hourglass,
+  XCircle,
+  CheckCircle,
+  Layers
+} from "lucide-react";
 import { cn, calculateInclusiveDays } from "@/lib/utils";
 import { api } from "@/services/api";
 import { PrintPermitModal } from "@/components/PrintPermitModal";
@@ -138,6 +156,61 @@ export default function MyRequestsPage() {
   const [printModalPermit, setPrintModalPermit] = useState<any>(null);
   const [previewPhoto, setPreviewPhoto] = useState<string | null>(null);
   const [extensionWindowDays, setExtensionWindowDays] = useState(3);
+  const [statusFilter, setStatusFilter] = useState<string>("ALL");
+  const [searchQuery, setSearchQuery] = useState<string>("");
+
+  const statusCounts = useMemo(() => {
+    let pending = 0;
+    let disetujui = 0;
+    let selesai = 0;
+    let ditolak = 0;
+
+    requests.forEach((r) => {
+      const st = r.status || "";
+      if (st.startsWith("Menunggu") || st === "Review PIC" || st === "Review HSE") {
+        pending++;
+      } else if (st === "Disetujui") {
+        disetujui++;
+      } else if (st === "Selesai") {
+        selesai++;
+      } else if (st === "Ditolak") {
+        ditolak++;
+      }
+    });
+
+    return {
+      all: requests.length,
+      pending,
+      disetujui,
+      selesai,
+      ditolak,
+    };
+  }, [requests]);
+
+  const filteredRequests = useMemo(() => {
+    return requests.filter((req) => {
+      if (statusFilter !== "ALL") {
+        if (statusFilter === "PENDING") {
+          const st = req.status || "";
+          if (!st.startsWith("Menunggu") && st !== "Review PIC" && st !== "Review HSE") {
+            return false;
+          }
+        } else if (req.status !== statusFilter) {
+          return false;
+        }
+      }
+
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase().trim();
+        const idMatch = req.id?.toLowerCase().includes(q);
+        const jobMatch = req.jenisPekerjaan?.toLowerCase().includes(q);
+        const locMatch = req.lokasi?.toLowerCase().includes(q);
+        if (!idMatch && !jobMatch && !locMatch) return false;
+      }
+
+      return true;
+    });
+  }, [requests, statusFilter, searchQuery]);
 
   const handleExtend = (req: any) => {
     if (req.hasActiveChild) {
@@ -206,9 +279,147 @@ export default function MyRequestsPage() {
           <div className="flex justify-between items-end">
             <div>
               <h2 className="text-2xl font-bold text-gray-900">Daftar Ijin Kerja Saya</h2>
-              <p className="text-sm text-gray-500 mt-1">Kelola dan pantau status pengajuan ijin kerja (Work Permit) Anda.</p>
+              <p className="text-sm text-gray-500 mt-1">Kelola dan pantau seluruh status ijin aktif maupun riwayat arsip pengajuan Anda.</p>
             </div>
             {loading && <span className="text-xs text-primary font-medium animate-pulse">Memuat data dari server...</span>}
+          </div>
+
+          {/* Combined Filter & Search Bar */}
+          <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-xs space-y-3">
+            {/* Filter Pills */}
+            <div className="flex items-center gap-2 overflow-x-auto pb-1">
+              {/* Semua Status */}
+              <button
+                type="button"
+                onClick={() => setStatusFilter("ALL")}
+                className={cn(
+                  "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer whitespace-nowrap",
+                  statusFilter === "ALL"
+                    ? "bg-[#162f65] text-white shadow-xs"
+                    : "bg-white text-slate-700 border border-slate-200 hover:bg-slate-50"
+                )}
+              >
+                <Layers size={13} className={statusFilter === "ALL" ? "text-white" : "text-slate-500"} />
+                <span>Semua Status</span>
+                <span className={cn(
+                  "px-1.5 py-0.2 rounded-full text-[10px] font-mono font-bold",
+                  statusFilter === "ALL" ? "bg-white/20 text-white" : "bg-slate-100 text-slate-600"
+                )}>
+                  {statusCounts.all}
+                </span>
+              </button>
+
+              {/* Menunggu / Pending */}
+              <button
+                type="button"
+                onClick={() => setStatusFilter("PENDING")}
+                className={cn(
+                  "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer whitespace-nowrap",
+                  statusFilter === "PENDING"
+                    ? "bg-[#162f65] text-white shadow-xs"
+                    : "bg-white text-slate-700 border border-slate-200 hover:bg-slate-50"
+                )}
+              >
+                <Hourglass size={13} className={statusFilter === "PENDING" ? "text-white" : "text-amber-600"} />
+                <span>Menunggu Review</span>
+                <span className={cn(
+                  "px-1.5 py-0.2 rounded-full text-[10px] font-mono font-bold",
+                  statusFilter === "PENDING" ? "bg-white/20 text-white" : "bg-amber-50 text-amber-700 border border-amber-200"
+                )}>
+                  {statusCounts.pending}
+                </span>
+              </button>
+
+              {/* Disetujui */}
+              <button
+                type="button"
+                onClick={() => setStatusFilter("Disetujui")}
+                className={cn(
+                  "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer whitespace-nowrap",
+                  statusFilter === "Disetujui"
+                    ? "bg-[#162f65] text-white shadow-xs"
+                    : "bg-white text-slate-700 border border-slate-200 hover:bg-slate-50"
+                )}
+              >
+                <CheckCircle size={13} className={statusFilter === "Disetujui" ? "text-white" : "text-emerald-600"} />
+                <span>Disetujui</span>
+                <span className={cn(
+                  "px-1.5 py-0.2 rounded-full text-[10px] font-mono font-bold",
+                  statusFilter === "Disetujui" ? "bg-white/20 text-white" : "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                )}>
+                  {statusCounts.disetujui}
+                </span>
+              </button>
+
+              {/* Selesai */}
+              <button
+                type="button"
+                onClick={() => setStatusFilter("Selesai")}
+                className={cn(
+                  "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer whitespace-nowrap",
+                  statusFilter === "Selesai"
+                    ? "bg-[#162f65] text-white shadow-xs"
+                    : "bg-white text-slate-700 border border-slate-200 hover:bg-slate-50"
+                )}
+              >
+                <CheckCircle2 size={13} className={statusFilter === "Selesai" ? "text-white" : "text-blue-600"} />
+                <span>Selesai</span>
+                <span className={cn(
+                  "px-1.5 py-0.2 rounded-full text-[10px] font-mono font-bold",
+                  statusFilter === "Selesai" ? "bg-white/20 text-white" : "bg-blue-50 text-blue-700 border border-blue-200"
+                )}>
+                  {statusCounts.selesai}
+                </span>
+              </button>
+
+              {/* Ditolak */}
+              <button
+                type="button"
+                onClick={() => setStatusFilter("Ditolak")}
+                className={cn(
+                  "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer whitespace-nowrap",
+                  statusFilter === "Ditolak"
+                    ? "bg-[#162f65] text-white shadow-xs"
+                    : "bg-white text-slate-700 border border-slate-200 hover:bg-slate-50"
+                )}
+              >
+                <XCircle size={13} className={statusFilter === "Ditolak" ? "text-white" : "text-rose-600"} />
+                <span>Ditolak</span>
+                <span className={cn(
+                  "px-1.5 py-0.2 rounded-full text-[10px] font-mono font-bold",
+                  statusFilter === "Ditolak" ? "bg-white/20 text-white" : "bg-rose-50 text-rose-700 border border-rose-200"
+                )}>
+                  {statusCounts.ditolak}
+                </span>
+              </button>
+            </div>
+
+            {/* Search Box & Counter */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2 border-t border-slate-100">
+              <div className="relative flex-1 max-w-md">
+                <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Cari nomor ijin (WP-...), pekerjaan, lokasi..."
+                  className="w-full pl-9 pr-8 py-2 text-xs border border-slate-300 rounded-xl focus:outline-none focus:border-primary bg-slate-50/50"
+                />
+                {searchQuery && (
+                  <button
+                    type="button"
+                    onClick={() => setSearchQuery("")}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 text-xs cursor-pointer p-0.5"
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
+
+              <span className="text-xs text-slate-500 font-medium">
+                Menampilkan <strong>{filteredRequests.length}</strong> dari {requests.length} ijin kerja
+              </span>
+            </div>
           </div>
 
           {/* Desktop Table (Boxed Data Table style) */}
@@ -226,8 +437,8 @@ export default function MyRequestsPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
-                  {requests.length > 0 ? (
-                    requests.map((req) => (
+                  {filteredRequests.length > 0 ? (
+                    filteredRequests.map((req) => (
                       <tr key={req.id} className="hover:bg-gray-50/50 transition-colors">
                         <td className="px-5 py-4 text-sm font-bold text-gray-900 whitespace-nowrap">
                           <div className="font-mono text-gray-900">{req.id}</div>
@@ -305,8 +516,14 @@ export default function MyRequestsPage() {
                     <tr>
                       <td colSpan={6} className="px-6 py-12 text-center text-gray-500">
                         <FileText size={40} className="mx-auto mb-3 opacity-20" />
-                        <p className="text-base font-medium text-gray-800">Belum Ada Ijin Kerja</p>
-                        <p className="text-xs text-gray-500 mt-1">Anda belum memiliki riwayat pengajuan izin kerja. Klik "Buat Ijin Kerja Baru" untuk mengajukan permohonan.</p>
+                        <p className="text-base font-medium text-gray-800">
+                          {requests.length === 0 ? "Belum Ada Ijin Kerja" : "Tidak Ada Ijin Kerja yang Cocok"}
+                        </p>
+                        <p className="text-xs text-gray-500 mt-1 max-w-md mx-auto">
+                          {requests.length === 0 
+                            ? "Anda belum memiliki riwayat pengajuan izin kerja. Klik 'Buat Ijin Kerja Baru' untuk mengajukan permohonan." 
+                            : "Tidak ditemukan ijin kerja yang sesuai dengan filter atau kata kunci pencarian Anda."}
+                        </p>
                       </td>
                     </tr>
                   )}
@@ -317,8 +534,8 @@ export default function MyRequestsPage() {
 
           {/* Mobile Card Layout */}
           <div className="sm:hidden space-y-4">
-            {requests.length > 0 ? (
-              requests.map((req) => (
+            {filteredRequests.length > 0 ? (
+              filteredRequests.map((req) => (
                 <div key={req.id} className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm relative space-y-4">
                 <div className="flex justify-between items-start">
                   <div className="flex items-center gap-2">
@@ -398,8 +615,14 @@ export default function MyRequestsPage() {
           ) : (
             <div className="bg-white p-8 rounded-xl border border-gray-200 text-center text-gray-500">
               <FileText size={32} className="mx-auto mb-2 opacity-20" />
-              <p className="text-sm font-semibold text-gray-700">Belum Ada Ijin Kerja</p>
-              <p className="text-xs text-gray-400 mt-1">Anda belum memiliki pengajuan ijin kerja.</p>
+              <p className="text-sm font-semibold text-gray-700">
+                {requests.length === 0 ? "Belum Ada Ijin Kerja" : "Tidak Ada Ijin Kerja yang Cocok"}
+              </p>
+              <p className="text-xs text-gray-400 mt-1 max-w-md mx-auto">
+                {requests.length === 0 
+                  ? "Anda belum memiliki pengajuan ijin kerja. Klik 'Buat Ijin Kerja Baru' untuk mengajukan permohonan." 
+                  : "Tidak ditemukan ijin kerja yang sesuai dengan filter atau kata kunci pencarian Anda."}
+              </p>
             </div>
           )}
           </div>
