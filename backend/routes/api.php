@@ -94,6 +94,7 @@ Route::prefix('v1')->group(function () {
         Route::post('/monitoring/facilities', [MonitoringController::class, 'storeFacility']);
         Route::get('/monitoring/facilities/by-qr/{qrCodeId}', [MonitoringController::class, 'getFacilityByQrId']);
         Route::post('/monitoring/facilities/{id}/refill', [MonitoringController::class, 'recordRefill']);
+        Route::put('/monitoring/facilities/{id}/coordinates', [MonitoringController::class, 'updateFacilityCoordinates']);
         Route::get('/monitoring/alerts-summary', [MonitoringController::class, 'getAlertsSummary']);
         Route::post('/monitoring/inspections', [MonitoringController::class, 'storeInspection']);
         Route::post('/monitoring/capa', [MonitoringController::class, 'storeCapa']);

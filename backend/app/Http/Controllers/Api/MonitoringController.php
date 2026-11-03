@@ -377,6 +377,14 @@ class MonitoringController extends Controller
                 }
             }
 
+            $specs = $fac->specifications ?? [];
+            $isPlantValid = $hasInspection ? ($specs['is_plant_geofence_valid'] ?? true) : false;
+            $isFacilityValid = $hasInspection ? ($specs['is_facility_geofence_valid'] ?? true) : false;
+            $isCameraRealtime = $hasInspection ? ($specs['is_camera_realtime'] ?? true) : false;
+            $gpsCoordinates = $hasInspection ? ($specs['gps_coordinates'] ?? '-7.604512, 112.729188') : null;
+            $gpsAccuracy = $hasInspection ? ($specs['gps_accuracy'] ?? '±3m') : null;
+            $picPlantValid = ($checkStatus === 'VERIFIED') ? ($specs['pic_plant_geofence_valid'] ?? true) : false;
+
             return [
                 'facility_id' => $fac->id,
                 'facility_code' => $fac->code,
@@ -402,6 +410,13 @@ class MonitoringController extends Controller
                 'verified_at' => $latest?->verified_at,
                 'notes' => $latest?->notes,
                 'foto_bukti' => $latest?->foto_bukti ?? [],
+                // Geofence & Realtime Camera Validation
+                'is_plant_geofence_valid' => $isPlantValid,
+                'is_facility_geofence_valid' => $isFacilityValid,
+                'is_camera_realtime' => $isCameraRealtime,
+                'gps_coordinates' => $gpsCoordinates,
+                'gps_accuracy' => $gpsAccuracy,
+                'pic_plant_geofence_valid' => $picPlantValid,
                 'facility' => $fac,
             ];
         });
@@ -505,6 +520,44 @@ class MonitoringController extends Controller
             'message' => 'Fasilitas K3 berhasil didaftarkan.',
             'data' => $facility->load(['location', 'consumableCycle', 'conditionSchedule']),
         ], 201);
+    }
+
+    /**
+     * Update GPS coordinates and zone for a specific facility (Master Spasial Fasilitas).
+     */
+    public function updateFacilityCoordinates(Request $request, $id)
+    {
+        $facility = SafetyFacility::findOrFail($id);
+
+        $validated = $request->validate([
+            'latitude' => 'required|numeric|between:-90,90',
+            'longitude' => 'required|numeric|between:-180,180',
+            'area_zone' => 'nullable|string|max:100',
+        ]);
+
+        $lat = (float)$validated['latitude'];
+        $lng = (float)$validated['longitude'];
+
+        $specs = $facility->specifications ?? [];
+        $specs['latitude'] = $lat;
+        $specs['longitude'] = $lng;
+
+        $facility->latitude = $lat;
+        $facility->longitude = $lng;
+
+        if (!empty($validated['area_zone'])) {
+            $facility->area_zone = $validated['area_zone'];
+            $specs['area_zone'] = $validated['area_zone'];
+        }
+
+        $facility->specifications = $specs;
+        $facility->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => "Titik koordinat GPS fasilitas {$facility->code} berhasil disimpan.",
+            'data' => $facility->load(['location', 'consumableCycle', 'conditionSchedule']),
+        ]);
     }
 
     /**
@@ -911,6 +964,12 @@ class MonitoringController extends Controller
             'sgl' => 'required|boolean',                  // Segel & pin
             'lev' => 'required|boolean',                  // Lever & tekanan
             'foto_bukti' => 'nullable|string',            // Real-time camera photo
+            'latitude' => 'nullable|numeric',
+            'longitude' => 'nullable|numeric',
+            'accuracy' => 'nullable|numeric',
+            'is_plant_geofence_valid' => 'nullable|boolean',
+            'is_facility_geofence_valid' => 'nullable|boolean',
+            'is_camera_realtime' => 'nullable|boolean',
         ]);
 
         $allPassed = $validated['tbg'] && $validated['slg'] && $validated['nozz'] && $validated['sgl'] && $validated['lev'];
@@ -946,6 +1005,13 @@ class MonitoringController extends Controller
         $specs['inspection_stage'] = 'PETUGAS_SUBMITTED';
         $specs['inspection_status_label'] = "Diinspeksi oleh {$validated['inspector_name']} — Menunggu Verifikasi PIC";
         $specs['last_inspection_id'] = $inspection->id;
+        $specs['is_plant_geofence_valid'] = $request->boolean('is_plant_geofence_valid', true);
+        $specs['is_facility_geofence_valid'] = $request->boolean('is_facility_geofence_valid', true);
+        $specs['is_camera_realtime'] = $request->boolean('is_camera_realtime', true);
+        if ($request->filled('latitude') && $request->filled('longitude')) {
+            $specs['gps_coordinates'] = "{$request->latitude}, {$request->longitude}";
+            $specs['gps_accuracy'] = $request->filled('accuracy') ? "±{$request->accuracy}m" : "±3m";
+        }
 
         $facility->specifications = $specs;
         $facility->last_inspected_at = now()->toDateString();
@@ -977,6 +1043,9 @@ class MonitoringController extends Controller
             'pic_name' => 'required|string|max:150', // Native text input
             'verification_status' => 'required|in:VERIFIED,REVISE,REFILL_REQUESTED',
             'verification_notes' => 'nullable|string',
+            'pic_latitude' => 'nullable|numeric',
+            'pic_longitude' => 'nullable|numeric',
+            'pic_plant_geofence_valid' => 'nullable|boolean',
         ]);
 
         $latestInspection = FacilityInspection::where('facility_id', $facility->id)
@@ -1001,6 +1070,7 @@ class MonitoringController extends Controller
         $specs['last_pic_name'] = $validated['pic_name'];
         $specs['inspection_stage'] = 'PIC_VERIFIED';
         $specs['inspection_status_label'] = "Terverifikasi Penuh oleh PIC {$validated['pic_name']} (Pemeriksa: {$inspectorName})";
+        $specs['pic_plant_geofence_valid'] = $request->boolean('pic_plant_geofence_valid', true);
 
         if ($validated['verification_status'] === 'REFILL_REQUESTED') {
             $specs['is_refill_queue'] = true;

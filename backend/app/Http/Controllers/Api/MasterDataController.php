@@ -360,6 +360,18 @@ class MasterDataController extends Controller
                         'message' => 'Jendela perpanjangan izin minimal 1 hari sebelum kedaluwarsa.'
                     ], 422);
                 }
+                if ($item['key'] === 'geofence_plant_radius_meters' && (int)$item['value'] < 1) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Radius pagar kawasan pabrik minimal 1 meter.'
+                    ], 422);
+                }
+                if ($item['key'] === 'geofence_child_radius_meters' && (int)$item['value'] < 1) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Radius jangkauan scan alat minimal 1 meter.'
+                    ], 422);
+                }
 
                 $setting->update(['value' => (string)$item['value']]);
             }
@@ -373,7 +385,7 @@ class MasterDataController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Pengaturan kebijakan SIKA berhasil diperbarui.',
+            'message' => 'Pengaturan sistem & geofence berhasil diperbarui.',
             'data' => [
                 'list' => $allSettings,
                 'map' => $settingsMap,

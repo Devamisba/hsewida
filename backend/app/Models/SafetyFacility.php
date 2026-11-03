@@ -20,6 +20,8 @@ class SafetyFacility extends Model
         'tanggal_daftar',
         'location_id',
         'area_zone',
+        'latitude',
+        'longitude',
         'specifications',
         'status',
         'status_aktif',
@@ -27,6 +29,8 @@ class SafetyFacility extends Model
     ];
 
     protected $casts = [
+        'latitude' => 'float',
+        'longitude' => 'float',
         'specifications' => 'array',
         'last_inspected_at' => 'date:Y-m-d',
         'tanggal_daftar' => 'date:Y-m-d',
