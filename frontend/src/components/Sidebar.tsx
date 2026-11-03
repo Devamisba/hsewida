@@ -77,13 +77,13 @@ export const NAVIGATION_CONFIG: NavItem[] = [
         name: "Ijin Kerja Baru",
         href: "/create-request",
         icon: FilePlus2,
-        roles: ["admin", "hse", "kontraktor", "contractor"],
+        roles: ["admin", "hse", "kontraktor", "contractor", "pemohon", "vendor"],
       },
       {
         name: "Ijin Saya",
         href: "/my-requests",
         icon: Files,
-        roles: ["admin", "kontraktor", "contractor"],
+        roles: ["admin", "kontraktor", "contractor", "pemohon", "vendor"],
       },
       {
         name: "Review Ijin",
@@ -141,9 +141,20 @@ export const NAVIGATION_CONFIG: NavItem[] = [
 // Helper: Memeriksa apakah role saat ini memiliki akses ke item
 function isRoleAllowed(allowedRoles?: string[], currentRole?: string | null): boolean {
   if (!allowedRoles || allowedRoles.includes("*")) return true;
-  const normalizedRole = currentRole || "kontraktor";
-  if (normalizedRole === "contractor" && allowedRoles.includes("kontraktor")) return true;
-  return allowedRoles.includes(normalizedRole);
+  const rawRole = (currentRole || "pemohon").toLowerCase().trim();
+  
+  // Normalisasi alias vendor / kontraktor / contractor / pemohon
+  const isVendorLike = ["pemohon", "vendor", "kontraktor", "contractor"].includes(rawRole);
+  if (isVendorLike && (
+    allowedRoles.includes("pemohon") || 
+    allowedRoles.includes("vendor") || 
+    allowedRoles.includes("kontraktor") || 
+    allowedRoles.includes("contractor")
+  )) {
+    return true;
+  }
+  
+  return allowedRoles.includes(rawRole);
 }
 
 // ---------------------------------------------------------------------------
