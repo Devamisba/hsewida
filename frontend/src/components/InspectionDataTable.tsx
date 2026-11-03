@@ -719,7 +719,7 @@ export function InspectionDataTable({
                                 </div>
                                 <div className="text-[9px] text-slate-500 flex items-center gap-1 font-mono">
                                   <Navigation size={9} className="text-slate-400" />
-                                  <span>{row.gps_coordinates || "-7.604512, 112.729188"}</span>
+                                  <span>{row.gps_coordinates || "-7.644263, 112.694194"}</span>
                                 </div>
                               </div>
                             )}
@@ -957,7 +957,7 @@ export function InspectionDataTable({
                   </div>
                   <div className="flex flex-wrap items-center justify-between text-slate-300 gap-x-3">
                     <span>🕒 Waktu Potret: {formatDateTime(activePhotoMeta?.inspection_date || new Date().toISOString())}</span>
-                    <span className="font-mono text-cyan-300">📍 GPS: {activePhotoMeta?.gps_coordinates || "-7.604512, 112.729188"} (±3m)</span>
+                    <span className="font-mono text-cyan-300">📍 GPS: {activePhotoMeta?.gps_coordinates || "-7.644263, 112.694194"} (±3m)</span>
                   </div>
                   <div className="text-slate-400">
                     🏷️ Unit: {activePhotoMeta?.facility_code || "-"} ({activePhotoMeta?.area_zone || "Area Pabrik"}) | Petugas: {activePhotoMeta?.inspector_name || "Tim Pengecekan"}

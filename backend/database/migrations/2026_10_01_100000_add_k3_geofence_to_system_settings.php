@@ -13,7 +13,7 @@ return new class extends Migration
         $settings = [
             [
                 'key' => 'geofence_plant_name',
-                'value' => 'PT Widatra Bhakti — Kawasan Pabrik',
+                'value' => 'PT Widatra Bhakti — Kawasan Pabrik (Pandaan)',
                 'label' => 'Nama Identitas Kawasan Pabrik',
                 'description' => 'Nama resmi area/gedung pusat fasilitas yang muncul pada peta spasial GIS dan watermark digital foto.',
                 'unit' => 'Teks',
@@ -24,7 +24,7 @@ return new class extends Migration
             ],
             [
                 'key' => 'geofence_plant_lat',
-                'value' => '-7.604500',
+                'value' => '-7.644263',
                 'label' => 'Titik Pusat Latitude Pabrik (Induk)',
                 'description' => 'Titik koordinat lintang geografis pusat kawasan pabrik PT Widatra Bhakti (Pandaan, Pasuruan).',
                 'unit' => 'Derajat Lintang',
@@ -35,7 +35,7 @@ return new class extends Migration
             ],
             [
                 'key' => 'geofence_plant_lng',
-                'value' => '112.729200',
+                'value' => '112.694194',
                 'label' => 'Titik Pusat Longitude Pabrik (Induk)',
                 'description' => 'Titik koordinat bujur geografis pusat kawasan pabrik PT Widatra Bhakti (Pandaan, Pasuruan).',
                 'unit' => 'Derajat Bujur',
@@ -46,7 +46,7 @@ return new class extends Migration
             ],
             [
                 'key' => 'geofence_plant_radius_meters',
-                'value' => '250',
+                'value' => '500',
                 'label' => 'Jangkauan Radius Pagar Pabrik (Induk)',
                 'description' => 'Batas radius lingkaran geofence pabrik induk. PIC K3 dan Tim Pemeriksa wajib berada di dalam perimeter ini.',
                 'unit' => 'Meter',

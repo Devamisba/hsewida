@@ -12,23 +12,32 @@ export interface PlantGeofenceConfig {
 }
 
 export const DEFAULT_PLANT_CENTER: PlantGeofenceConfig = {
-  lat: -7.604500,
-  lng: 112.729200,
-  name: "PT Widatra Bhakti — Kawasan Pabrik",
-  radiusMeters: 250, // Geofence Induk
+  lat: -7.644263,
+  lng: 112.694194,
+  name: "PT Widatra Bhakti — Kawasan Pabrik (Pandaan)",
+  radiusMeters: 500, // Geofence Induk melingkupi kawasan pabrik Pandaan
   childRadiusMeters: 25, // Geofence Child (Alat)
 };
 
-const STORAGE_KEY = "k3_geofence_master_config";
+const STORAGE_KEY = "k3_geofence_master_config_v2";
 
 export function getStoredPlantGeofence(): PlantGeofenceConfig {
   try {
     const raw = typeof window !== "undefined" ? localStorage.getItem(STORAGE_KEY) : null;
     if (raw) {
       const parsed = JSON.parse(raw);
+      const lat = Number(parsed.lat ?? DEFAULT_PLANT_CENTER.lat);
+      const lng = Number(parsed.lng ?? DEFAULT_PLANT_CENTER.lng);
+
+      // Auto-invalidation jika masih menyimpan koordinat dummy lama di Gunung Gangsir (-7.6045, 112.7292)
+      if (lat > -7.62 || lng > 112.71) {
+        localStorage.removeItem(STORAGE_KEY);
+        return DEFAULT_PLANT_CENTER;
+      }
+
       return {
-        lat: Number(parsed.lat ?? DEFAULT_PLANT_CENTER.lat),
-        lng: Number(parsed.lng ?? DEFAULT_PLANT_CENTER.lng),
+        lat,
+        lng,
         name: parsed.name || DEFAULT_PLANT_CENTER.name,
         radiusMeters: Number(parsed.radiusMeters ?? DEFAULT_PLANT_CENTER.radiusMeters),
         childRadiusMeters: Number(parsed.childRadiusMeters ?? DEFAULT_PLANT_CENTER.childRadiusMeters),
@@ -57,10 +66,13 @@ export function syncGeofenceFromSettingsMap(map: Record<string, any>): PlantGeof
   if (!map) return PLANT_CENTER;
   const updated: Partial<PlantGeofenceConfig> = {};
   if (map.geofence_plant_lat !== undefined && map.geofence_plant_lat !== "") {
-    updated.lat = Number(map.geofence_plant_lat);
+    const l = Number(map.geofence_plant_lat);
+    // Abaikan jika database masih menyimpan koordinat lama Gunung Gangsir
+    if (l <= -7.62) updated.lat = l;
   }
   if (map.geofence_plant_lng !== undefined && map.geofence_plant_lng !== "") {
-    updated.lng = Number(map.geofence_plant_lng);
+    const g = Number(map.geofence_plant_lng);
+    if (g <= 112.71) updated.lng = g;
   }
   if (map.geofence_plant_name !== undefined && map.geofence_plant_name !== "") {
     updated.name = String(map.geofence_plant_name);
@@ -78,32 +90,32 @@ export const PLANT_CENTER: PlantGeofenceConfig = {
   ...getStoredPlantGeofence(),
 };
 
-// Zona Koordinat Basis di Kawasan Pabrik
+// Zona Koordinat Basis Riil di Kawasan Pabrik Pandaan (Pasuruan)
 export const ZONE_CENTERS: Record<string, { lat: number; lng: number; label: string }> = {
   "UMUM": {
-    lat: -7.604100,
-    lng: 112.728950,
-    label: "Area Umum (Pos Satpam, Parkir, Kantor Depan)"
+    lat: -7.645014,
+    lng: 112.693794,
+    label: "Area Umum (Pos Satpam, Parkir, Kantor Depan Pandaan)"
   },
   "FACTORY 1": {
-    lat: -7.604350,
-    lng: 112.729450,
-    label: "Factory 1 (Produksi & Filling Solution)"
+    lat: -7.645118,
+    lng: 112.693859,
+    label: "Factory 1 (Produksi & Filling Solution Pandaan)"
   },
   "FACTORY 2 & WORKSHOP": {
-    lat: -7.604750,
-    lng: 112.728900,
-    label: "Factory 2 & Workshop (Teknik & Utilitas)"
+    lat: -7.643320,
+    lng: 112.694915,
+    label: "Factory 2 & Workshop (Teknik & Utilitas Pandaan)"
   },
   "WARE HOUSE": {
-    lat: -7.604850,
-    lng: 112.729550,
-    label: "Warehouse (Gudang Bahan Baku, Jadi & Transit)"
+    lat: -7.643562,
+    lng: 112.694169,
+    label: "Warehouse (Gudang Bahan Baku, Jadi & Transit Pandaan)"
   },
   "LAB QC": {
-    lat: -7.604250,
-    lng: 112.729150,
-    label: "Laboratorium QC & Ruang Stabilitas"
+    lat: -7.643660,
+    lng: 112.694814,
+    label: "Laboratorium QC & Ruang Stabilitas Pandaan"
   }
 };
 

@@ -384,7 +384,7 @@ export function FacilityDetailActionModal({
                     required
                     value={editLat}
                     onChange={(e) => setEditLat(e.target.value)}
-                    placeholder="-7.604500"
+                    placeholder="-7.644263"
                     className="w-full px-2.5 py-1.5 border border-slate-300 rounded-lg text-xs font-mono font-bold text-slate-900 bg-white focus:ring-1 focus:ring-emerald-500 outline-none"
                   />
                 </div>
@@ -397,7 +397,7 @@ export function FacilityDetailActionModal({
                     required
                     value={editLng}
                     onChange={(e) => setEditLng(e.target.value)}
-                    placeholder="112.729200"
+                    placeholder="112.694194"
                     className="w-full px-2.5 py-1.5 border border-slate-300 rounded-lg text-xs font-mono font-bold text-slate-900 bg-white focus:ring-1 focus:ring-emerald-500 outline-none"
                   />
                 </div>

@@ -63,8 +63,16 @@ export default function GisGeofencePage() {
         syncGeofenceFromSettingsMap(setRes.data.map);
         const map = setRes.data.map;
         if (map.geofence_plant_name) setPlantName(String(map.geofence_plant_name));
-        if (map.geofence_plant_lat) setPlantLat(String(map.geofence_plant_lat));
-        if (map.geofence_plant_lng) setPlantLng(String(map.geofence_plant_lng));
+        if (map.geofence_plant_lat && Number(map.geofence_plant_lat) <= -7.62) {
+          setPlantLat(String(map.geofence_plant_lat));
+        } else {
+          setPlantLat(String(PLANT_CENTER.lat));
+        }
+        if (map.geofence_plant_lng && Number(map.geofence_plant_lng) <= 112.71) {
+          setPlantLng(String(map.geofence_plant_lng));
+        } else {
+          setPlantLng(String(PLANT_CENTER.lng));
+        }
         if (map.geofence_plant_radius_meters) setPlantRadius(Number(map.geofence_plant_radius_meters));
         if (map.geofence_child_radius_meters) setChildRadius(Number(map.geofence_child_radius_meters));
       }

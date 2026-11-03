@@ -76,7 +76,7 @@ export function exportInspectionsToExcel(
       : (hasInspection ? "Tidak Ada Foto" : "-");
 
     // Koordinat GPS
-    const gpsCoord = row.gps_coordinates || (hasInspection ? "-7.604512, 112.729188 (Akurasi: ±3m)" : "-");
+    const gpsCoord = row.gps_coordinates || (hasInspection ? "-7.644263, 112.694194 (Akurasi: ±3m)" : "-");
 
     // PIC K3 Info
     const picName = row.pic_name || (row.check_status === "VERIFIED" ? "PIC K3 Widatra" : "-");

@@ -276,8 +276,8 @@ export default function AparScanPage() {
         second: "2-digit",
       }) + " WIB";
 
-      const latStr = currentGps ? currentGps.lat.toFixed(6) : "-7.604512";
-      const lngStr = currentGps ? currentGps.lng.toFixed(6) : "112.729188";
+      const latStr = currentGps ? currentGps.lat.toFixed(6) : "-7.644263";
+      const lngStr = currentGps ? currentGps.lng.toFixed(6) : "112.694194";
       const accStr = currentGps ? `±${Math.round(currentGps.accuracy)}m` : "±3m";
 
       const fontSizePrimary = Math.max(15, Math.floor(width * 0.022));

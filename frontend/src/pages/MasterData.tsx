@@ -1555,7 +1555,7 @@ export default function MasterDataPage() {
                         showFeedback("success", "Pengaturan dikembalikan ke koordinat pabrik resmi PT Widatra Bhakti.");
                       }}
                       className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-semibold transition cursor-pointer"
-                      title="Kembalikan koordinat resmi pabrik Widatra Pandaan (-7.604500, 112.729200)"
+                      title="Kembalikan koordinat resmi pabrik Widatra Pandaan (-7.644263, 112.694194)"
                     >
                       <RefreshCw size={14} className="text-emerald-600" />
                       <span>Reset Titik Pabrik Asli</span>
@@ -1589,7 +1589,7 @@ export default function MasterDataPage() {
                       type="text"
                       value={policySettingsMap.geofence_plant_name ?? DEFAULT_PLANT_CENTER.name}
                       onChange={(e) => setPolicySettingsMap(prev => ({ ...prev, geofence_plant_name: e.target.value }))}
-                      placeholder="PT Widatra Bhakti — Kawasan Pabrik"
+                      placeholder="PT Widatra Bhakti — Kawasan Pabrik (Pandaan)"
                       className="w-full p-2.5 border border-slate-200 rounded-xl text-sm font-semibold text-slate-900 outline-none focus:ring-2 focus:ring-emerald-500 bg-slate-50/50"
                     />
                     <p className="text-[11px] text-slate-400">
@@ -1606,11 +1606,11 @@ export default function MasterDataPage() {
                       type="text"
                       value={policySettingsMap.geofence_plant_lat ?? DEFAULT_PLANT_CENTER.lat}
                       onChange={(e) => setPolicySettingsMap(prev => ({ ...prev, geofence_plant_lat: e.target.value }))}
-                      placeholder="-7.604500"
+                      placeholder="-7.644263"
                       className="w-full p-2.5 border border-slate-200 rounded-xl text-sm font-mono font-bold text-slate-900 outline-none focus:ring-2 focus:ring-emerald-500 bg-slate-50/50"
                     />
                     <p className="text-[11px] text-slate-400">
-                      Koordinat lintang pusat kawasan pabrik (default: -7.604500).
+                      Koordinat lintang pusat kawasan pabrik (default: -7.644263 Pandaan).
                     </p>
                   </div>
 
@@ -1623,11 +1623,11 @@ export default function MasterDataPage() {
                       type="text"
                       value={policySettingsMap.geofence_plant_lng ?? DEFAULT_PLANT_CENTER.lng}
                       onChange={(e) => setPolicySettingsMap(prev => ({ ...prev, geofence_plant_lng: e.target.value }))}
-                      placeholder="112.729200"
+                      placeholder="112.694194"
                       className="w-full p-2.5 border border-slate-200 rounded-xl text-sm font-mono font-bold text-slate-900 outline-none focus:ring-2 focus:ring-emerald-500 bg-slate-50/50"
                     />
                     <p className="text-[11px] text-slate-400">
-                      Koordinat bujur pusat kawasan pabrik (default: 112.729200).
+                      Koordinat bujur pusat kawasan pabrik (default: 112.694194 Pandaan).
                     </p>
                   </div>
 
