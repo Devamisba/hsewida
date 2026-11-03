@@ -21,6 +21,7 @@
 /out/
 *.tsbuildinfo
 *.zip
+*_backup*.sql
 
 # --- Laravel Storage & Cache ---
 backend/storage/*.key
