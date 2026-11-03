@@ -3,7 +3,7 @@ import { X, Printer, ShieldCheck, Download, Loader2, FileText, Lock, AlertTriang
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas-pro";
 import { QRCodeSVG } from "./QRCodeSVG";
-import { cn, calculateInclusiveDays } from "@/lib/utils";
+import { cn, calculateInclusiveDays, formatPermitStatus } from "@/lib/utils";
 
 interface PrintPermitModalProps {
   permit: any;
@@ -228,7 +228,7 @@ export function PrintPermitModal({ permit, onClose }: PrintPermitModalProps) {
           {!isApproved && (
             <div className="bg-amber-500 text-white px-4 py-2 text-xs font-bold flex items-center justify-center gap-2 shrink-0 shadow-inner">
               <AlertTriangle size={16} />
-              <span>DOKUMEN DRAFT / BELUM DISETUJUI RESMI — Ijin kerja ini masih dalam tahap '{permit.status}' dan belum sah untuk operasional pabrik.</span>
+              <span>DOKUMEN DRAFT / BELUM DISETUJUI RESMI — Ijin kerja ini masih dalam tahap '{formatPermitStatus(permit.status)}' dan belum sah untuk operasional pabrik.</span>
             </div>
           )}
 

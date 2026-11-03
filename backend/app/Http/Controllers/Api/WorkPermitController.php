@@ -90,7 +90,7 @@ class WorkPermitController extends Controller
 
         switch ($roleCode) {
             case 'pic_vendor':
-                $query->where('status', 'Menunggu PIC Vendor');
+                $query->whereIn('status', ['Menunggu PIC Widatra', 'Menunggu PIC Vendor']);
                 break;
             case 'hse':
                 $query->where('status', 'Menunggu HSE');
@@ -103,6 +103,7 @@ class WorkPermitController extends Controller
                 break;
             case 'admin':
                 $query->whereIn('status', [
+                    'Menunggu PIC Widatra',
                     'Menunggu PIC Vendor', 
                     'Menunggu HSE', 
                     'Menunggu Head Dept HRD&GA', 
@@ -373,7 +374,7 @@ class WorkPermitController extends Controller
                 'hse_officer_phone' => $validated['noHpHse'],
                 'total_workers' => count($validated['pekerja']),
                 'risk_level' => $riskLevel,
-                'status' => 'Menunggu PIC Vendor',
+                'status' => 'Menunggu PIC Widatra',
                 'qr_code_token' => $qrToken,
             ]);
 
@@ -481,7 +482,7 @@ class WorkPermitController extends Controller
         $permit = WorkPermit::findOrFail($id);
 
         $requiredRole = match ($permit->status) {
-            'Menunggu PIC Vendor' => 'pic_vendor',
+            'Menunggu PIC Widatra', 'Menunggu PIC Vendor' => 'pic_vendor',
             'Menunggu HSE' => 'hse',
             'Menunggu Head Dept HRD&GA', 'Menunggu GA Dept Head' => 'ga_dept_head',
             'Menunggu Head Division HRD&GA', 'Menunggu GA Div Head' => 'ga_div_head',
@@ -504,7 +505,7 @@ class WorkPermitController extends Controller
         }
 
         $nextStatus = match ($permit->status) {
-            'Menunggu PIC Vendor' => 'Menunggu HSE',
+            'Menunggu PIC Widatra', 'Menunggu PIC Vendor' => 'Menunggu HSE',
             'Menunggu HSE' => 'Menunggu Head Dept HRD&GA',
             'Menunggu Head Dept HRD&GA', 'Menunggu GA Dept Head' => 'Menunggu Head Division HRD&GA',
             'Menunggu Head Division HRD&GA', 'Menunggu GA Div Head' => 'Disetujui',
@@ -555,7 +556,7 @@ class WorkPermitController extends Controller
         $permit = WorkPermit::findOrFail($id);
 
         $requiredRole = match ($permit->status) {
-            'Menunggu PIC Vendor' => 'pic_vendor',
+            'Menunggu PIC Widatra', 'Menunggu PIC Vendor' => 'pic_vendor',
             'Menunggu HSE' => 'hse',
             'Menunggu Head Dept HRD&GA', 'Menunggu GA Dept Head' => 'ga_dept_head',
             'Menunggu Head Division HRD&GA', 'Menunggu GA Div Head' => 'ga_div_head',

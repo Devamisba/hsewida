@@ -18,3 +18,9 @@ export function calculateInclusiveDays(startDate?: string, endDate?: string): nu
     return 0;
   }
 }
+
+export function formatPermitStatus(status?: string | null): string {
+  if (!status) return "";
+  if (status === "Menunggu PIC Vendor") return "Menunggu PIC Widatra";
+  return status;
+}

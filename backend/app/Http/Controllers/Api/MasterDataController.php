@@ -243,9 +243,9 @@ class MasterDataController extends Controller
             [
                 'step' => 2,
                 'stage_code' => 'pic_review',
-                'status_name' => 'Menunggu PIC Vendor',
+                'status_name' => 'Menunggu PIC Widatra',
                 'reviewer_role' => 'pic_vendor',
-                'role_name' => 'PIC Vendor Internal (PT Widatra Bhakti)',
+                'role_name' => 'PIC Widatra Internal (PT Widatra Bhakti)',
                 'sla_hours' => 8,
                 'sla_label' => '8 Jam Kerja',
                 'description' => 'Verifikasi keabsahan SPK/kontrak kerja, kelayakan vendor rekanan, data pekerja, dan dokumen BPJS/asuransi aktif.',

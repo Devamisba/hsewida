@@ -112,8 +112,8 @@ Seluruh akun default menggunakan password: **`password`**
 
 ```text
 [Draft] 
-   └──> [Menunggu PIC Vendor] (Submit Pengajuan, Min H-3)
-           └──> [Menunggu HSE] (Approved by PIC)
+   └──> [Menunggu PIC Widatra] (Submit Pengajuan, Min H-3)
+           └──> [Menunggu HSE] (Approved by PIC Widatra)
                    └──> [Menunggu GA Dept Head] (Approved by HSE)
                            └──> [Menunggu GA Div Head] (Approved by GA Dept)
                                    └──> [Disetujui] (Final Sign-off + QR Code)

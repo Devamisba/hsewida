@@ -1,5 +1,5 @@
 import { CalendarClock, CheckCircle2, Clock, AlertCircle } from 'lucide-react';
-import { cn, calculateInclusiveDays } from '@/lib/utils';
+import { cn, calculateInclusiveDays, formatPermitStatus } from '@/lib/utils';
 
 export interface ProjectPhase {
   id: number;
@@ -152,7 +152,7 @@ export function ProjectPhaseTimeline({
                   <div className="flex items-center gap-1">
                     {getStatusIcon(phase.status)}
                     <span className={cn("text-[10px] font-bold px-1.5 py-0.5 rounded border", getStatusBadge(phase.status))}>
-                      {phase.status}
+                      {formatPermitStatus(phase.status)}
                     </span>
                   </div>
                 </div>

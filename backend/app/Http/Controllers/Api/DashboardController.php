@@ -22,6 +22,7 @@ class DashboardController extends Controller
 
         $pendingCount = WorkPermit::where('user_id', $user->id)
             ->whereIn('status', [
+                'Menunggu PIC Widatra',
                 'Menunggu PIC Vendor', 
                 'Menunggu HSE', 
                 'Menunggu Head Dept HRD&GA', 

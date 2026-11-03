@@ -18,7 +18,7 @@ class HseWorkflowTest extends TestCase
     {
         $response = $this->postJson('/api/v1/auth/login', [
             'email' => 'vendor@hse.com',
-            'password' => 'password123',
+            'password' => 'password',
         ]);
 
         $response->assertStatus(200)
@@ -107,11 +107,11 @@ class HseWorkflowTest extends TestCase
         $submitRes->assertStatus(201);
         $permitId = $submitRes->json('data.id');
         $this->assertNotEmpty($submitRes->json('data.permit_number'));
-        $this->assertEquals('Menunggu PIC Vendor', $submitRes->json('data.status'));
+        $this->assertEquals('Menunggu PIC Widatra', $submitRes->json('data.status'));
 
-        // 2. PIC Vendor Approves
+        // 2. PIC Widatra Approves
         $approvePicRes = $this->actingAs($picUser)->postJson("/api/v1/permits/{$permitId}/approve", [
-            'note' => 'Disetujui oleh PIC Vendor untuk verifikasi HSE.',
+            'note' => 'Disetujui oleh PIC Widatra untuk verifikasi HSE.',
         ]);
         $approvePicRes->assertStatus(200);
         $this->assertEquals('Menunggu HSE', $approvePicRes->json('data.status'));

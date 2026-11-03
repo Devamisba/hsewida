@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Header } from "@/components/Header";
 import { CheckCircle, XCircle, Clock, Eye, CheckSquare, Search, Briefcase, AlertTriangle, Users, FileCheck, X, Shield, FileText, Printer, Lock, CalendarPlus } from "lucide-react";
-import { cn, calculateInclusiveDays } from "@/lib/utils";
+import { cn, calculateInclusiveDays, formatPermitStatus } from "@/lib/utils";
 import { api } from "@/services/api";
 import { auth } from "@/lib/auth";
 import { PrintPermitModal } from "@/components/PrintPermitModal";
@@ -133,6 +133,7 @@ export default function ReviewRequestsPage() {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "Menunggu PIC Vendor": 
+      case "Menunggu PIC Widatra": 
       case "Menunggu HSE": 
       case "Menunggu Head Dept HRD&GA":
       case "Menunggu Head Division HRD&GA":
@@ -148,7 +149,7 @@ export default function ReviewRequestsPage() {
   // Filter data berdasarkan role (jika bukan admin)
   const filteredRequests = requests.filter(req => {
     if (role === 'admin') return true;
-    if (role === 'pic_vendor') return req.status === "Menunggu PIC Vendor";
+    if (role === 'pic_vendor') return req.status === "Menunggu PIC Vendor" || req.status === "Menunggu PIC Widatra";
     if (role === 'hse') return req.status === "Menunggu HSE";
     if (role === 'ga_dept_head') return req.status === "Menunggu Head Dept HRD&GA" || req.status === "Menunggu GA Dept Head";
     if (role === 'ga_div_head') return req.status === "Menunggu Head Division HRD&GA" || req.status === "Menunggu GA Div Head";
@@ -157,7 +158,8 @@ export default function ReviewRequestsPage() {
 
   const getRequiredRoleForStatus = (st: string) => {
     switch (st) {
-      case "Menunggu PIC Vendor": return { role: "pic_vendor", label: "PIC Widatra", step: 1 };
+      case "Menunggu PIC Vendor": 
+      case "Menunggu PIC Widatra": return { role: "pic_vendor", label: "PIC Widatra", step: 1 };
       case "Menunggu HSE": return { role: "hse", label: "HSE Officer", step: 2 };
       case "Menunggu Head Dept HRD&GA":
       case "Menunggu GA Dept Head": return { role: "ga_dept_head", label: "Head Dept HRD&GA", step: 3 };
@@ -299,7 +301,7 @@ export default function ReviewRequestsPage() {
                         </td>
                         <td className="px-6 py-4 text-center">
                           <span className={cn("inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold", getStatusBadge(req.status))}>
-                            <Clock size={14} /> {req.status}
+                            <Clock size={14} /> {formatPermitStatus(req.status)}
                           </span>
                         </td>
                         <td className="px-6 py-4 text-right">
@@ -353,7 +355,7 @@ export default function ReviewRequestsPage() {
                     {selectedRequest.id}
                   </h3>
                   <span className={cn("inline-flex self-start sm:self-auto px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider", getStatusBadge(selectedRequest.status))}>
-                    {selectedRequest.status}
+                    {formatPermitStatus(selectedRequest.status)}
                   </span>
                 </div>
                 <p className="text-sm font-medium text-gray-500 mt-1">{selectedRequest.jenisPekerjaan} - {selectedRequest.kontraktor}</p>

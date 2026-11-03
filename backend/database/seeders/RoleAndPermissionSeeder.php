@@ -19,7 +19,7 @@ class RoleAndPermissionSeeder extends Seeder
             ],
             [
                 'code' => 'pic_vendor',
-                'name' => 'PIC Vendor (Internal)',
+                'name' => 'PIC Widatra (Internal)',
                 'description' => 'Penanggung jawab internal PT Widatra Bhakti atas vendor. Melakukan review tahap 1.',
             ],
             [
@@ -62,7 +62,7 @@ class RoleAndPermissionSeeder extends Seeder
             // Work Permit
             ['code' => 'permits.create', 'name' => 'Ajukan Ijin Kerja Baru / Perpanjangan', 'group' => 'Work Permit'],
             ['code' => 'permits.view_own', 'name' => 'Lihat Ijin Kerja Milik Sendiri', 'group' => 'Work Permit'],
-            ['code' => 'permits.review_pic', 'name' => 'Review Permit Tahap 1 (PIC Vendor)', 'group' => 'Work Permit'],
+            ['code' => 'permits.review_pic', 'name' => 'Review Permit Tahap 1 (PIC Widatra)', 'group' => 'Work Permit'],
             ['code' => 'permits.review_hse', 'name' => 'Review Permit Tahap 2 (HSE)', 'group' => 'Work Permit'],
             ['code' => 'permits.review_ga_dept', 'name' => 'Review Permit Tahap 3 (Head Dept HRD&GA)', 'group' => 'Work Permit'],
             ['code' => 'permits.review_ga_div', 'name' => 'Review Permit Tahap 4 (Head Division HRD&GA)', 'group' => 'Work Permit'],

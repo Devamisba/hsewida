@@ -1,5 +1,5 @@
 import { CheckCircle2, Clock, Lock, XCircle, ShieldCheck, AlertCircle } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, formatPermitStatus } from "@/lib/utils";
 
 interface ApprovalRecord {
   id?: number;
@@ -72,7 +72,8 @@ export function ApprovalWorkflowStepper({
   // Determine current active step number (1..4, 5 = Disetujui, -1 = Ditolak)
   const getActiveStepIndex = (st: string): number => {
     switch (st) {
-      case "Menunggu PIC Vendor": return 1;
+      case "Menunggu PIC Vendor": 
+      case "Menunggu PIC Widatra": return 1;
       case "Menunggu HSE": return 2;
       case "Menunggu Head Dept HRD&GA":
       case "Menunggu GA Dept Head": return 3;
@@ -140,7 +141,7 @@ export function ApprovalWorkflowStepper({
             </span>
           ) : (
             <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold bg-blue-100 text-blue-800 border border-blue-200 animate-pulse">
-              <Clock size={13} /> Tahap {activeStep} dari 4: {status.replace("Menunggu ", "")}
+              <Clock size={13} /> Tahap {activeStep} dari 4: {formatPermitStatus(status).replace("Menunggu ", "")}
             </span>
           )}
         </div>

@@ -27,7 +27,7 @@ import {
   Search,
   RotateCcw
 } from "lucide-react";
-import { cn, calculateInclusiveDays } from "@/lib/utils";
+import { cn, calculateInclusiveDays, formatPermitStatus } from "@/lib/utils";
 import { api } from "@/services/api";
 import { auth } from "@/lib/auth";
 import { PrintPermitModal } from "@/components/PrintPermitModal";
@@ -128,6 +128,7 @@ function mapApiToHistory(item: any) {
 const getStatusBadge = (status: string) => {
   switch (status) {
     case "Menunggu PIC Vendor": 
+    case "Menunggu PIC Widatra": 
     case "Menunggu HSE": 
     case "Menunggu Head Dept HRD&GA":
     case "Menunggu Head Division HRD&GA":
@@ -818,7 +819,7 @@ export default function HistoryPage() {
                         </td>
                         <td className="px-5 py-4 whitespace-nowrap">
                           <span className={cn("px-2.5 py-1 rounded-full text-xs font-bold tracking-wide uppercase", getStatusBadge(req.status))}>
-                            {req.status}
+                            {formatPermitStatus(req.status)}
                           </span>
                         </td>
                         <td className="px-5 py-4 text-right whitespace-nowrap">
@@ -851,7 +852,7 @@ export default function HistoryPage() {
                               <button 
                                 disabled
                                 className="p-2 text-gray-300 bg-gray-50 rounded-lg cursor-not-allowed opacity-60" 
-                                title={`Cetak Terkunci: Menunggu persetujuan akhir dari Head Division HRD&GA (Status: ${req.status})`}
+                                title={`Cetak Terkunci: Menunggu persetujuan akhir dari Head Division HRD&GA (Status: ${formatPermitStatus(req.status)})`}
                               >
                                 <Lock size={18} className="text-gray-400" />
                               </button>
@@ -925,7 +926,7 @@ export default function HistoryPage() {
                       </div>
                     </div>
                     <span className={cn("px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider", getStatusBadge(req.status))}>
-                      {req.status}
+                      {formatPermitStatus(req.status)}
                     </span>
                   </div>
                   
@@ -1033,7 +1034,7 @@ export default function HistoryPage() {
                     {selectedRequest.id}
                   </h3>
                   <span className={cn("inline-flex self-start sm:self-auto px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider", getStatusBadge(selectedRequest.status))}>
-                    {selectedRequest.status}
+                    {formatPermitStatus(selectedRequest.status)}
                   </span>
                 </div>
                 <p className="text-sm font-medium text-gray-500 mt-1">{selectedRequest.jenisPekerjaan}</p>
