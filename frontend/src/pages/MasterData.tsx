@@ -25,10 +25,13 @@ import {
   Info,
   SlidersHorizontal,
   Calendar,
-  CalendarPlus
+  CalendarPlus,
+  Navigation,
+  Crosshair
 } from "lucide-react";
 import { api } from "@/services/api";
 import { RolePermissionMatrixView } from "@/components/RolePermissionMatrixView";
+import { syncGeofenceFromSettingsMap, DEFAULT_PLANT_CENTER } from "@/utils/facilityCoordinates";
 
 const PPE_CATEGORIES_INFO: Record<string, { label: string; desc: string; color: string; bg: string; border: string }> = {
   "Head & Face": {
@@ -117,6 +120,11 @@ export default function MasterDataPage() {
     max_permit_duration_days: 6,
     min_lead_time_days: 3,
     extension_window_days: 3,
+    geofence_plant_name: DEFAULT_PLANT_CENTER.name,
+    geofence_plant_lat: String(DEFAULT_PLANT_CENTER.lat),
+    geofence_plant_lng: String(DEFAULT_PLANT_CENTER.lng),
+    geofence_plant_radius_meters: DEFAULT_PLANT_CENTER.radiusMeters,
+    geofence_child_radius_meters: DEFAULT_PLANT_CENTER.childRadiusMeters,
   });
   const [isSavingSettings, setIsSavingSettings] = useState(false);
 
@@ -187,6 +195,7 @@ export default function MasterDataPage() {
         const sRes = await api.getSettings();
         if (sRes?.success && sRes.data?.map) {
           setPolicySettingsMap(sRes.data.map);
+          syncGeofenceFromSettingsMap(sRes.data.map);
         }
       }
     } catch (err: any) {
@@ -430,24 +439,27 @@ export default function MasterDataPage() {
     }
   };
 
-  // Save Policy Settings
+  // Save Policy & Geofence Settings
   const handleSaveSettings = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSavingSettings(true);
     try {
       const payload = Object.entries(policySettingsMap).map(([key, value]) => ({
         key,
-        value: Number(value),
+        value: typeof value === "number" ? value : String(value),
       }));
       const res = await api.updateSettings(payload);
       if (res?.success) {
-        if (res.data?.map) setPolicySettingsMap(res.data.map);
-        showFeedback("success", "Pengaturan Kebijakan SIKA berhasil disimpan ke sistem.");
+        if (res.data?.map) {
+          setPolicySettingsMap(res.data.map);
+          syncGeofenceFromSettingsMap(res.data.map);
+        }
+        showFeedback("success", "Pengaturan Kebijakan SIKA & Master Geofence K3 berhasil disimpan.");
       } else {
         showFeedback("error", res?.message || "Gagal menyimpan pengaturan.");
       }
     } catch (err: any) {
-      showFeedback("error", err.message || "Gagal menyimpan pengaturan kebijakan SIKA.");
+      showFeedback("error", err.message || "Gagal menyimpan pengaturan sistem.");
     } finally {
       setIsSavingSettings(false);
     }
@@ -521,7 +533,7 @@ export default function MasterDataPage() {
           </div>
 
           {/* 5 Navigation Tabs Utama */}
-          <div className="flex border-b border-slate-200 bg-white rounded-xl p-1.5 shadow-sm overflow-x-auto gap-1">
+          <div className="flex border-b border-slate-200 bg-white rounded-xl p-1.5 shadow-sm overflow-x-auto gap-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
             <button
               onClick={() => setActiveTab("users_roles")}
               className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-bold transition-all whitespace-nowrap ${
@@ -568,7 +580,7 @@ export default function MasterDataPage() {
                 activeTab === "policy_settings" ? "bg-blue-50 text-blue-700 shadow-sm ring-1 ring-blue-200" : "text-slate-600 hover:bg-slate-100"
               }`}
             >
-              <SlidersHorizontal size={18} /> Kebijakan & Durasi SIKA
+              <SlidersHorizontal size={18} /> Kebijakan SIKA & Geofence K3
             </button>
           </div>
 
@@ -1472,6 +1484,209 @@ export default function MasterDataPage() {
                       <span className="text-xs font-bold text-slate-500 shrink-0">Hari (H-X)</span>
                     </div>
                     <p className="text-[11px] text-slate-400 italic">Default standar K3: H-3 sebelum expired</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* ========================================================================= */}
+              {/* SECTION: MASTER GEOFENCE & JANGKAUAN SCAN K3 (GIS SPASIAL) */}
+              {/* ========================================================================= */}
+              <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-6">
+                <div className="flex flex-col lg:flex-row lg:items-center justify-between pb-4 border-b border-slate-100 gap-4">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2.5 bg-emerald-50 text-emerald-700 rounded-xl border border-emerald-200">
+                      <Navigation size={22} />
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <h4 className="text-base font-bold text-slate-900">Master Geofence & Jangkauan Scan K3</h4>
+                        <span className="px-2 py-0.5 bg-emerald-100 text-emerald-800 text-[10px] font-bold rounded-full">
+                          GIS Spasial Pabrik
+                        </span>
+                      </div>
+                      <p className="text-xs text-slate-500 mt-0.5">
+                        Konfigurasi terpusat titik koordinat pusat pabrik (Induk), radius pagar kawasan, dan toleransi jangkauan mikro saat scan QR alat (Child).
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Quick Preset Buttons */}
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (navigator.geolocation) {
+                          navigator.geolocation.getCurrentPosition(
+                            (pos) => {
+                              setPolicySettingsMap(prev => ({
+                                ...prev,
+                                geofence_plant_lat: pos.coords.latitude.toFixed(6),
+                                geofence_plant_lng: pos.coords.longitude.toFixed(6),
+                              }));
+                              showFeedback("success", `Koordinat diisi otomatis dari GPS Anda: ${pos.coords.latitude.toFixed(6)}, ${pos.coords.longitude.toFixed(6)}`);
+                            },
+                            (err) => {
+                              showFeedback("error", "Gagal membaca GPS browser: " + err.message);
+                            },
+                            { enableHighAccuracy: true }
+                          );
+                        } else {
+                          showFeedback("error", "Browser tidak mendukung Geolocation.");
+                        }
+                      }}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 rounded-lg text-xs font-semibold transition cursor-pointer"
+                      title="Isi koordinat otomatis menggunakan titik GPS perangkat saat ini"
+                    >
+                      <Crosshair size={14} />
+                      <span>Gunakan GPS Saya Saat Ini</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setPolicySettingsMap(prev => ({
+                          ...prev,
+                          geofence_plant_name: DEFAULT_PLANT_CENTER.name,
+                          geofence_plant_lat: String(DEFAULT_PLANT_CENTER.lat),
+                          geofence_plant_lng: String(DEFAULT_PLANT_CENTER.lng),
+                          geofence_plant_radius_meters: DEFAULT_PLANT_CENTER.radiusMeters,
+                          geofence_child_radius_meters: DEFAULT_PLANT_CENTER.childRadiusMeters,
+                        }));
+                        showFeedback("success", "Pengaturan dikembalikan ke koordinat pabrik resmi PT Widatra Bhakti.");
+                      }}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-semibold transition cursor-pointer"
+                      title="Kembalikan koordinat resmi pabrik Widatra Pandaan (-7.604500, 112.729200)"
+                    >
+                      <RefreshCw size={14} className="text-emerald-600" />
+                      <span>Reset Titik Pabrik Asli</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setPolicySettingsMap(prev => ({
+                          ...prev,
+                          geofence_plant_radius_meters: 50000,
+                        }));
+                        showFeedback("success", "Radius pagar diperbesar ke 50.000m (50 km) untuk simulasi uji coba di luar pabrik.");
+                      }}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 rounded-lg text-xs font-semibold transition cursor-pointer"
+                      title="Perbesar radius menjadi 50 km agar status GPS valid saat pengujian lokal"
+                    >
+                      <span>Simulasi Uji Coba (50 km)</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Geofence Form Fields Grid */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                  {/* Field 1: Nama Kawasan Pabrik */}
+                  <div className="lg:col-span-3 space-y-1.5">
+                    <label className="block text-xs font-bold text-slate-700 uppercase">
+                      Nama Identitas Kawasan Pabrik (Watermark & Peta)
+                    </label>
+                    <input
+                      type="text"
+                      value={policySettingsMap.geofence_plant_name ?? DEFAULT_PLANT_CENTER.name}
+                      onChange={(e) => setPolicySettingsMap(prev => ({ ...prev, geofence_plant_name: e.target.value }))}
+                      placeholder="PT Widatra Bhakti — Kawasan Pabrik"
+                      className="w-full p-2.5 border border-slate-200 rounded-xl text-sm font-semibold text-slate-900 outline-none focus:ring-2 focus:ring-emerald-500 bg-slate-50/50"
+                    />
+                    <p className="text-[11px] text-slate-400">
+                      Nama ini disematkan permanen pada watermark otomatis kamera dan label geofence peta spasial.
+                    </p>
+                  </div>
+
+                  {/* Field 2: Latitude Pusat Pabrik */}
+                  <div className="space-y-1.5">
+                    <label className="block text-xs font-bold text-slate-700 uppercase">
+                      Titik Pusat Latitude Pabrik (Induk)
+                    </label>
+                    <input
+                      type="text"
+                      value={policySettingsMap.geofence_plant_lat ?? DEFAULT_PLANT_CENTER.lat}
+                      onChange={(e) => setPolicySettingsMap(prev => ({ ...prev, geofence_plant_lat: e.target.value }))}
+                      placeholder="-7.604500"
+                      className="w-full p-2.5 border border-slate-200 rounded-xl text-sm font-mono font-bold text-slate-900 outline-none focus:ring-2 focus:ring-emerald-500 bg-slate-50/50"
+                    />
+                    <p className="text-[11px] text-slate-400">
+                      Koordinat lintang pusat kawasan pabrik (default: -7.604500).
+                    </p>
+                  </div>
+
+                  {/* Field 3: Longitude Pusat Pabrik */}
+                  <div className="space-y-1.5">
+                    <label className="block text-xs font-bold text-slate-700 uppercase">
+                      Titik Pusat Longitude Pabrik (Induk)
+                    </label>
+                    <input
+                      type="text"
+                      value={policySettingsMap.geofence_plant_lng ?? DEFAULT_PLANT_CENTER.lng}
+                      onChange={(e) => setPolicySettingsMap(prev => ({ ...prev, geofence_plant_lng: e.target.value }))}
+                      placeholder="112.729200"
+                      className="w-full p-2.5 border border-slate-200 rounded-xl text-sm font-mono font-bold text-slate-900 outline-none focus:ring-2 focus:ring-emerald-500 bg-slate-50/50"
+                    />
+                    <p className="text-[11px] text-slate-400">
+                      Koordinat bujur pusat kawasan pabrik (default: 112.729200).
+                    </p>
+                  </div>
+
+                  {/* Field 4: Radius Pagar Pabrik (Induk) */}
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <label className="block text-xs font-bold text-slate-700 uppercase">
+                        Radius Pagar Pabrik (Induk)
+                      </label>
+                      <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded">
+                        Geofence Induk
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="number"
+                        min={10}
+                        max={100000}
+                        value={policySettingsMap.geofence_plant_radius_meters ?? DEFAULT_PLANT_CENTER.radiusMeters}
+                        onChange={(e) => setPolicySettingsMap(prev => ({
+                          ...prev,
+                          geofence_plant_radius_meters: Math.max(1, parseInt(e.target.value) || 1)
+                        }))}
+                        className="w-full p-2.5 border border-slate-200 rounded-xl text-sm font-bold text-slate-900 outline-none focus:ring-2 focus:ring-emerald-500 bg-slate-50/50"
+                      />
+                      <span className="text-xs font-bold text-slate-500 shrink-0">Meter</span>
+                    </div>
+                    <p className="text-[11px] text-slate-400">
+                      Batas lingkaran geofence kawasan. PIC K3 dan Petugas wajib berada di dalam radius ini (&lt;{policySettingsMap.geofence_plant_radius_meters ?? 250}m).
+                    </p>
+                  </div>
+
+                  {/* Field 5: Radius Mikro Scan QR Alat (Child) */}
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <label className="block text-xs font-bold text-slate-700 uppercase">
+                        Jangkauan Scan QR Alat (Child)
+                      </label>
+                      <span className="text-[10px] font-bold text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded">
+                        Geofence Child
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="number"
+                        min={1}
+                        max={500}
+                        value={policySettingsMap.geofence_child_radius_meters ?? DEFAULT_PLANT_CENTER.childRadiusMeters}
+                        onChange={(e) => setPolicySettingsMap(prev => ({
+                          ...prev,
+                          geofence_child_radius_meters: Math.max(1, parseInt(e.target.value) || 1)
+                        }))}
+                        className="w-full p-2.5 border border-slate-200 rounded-xl text-sm font-bold text-slate-900 outline-none focus:ring-2 focus:ring-emerald-500 bg-slate-50/50"
+                      />
+                      <span className="text-xs font-bold text-slate-500 shrink-0">Meter</span>
+                    </div>
+                    <p className="text-[11px] text-slate-400">
+                      Jarak toleransi maksimal petugas dari fisik alat saat scan QR (&lt;{policySettingsMap.geofence_child_radius_meters ?? 25}m).
+                    </p>
                   </div>
                 </div>
               </div>

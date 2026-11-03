@@ -428,6 +428,17 @@ export const api = {
     });
   },
 
+  updateFacilityCoordinates: async (id: number | string, payload: {
+    latitude: number;
+    longitude: number;
+    area_zone?: string;
+  }) => {
+    return apiRequest(`/monitoring/facilities/${id}/coordinates`, {
+      method: 'PUT',
+      body: JSON.stringify(payload),
+    });
+  },
+
   submitInspection: async (payload: any) => {
     return apiRequest('/monitoring/inspections', {
       method: 'POST',
@@ -496,6 +507,8 @@ export interface SafetyFacility {
   tipe_item: 'CONSUMABLE' | 'KONDISI';
   area_zone?: string;
   location: any;
+  latitude?: number | null;
+  longitude?: number | null;
   specifications?: any;
   status: string;
   status_aktif?: boolean;

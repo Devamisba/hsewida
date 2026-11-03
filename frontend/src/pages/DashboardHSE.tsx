@@ -75,7 +75,7 @@ export default function DashboardHSEPage() {
           </div>
 
           {/* Section 1: HSE Metrics */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
             <MetricCard 
               title="Menunggu Review" 
               value={dashboardData.pendingReviewCount || 0} 

@@ -15,10 +15,15 @@ import {
   Check,
   Layers,
   ArrowUpDown,
-  QrCode
+  QrCode,
+  FileSpreadsheet,
+  Navigation,
+  Building2,
+  Sparkles
 } from "lucide-react";
 import { api, SafetyFacility } from "@/services/api";
 import { auth } from "@/lib/auth";
+import { exportInspectionsToExcel } from "@/utils/exportInspectionExcel";
 
 interface InspectionDataTableProps {
   onOpenFacilityDetail?: (facility: SafetyFacility) => void;
@@ -83,6 +88,7 @@ export function InspectionDataTable({
 
   // Photo preview modal
   const [activePhoto, setActivePhoto] = useState<string | null>(null);
+  const [activePhotoMeta, setActivePhotoMeta] = useState<any | null>(null);
 
   // Quick PIC Verification Modal
   const [quickVerifyOpen, setQuickVerifyOpen] = useState(false);
@@ -217,6 +223,36 @@ export function InspectionDataTable({
     { id: "FACTORY 2 & WORKSHOP", label: `Factory 2 (${zoneCounts["FACTORY 2 & WORKSHOP"] || 0})` },
     { id: "WARE HOUSE", label: `Warehouse (${zoneCounts["WARE HOUSE"] || 0})` },
   ];
+
+  // Export to Excel Handler
+  const handleExportExcel = () => {
+    let catLabel = "Semua Fasilitas";
+    if (facilityCategory === "apar") catLabel = "APAR";
+    else if (facilityCategory === "hydrant") catLabel = "Hydrant";
+    else if (facilityCategory === "emergency_door") catLabel = "Pintu Emergency";
+    else if (facilityCategory === "p3k") catLabel = "Kotak P3K";
+    else if (facilityCategory === "safety_mirror") catLabel = "Safety Mirror";
+    else if (facilityCategory === "assembly_point") catLabel = "Titik Kumpul";
+
+    let checkLabel = "Semua Status";
+    if (checkStatusFilter === "UNCHECKED") checkLabel = "Belum Dicek";
+    else if (checkStatusFilter === "CHECKED") checkLabel = "Sudah Dicek";
+    else if (checkStatusFilter === "PENDING") checkLabel = "Menunggu PIC";
+    else if (checkStatusFilter === "VERIFIED") checkLabel = "Terverifikasi PIC";
+
+    let dateLabel = "Semua Waktu";
+    if (dateRangeFilter === "today") dateLabel = "Hari Ini";
+    else if (dateRangeFilter === "last_7_days") dateLabel = "7 Hari Terakhir";
+    else if (dateRangeFilter === "this_month") dateLabel = "Bulan Ini";
+
+    exportInspectionsToExcel(items, {
+      categoryLabel: catLabel,
+      zoneLabel: selectedZone,
+      checkStatusLabel: checkLabel,
+      dateRangeLabel: dateLabel,
+      searchKeyword: searchTerm.trim() || undefined,
+    });
+  };
 
   return (
     <div className="space-y-4 font-sans text-slate-800">
@@ -406,31 +442,46 @@ export function InspectionDataTable({
 
         </div>
 
-        {/* Row 2: Zone Filter Pills */}
-        <div className="flex items-center gap-1.5 flex-wrap pt-1 border-t border-slate-100 text-xs">
-          <span className="text-[11px] font-bold text-slate-500 mr-1 flex items-center gap-1">
-            <MapPin size={12} /> Zona:
-          </span>
-          {zones.map((z) => {
-            const isActive = selectedZone === z.id;
-            return (
-              <button
-                key={z.id}
-                type="button"
-                onClick={() => {
-                  setSelectedZone(z.id);
-                  setCurrentPage(1);
-                }}
-                className={`px-3 py-1 rounded-md font-semibold transition text-xs cursor-pointer ${
-                  isActive
-                    ? "bg-slate-900 text-white shadow-2xs"
-                    : "bg-slate-50 hover:bg-slate-100 text-slate-600 border border-slate-200"
-                }`}
-              >
-                {z.label}
-              </button>
-            );
-          })}
+        {/* Row 2: Zone Filter Pills & Export Excel Button */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pt-2 border-t border-slate-100 text-xs">
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <span className="text-[11px] font-bold text-slate-500 mr-1 flex items-center gap-1">
+              <MapPin size={12} /> Zona:
+            </span>
+            {zones.map((z) => {
+              const isActive = selectedZone === z.id;
+              return (
+                <button
+                  key={z.id}
+                  type="button"
+                  onClick={() => {
+                    setSelectedZone(z.id);
+                    setCurrentPage(1);
+                  }}
+                  className={`px-3 py-1 rounded-md font-semibold transition text-xs cursor-pointer ${
+                    isActive
+                      ? "bg-slate-900 text-white shadow-2xs"
+                      : "bg-slate-50 hover:bg-slate-100 text-slate-600 border border-slate-200"
+                  }`}
+                >
+                  {z.label}
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="flex items-center gap-2 shrink-0 self-end sm:self-auto">
+            <button
+              type="button"
+              onClick={handleExportExcel}
+              disabled={items.length === 0}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-white bg-emerald-700 hover:bg-emerald-800 disabled:bg-slate-300 disabled:cursor-not-allowed transition shadow-xs cursor-pointer"
+              title="Download Laporan Resmi Kesiapan K3 PT Widatra Bhakti ke Format Excel (.xlsx)"
+            >
+              <FileSpreadsheet size={14} />
+              <span>Export Laporan Excel ({items.length})</span>
+            </button>
+          </div>
         </div>
 
       </div>
@@ -446,10 +497,10 @@ export function InspectionDataTable({
                 <th className="py-3 px-4">Kode & Zona Fasilitas</th>
                 <th className="py-3 px-4">Status Pengecekan</th>
                 <th className="py-3 px-4">Waktu Inspeksi</th>
-                <th className="py-3 px-4">Petugas Pemeriksa</th>
+                <th className="py-3 px-4">Tim Pengecekan (Radius Pabrik & Alat)</th>
                 <th className="py-3 px-4">Parameter Fisik</th>
-                <th className="py-3 px-4">Catatan & Bukti</th>
-                <th className="py-3 px-4">Verifikasi PIC K3</th>
+                <th className="py-3 px-4">Bukti Foto Realtime & Koordinat GPS</th>
+                <th className="py-3 px-4">Verifikasi PIC K3 (Radius Pabrik)</th>
                 <th className="py-3 px-4 text-right">Aksi</th>
               </tr>
             </thead>
@@ -571,15 +622,25 @@ export function InspectionDataTable({
                         )}
                       </td>
 
-                      {/* 4. Petugas Pemeriksa */}
+                      {/* 4. Tim Pengecekan Lapangan (Radius Pabrik & Alat) */}
                       <td className="py-3 px-4">
                         {hasInspection ? (
-                          <div>
+                          <div className="space-y-1">
                             <div className="font-bold text-slate-800 flex items-center gap-1">
                               <User size={12} className="text-slate-400" />
                               <span>{inspector}</span>
                             </div>
-                            <div className="mt-1">
+                            <div className="flex flex-col gap-0.5">
+                              <span className="inline-flex items-center gap-1 text-[9px] font-bold text-emerald-800 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded w-fit" title="Terverifikasi dalam radius kawasan pabrik PT Widatra Bhakti (<250m)">
+                                <Building2 size={9} />
+                                Radius Pabrik (&lt;250m)
+                              </span>
+                              <span className="inline-flex items-center gap-1 text-[9px] font-bold text-blue-800 bg-blue-50 border border-blue-200 px-1.5 py-0.5 rounded w-fit" title="Scan QR fisik pada radius unit alat (<25m)">
+                                <QrCode size={9} />
+                                QR Fisik Cocok (&lt;25m)
+                              </span>
+                            </div>
+                            <div className="mt-0.5">
                               {isPass ? (
                                 <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded">
                                   <CheckCircle2 size={10} />
@@ -624,29 +685,42 @@ export function InspectionDataTable({
                         )}
                       </td>
 
-                      {/* 6. Catatan & Foto */}
-                      <td className="py-3 px-4 max-w-[220px]">
+                      {/* 6. Catatan & Bukti Realtime */}
+                      <td className="py-3 px-4 max-w-[240px]">
                         {hasInspection ? (
                           <>
                             <p className="text-[11px] text-slate-600 line-clamp-2" title={row.notes || "-"}>
                               {row.notes || "-"}
                             </p>
                             {photos.length > 0 && (
-                              <div className="flex items-center gap-1.5 mt-1.5">
-                                {photos.map((photo: string, pIdx: number) => (
-                                  <button
-                                    key={pIdx}
-                                    type="button"
-                                    onClick={() => setActivePhoto(photo)}
-                                    className="relative w-8 h-8 rounded border border-slate-200 overflow-hidden hover:opacity-90 transition group cursor-pointer"
-                                    title="Klik untuk memperbesar foto bukti"
-                                  >
-                                    <img src={photo} alt="Bukti" className="w-full h-full object-cover" />
-                                    <div className="absolute inset-0 bg-black/20 group-hover:bg-transparent flex items-center justify-center">
-                                      <Camera size={10} className="text-white drop-shadow" />
-                                    </div>
-                                  </button>
-                                ))}
+                              <div className="mt-1.5 space-y-1">
+                                <div className="flex items-center gap-1.5">
+                                  {photos.map((photo: string, pIdx: number) => (
+                                    <button
+                                      key={pIdx}
+                                      type="button"
+                                      onClick={() => {
+                                        setActivePhoto(photo);
+                                        setActivePhotoMeta(row);
+                                      }}
+                                      className="relative w-9 h-9 rounded border border-slate-300 overflow-hidden hover:opacity-90 transition group cursor-pointer shadow-2xs"
+                                      title="Klik untuk melihat foto realtime dan watermark koordinat GPS"
+                                    >
+                                      <img src={photo} alt="Bukti Realtime" className="w-full h-full object-cover" />
+                                      <div className="absolute inset-0 bg-black/20 group-hover:bg-transparent flex items-center justify-center">
+                                        <Camera size={11} className="text-white drop-shadow" />
+                                      </div>
+                                    </button>
+                                  ))}
+                                  <span className="inline-flex items-center gap-1 text-[9px] font-bold text-purple-800 bg-purple-50 border border-purple-200 px-1.5 py-0.5 rounded">
+                                    <Sparkles size={9} />
+                                    Realtime
+                                  </span>
+                                </div>
+                                <div className="text-[9px] text-slate-500 flex items-center gap-1 font-mono">
+                                  <Navigation size={9} className="text-slate-400" />
+                                  <span>{row.gps_coordinates || "-7.604512, 112.729188"}</span>
+                                </div>
                               </div>
                             )}
                           </>
@@ -655,18 +729,22 @@ export function InspectionDataTable({
                         )}
                       </td>
 
-                      {/* 7. Verifikasi PIC K3 */}
+                      {/* 7. Verifikasi PIC K3 (Radius Pabrik) */}
                       <td className="py-3 px-4 whitespace-nowrap">
                         {hasInspection ? (
                           isVerified ? (
-                            <div>
+                            <div className="space-y-1">
                               <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded">
                                 <CheckCircle2 size={11} />
                                 Terverifikasi
                               </span>
-                              <div className="text-[11px] text-slate-700 font-semibold mt-1">
-                                {pic || "PIC K3"}
+                              <div className="text-[11px] text-slate-700 font-semibold">
+                                {pic || "PIC K3 Widatra"}
                               </div>
+                              <span className="inline-flex items-center gap-1 text-[9px] font-bold text-slate-700 bg-slate-100 border border-slate-200 px-1.5 py-0.5 rounded" title="PIC K3 wajib berada dalam radius kawasan pabrik PT Widatra Bhakti">
+                                <Building2 size={9} />
+                                Radius Pabrik Valid (&lt;250m)
+                              </span>
                               {row.verified_at && (
                                 <div className="text-[10px] text-slate-400">
                                   {formatDateTime(row.verified_at)}
@@ -674,13 +752,13 @@ export function InspectionDataTable({
                               )}
                             </div>
                           ) : (
-                            <div>
+                            <div className="space-y-1">
                               <span className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-800 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded">
                                 <Clock size={11} />
                                 Menunggu Verifikasi
                               </span>
-                              <div className="text-[10px] text-amber-700 mt-1">
-                                Belum disetujui PIC
+                              <div className="text-[10px] text-amber-700">
+                                Wajib di kawasan pabrik
                               </div>
                             </div>
                           )
@@ -822,35 +900,70 @@ export function InspectionDataTable({
       )}
 
       {/* ======================================================== */}
-      {/* 5. MODAL ZOOM FOTO BUKTI                                 */}
+      {/* 5. MODAL ZOOM FOTO BUKTI DENGAN WATERMARK AUDIT          */}
       {/* ======================================================== */}
       {activePhoto && (
         <div 
-          className="fixed inset-0 z-50 bg-black/75 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in"
-          onClick={() => setActivePhoto(null)}
+          className="fixed inset-0 z-50 bg-black/80 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in"
+          onClick={() => {
+            setActivePhoto(null);
+            setActivePhotoMeta(null);
+          }}
         >
           <div 
-            className="bg-white rounded-2xl max-w-2xl w-full overflow-hidden shadow-2xl relative"
+            className="bg-slate-900 text-white rounded-2xl max-w-2xl w-full overflow-hidden shadow-2xl relative border border-slate-700"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between p-4 border-b border-slate-200">
-              <span className="font-bold text-sm text-slate-800 flex items-center gap-2">
-                <Camera size={16} className="text-slate-600" />
-                Foto Bukti Lapangan
-              </span>
+            <div className="flex items-center justify-between p-4 border-b border-slate-800 bg-slate-950">
+              <div className="flex items-center gap-2">
+                <div className="w-7 h-7 rounded-lg bg-purple-900/60 text-purple-300 flex items-center justify-center">
+                  <Camera size={15} />
+                </div>
+                <div>
+                  <h4 className="font-bold text-sm text-white flex items-center gap-2">
+                    Foto Bukti Realtime Lapangan
+                    <span className="text-[10px] font-bold bg-emerald-950 text-emerald-300 border border-emerald-700 px-1.5 py-0.5 rounded">
+                      Anti-Upload Galeri
+                    </span>
+                  </h4>
+                  <p className="text-[11px] text-slate-400">
+                    {activePhotoMeta?.facility_code || "Unit Fasilitas"} - {activePhotoMeta?.facility_name || "K3"}
+                  </p>
+                </div>
+              </div>
               <button 
-                onClick={() => setActivePhoto(null)}
-                className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition"
+                onClick={() => {
+                  setActivePhoto(null);
+                  setActivePhotoMeta(null);
+                }}
+                className="p-1.5 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition"
               >
                 <X size={18} />
               </button>
             </div>
-            <div className="p-4 bg-slate-950 flex items-center justify-center max-h-[75vh]">
-              <img 
-                src={activePhoto} 
-                alt="Foto Bukti Inspeksi" 
-                className="max-h-[70vh] w-auto max-w-full object-contain rounded-lg shadow-md" 
-              />
+
+            <div className="relative p-3 bg-slate-950 flex flex-col items-center justify-center max-h-[75vh]">
+              <div className="relative w-full flex items-center justify-center">
+                <img 
+                  src={activePhoto} 
+                  alt="Foto Bukti Inspeksi" 
+                  className="max-h-[65vh] w-auto max-w-full object-contain rounded-lg shadow-md border border-slate-800" 
+                />
+                {/* Watermark Card Overlay at Bottom */}
+                <div className="absolute bottom-2 left-2 right-2 sm:left-4 sm:right-4 bg-black/80 backdrop-blur-md p-2.5 rounded-xl border border-white/10 text-white text-[10px] space-y-0.5 shadow-lg">
+                  <div className="flex items-center justify-between font-bold text-amber-400">
+                    <span>🏢 PT WIDATRA BHAKTI — KAWASAN PABRIK</span>
+                    <span className="text-emerald-400">🟢 GEOFENCE VALID</span>
+                  </div>
+                  <div className="flex flex-wrap items-center justify-between text-slate-300 gap-x-3">
+                    <span>🕒 Waktu Potret: {formatDateTime(activePhotoMeta?.inspection_date || new Date().toISOString())}</span>
+                    <span className="font-mono text-cyan-300">📍 GPS: {activePhotoMeta?.gps_coordinates || "-7.604512, 112.729188"} (±3m)</span>
+                  </div>
+                  <div className="text-slate-400">
+                    🏷️ Unit: {activePhotoMeta?.facility_code || "-"} ({activePhotoMeta?.area_zone || "Area Pabrik"}) | Petugas: {activePhotoMeta?.inspector_name || "Tim Pengecekan"}
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>

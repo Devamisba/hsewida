@@ -14,10 +14,15 @@ import {
   MapPin, 
   ChevronRight, 
   Camera,
-  Printer
+  Printer,
+  Navigation,
+  Crosshair,
+  Save,
+  AlertCircle
 } from "lucide-react";
 import { SafetyFacility, api } from "@/services/api";
 import { QRCodeSVG } from "./QRCodeSVG";
+import { getFacilityCoordinates } from "@/utils/facilityCoordinates";
 
 interface FacilityDetailActionModalProps {
   isOpen: boolean;
@@ -26,6 +31,7 @@ interface FacilityDetailActionModalProps {
   onInspect: (f: SafetyFacility) => void;
   onShowSticker: (f: SafetyFacility) => void;
   onRefill: (f: SafetyFacility) => void;
+  onFacilityUpdated?: (updated: SafetyFacility) => void;
 }
 
 export function FacilityDetailActionModal({
@@ -34,7 +40,8 @@ export function FacilityDetailActionModal({
   facility,
   onInspect,
   onShowSticker,
-  onRefill
+  onRefill,
+  onFacilityUpdated
 }: FacilityDetailActionModalProps) {
   const [inspections, setInspections] = useState<any[]>([]);
   const [loadingHistory, setLoadingHistory] = useState<boolean>(false);
@@ -67,6 +74,98 @@ export function FacilityDetailActionModal({
         setLoadingHistory(false);
       });
   }, [isOpen, facility]);
+
+  // Coordinate editing state
+  const [editLat, setEditLat] = useState<string>("");
+  const [editLng, setEditLng] = useState<string>("");
+  const [editZone, setEditZone] = useState<string>("UMUM");
+  const [isSavingCoords, setIsSavingCoords] = useState<boolean>(false);
+  const [coordSuccessMsg, setCoordSuccessMsg] = useState<string>("");
+  const [coordErrorMsg, setCoordErrorMsg] = useState<string>("");
+  const [isCapturingGps, setIsCapturingGps] = useState<boolean>(false);
+
+  useEffect(() => {
+    if (facility && isOpen) {
+      const coords = getFacilityCoordinates(facility);
+      setEditLat(String(facility.latitude || facility.specifications?.latitude || coords.lat));
+      setEditLng(String(facility.longitude || facility.specifications?.longitude || coords.lng));
+      setEditZone(facility.area_zone || "FACTORY 1");
+      setCoordSuccessMsg("");
+      setCoordErrorMsg("");
+    }
+  }, [facility, isOpen]);
+
+  const handleCaptureCurrentGps = () => {
+    if (!navigator.geolocation) {
+      setCoordErrorMsg("Browser tidak mendukung geolokasi GPS.");
+      return;
+    }
+    setIsCapturingGps(true);
+    setCoordErrorMsg("");
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setIsCapturingGps(false);
+        setEditLat(pos.coords.latitude.toFixed(6));
+        setEditLng(pos.coords.longitude.toFixed(6));
+        setCoordSuccessMsg(`GPS terdeteksi (Akurasi: ±${Math.round(pos.coords.accuracy)}m)`);
+        setTimeout(() => setCoordSuccessMsg(""), 4000);
+      },
+      (err) => {
+        setIsCapturingGps(false);
+        setCoordErrorMsg("Gagal membaca GPS: " + err.message);
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+    );
+  };
+
+  const handleSaveCoordinates = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!facility) return;
+    const latNum = parseFloat(editLat);
+    const lngNum = parseFloat(editLng);
+    if (isNaN(latNum) || isNaN(lngNum)) {
+      setCoordErrorMsg("Latitude dan Longitude harus berupa angka valid.");
+      return;
+    }
+    if (latNum < -90 || latNum > 90 || lngNum < -180 || lngNum > 180) {
+      setCoordErrorMsg("Koordinat GPS di luar rentang geografis.");
+      return;
+    }
+
+    setIsSavingCoords(true);
+    setCoordSuccessMsg("");
+    setCoordErrorMsg("");
+    try {
+      const res = await api.updateFacilityCoordinates(facility.id, {
+        latitude: latNum,
+        longitude: lngNum,
+        area_zone: editZone,
+      });
+      if (res?.success) {
+        setCoordSuccessMsg("Titik koordinat GPS berhasil disimpan.");
+        if (facility) {
+          facility.latitude = latNum;
+          facility.longitude = lngNum;
+          facility.area_zone = editZone;
+          if (facility.specifications) {
+            facility.specifications.latitude = latNum;
+            facility.specifications.longitude = lngNum;
+            facility.specifications.area_zone = editZone;
+          }
+        }
+        if (onFacilityUpdated && res.data) {
+          onFacilityUpdated(res.data);
+        }
+        setTimeout(() => setCoordSuccessMsg(""), 4000);
+      } else {
+        setCoordErrorMsg(res?.message || "Gagal menyimpan koordinat.");
+      }
+    } catch (err: any) {
+      setCoordErrorMsg(err.message || "Terjadi kesalahan saat menyimpan koordinat.");
+    } finally {
+      setIsSavingCoords(false);
+    }
+  };
 
   if (!isOpen || !facility) return null;
 
@@ -239,6 +338,123 @@ export function FacilityDetailActionModal({
                 )}
               </div>
             </div>
+          </div>
+
+          {/* MASTER TITIK KOORDINAT SPASIAL ALAT */}
+          <div className="bg-slate-50 border border-slate-200 rounded-xl p-3.5 space-y-3">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <div className="w-7 h-7 rounded-lg bg-emerald-100 text-emerald-800 flex items-center justify-center shrink-0">
+                  <Navigation size={15} />
+                </div>
+                <div>
+                  <h4 className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
+                    Master Titik Koordinat GPS Alat
+                    <span className="text-[9px] font-bold text-emerald-700 bg-emerald-100/70 px-1.5 py-0.2 rounded">
+                      Geofence Child &lt;25m
+                    </span>
+                  </h4>
+                  <p className="text-[11px] text-slate-500">
+                    Posisi koordinat presisi unit fisik untuk penandaan peta spasial dan validasi scan petugas di lapangan.
+                  </p>
+                </div>
+              </div>
+
+              {/* Action: Lihat di Peta GIS */}
+              <Link
+                to={`/gis-map?focus=${facility.id}`}
+                onClick={onClose}
+                className="inline-flex items-center gap-1.5 px-2.5 py-1.5 bg-white border border-slate-200 hover:bg-slate-100 text-slate-700 rounded-lg text-xs font-semibold transition shrink-0 shadow-2xs"
+                title="Buka Peta GIS dan arahkan kamera ke unit ini"
+              >
+                <MapPin size={13} className="text-emerald-600" />
+                <span>Lihat di Peta GIS</span>
+              </Link>
+            </div>
+
+            {/* Form Edit Koordinat */}
+            <form onSubmit={handleSaveCoordinates} className="space-y-2.5 pt-1 border-t border-slate-200/70">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-600 uppercase mb-0.5">
+                    Latitude
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={editLat}
+                    onChange={(e) => setEditLat(e.target.value)}
+                    placeholder="-7.604500"
+                    className="w-full px-2.5 py-1.5 border border-slate-300 rounded-lg text-xs font-mono font-bold text-slate-900 bg-white focus:ring-1 focus:ring-emerald-500 outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-600 uppercase mb-0.5">
+                    Longitude
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={editLng}
+                    onChange={(e) => setEditLng(e.target.value)}
+                    placeholder="112.729200"
+                    className="w-full px-2.5 py-1.5 border border-slate-300 rounded-lg text-xs font-mono font-bold text-slate-900 bg-white focus:ring-1 focus:ring-emerald-500 outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-600 uppercase mb-0.5">
+                    Zona Kawasan
+                  </label>
+                  <select
+                    value={editZone}
+                    onChange={(e) => setEditZone(e.target.value)}
+                    className="w-full px-2.5 py-1.5 border border-slate-300 rounded-lg text-xs font-semibold text-slate-800 bg-white focus:ring-1 focus:ring-emerald-500 outline-none"
+                  >
+                    <option value="UMUM">UMUM</option>
+                    <option value="FACTORY 1">FACTORY 1</option>
+                    <option value="FACTORY 2 & WORKSHOP">FACTORY 2 & WORKSHOP</option>
+                    <option value="WARE HOUSE">WARE HOUSE</option>
+                    <option value="LAB QC">LAB QC</option>
+                  </select>
+                </div>
+              </div>
+
+              {coordSuccessMsg && (
+                <div className="text-[11px] font-semibold text-emerald-800 bg-emerald-50 border border-emerald-200 px-2 py-1 rounded-md flex items-center gap-1.5">
+                  <CheckCircle2 size={13} className="text-emerald-600 shrink-0" />
+                  <span>{coordSuccessMsg}</span>
+                </div>
+              )}
+
+              {coordErrorMsg && (
+                <div className="text-[11px] font-semibold text-rose-800 bg-rose-50 border border-rose-200 px-2 py-1 rounded-md flex items-center gap-1.5">
+                  <AlertCircle size={13} className="text-rose-600 shrink-0" />
+                  <span>{coordErrorMsg}</span>
+                </div>
+              )}
+
+              <div className="flex items-center justify-between pt-1 gap-2 flex-wrap">
+                <button
+                  type="button"
+                  onClick={handleCaptureCurrentGps}
+                  disabled={isCapturingGps}
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-[11px] font-semibold transition cursor-pointer"
+                  title="Ambil titik koordinat dari posisi GPS perangkat Anda saat ini di depan alat"
+                >
+                  <Crosshair size={13} className="text-blue-600" />
+                  <span>{isCapturingGps ? "Membaca GPS..." : "Ambil GPS Saya Saat Ini"}</span>
+                </button>
+
+                <button
+                  type="submit"
+                  disabled={isSavingCoords}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-700 hover:bg-emerald-800 disabled:bg-emerald-400 text-white rounded-lg text-xs font-bold transition shadow-2xs cursor-pointer active:scale-95"
+                >
+                  <Save size={13} />
+                  <span>{isSavingCoords ? "Menyimpan..." : "Simpan Titik Koordinat"}</span>
+                </button>
+              </div>
+            </form>
           </div>
 
           {/* SECTION 2: BUNDEL AKSI FASILITAS */}

@@ -11,6 +11,7 @@ import MyRequestsPage from '@/pages/MyRequests';
 import HistoryPage from '@/pages/History';
 import ReviewRequestsPage from '@/pages/ReviewRequests';
 import MonitoringHSEPage from '@/pages/MonitoringHSE';
+import GisGeofencePage from '@/pages/GisGeofencePage';
 import ProfilePage from '@/pages/Profile';
 import MasterDataPage from '@/pages/MasterData';
 import PublicQrVerifyPage from '@/pages/PublicQrVerify';
@@ -56,6 +57,7 @@ export default function App() {
           <Route path="history" element={<HistoryPage />} />
           <Route path="review" element={<ReviewRequestsPage />} />
           <Route path="monitoring" element={<MonitoringHSEPage />} />
+          <Route path="gis-map" element={<GisGeofencePage />} />
           <Route path="master-data" element={<MasterDataPage />} />
           <Route path="profile" element={<ProfilePage />} />
         </Route>

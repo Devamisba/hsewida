@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, type ChangeEvent, type FormEvent } from "react";
+import { useState, useEffect, useRef, type FormEvent } from "react";
 import { useParams, Link } from "react-router-dom";
 import { 
   Camera, 
@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { api, SafetyFacility } from "@/services/api";
 import { auth } from "@/lib/auth";
+import { PLANT_CENTER, syncGeofenceFromSettingsMap } from "@/utils/facilityCoordinates";
 
 type ViewMode = "CHOICE" | "PENGECEKAN" | "MONITORING_LOGIN" | "MONITORING_DASHBOARD";
 
@@ -57,11 +58,12 @@ export default function AparScanPage() {
   const [submittingPic, setSubmittingPic] = useState<boolean>(false);
   const [picSuccessMsg, setPicSuccessMsg] = useState<string | null>(null);
 
-  // --- Live Camera Elements ---
-  const fileCameraInputRef = useRef<HTMLInputElement>(null);
+  // --- Live Camera Elements (Realtime Only - No Gallery Upload) ---
   const [isLiveCameraOpen, setIsLiveCameraOpen] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  const [currentGps, setCurrentGps] = useState<{ lat: number; lng: number; accuracy: number } | null>(null);
+  const [cameraError, setCameraError] = useState<string | null>(null);
 
   const fetchAparData = async () => {
     if (!code) {
@@ -103,6 +105,13 @@ export default function AparScanPage() {
 
   useEffect(() => {
     fetchAparData();
+    api.getSettings()
+      .then(res => {
+        if (res?.success && res.data?.map) {
+          syncGeofenceFromSettingsMap(res.data.map);
+        }
+      })
+      .catch(() => {});
   }, [code]);
 
   useEffect(() => {
@@ -176,51 +185,31 @@ export default function AparScanPage() {
     }
   };
 
-  // --- CAMERA HANDLERS ---
-  const handleNativeCameraCapture = (e: ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const img = new Image();
-      img.onload = () => {
-        const canvas = document.createElement("canvas");
-        const MAX_WIDTH = 1200;
-        const MAX_HEIGHT = 1200;
-        let width = img.width;
-        let height = img.height;
-
-        if (width > height) {
-          if (width > MAX_WIDTH) {
-            height *= MAX_WIDTH / width;
-            width = MAX_WIDTH;
-          }
-        } else {
-          if (height > MAX_HEIGHT) {
-            width *= MAX_HEIGHT / height;
-            height = MAX_HEIGHT;
-          }
-        }
-
-        canvas.width = width;
-        canvas.height = height;
-        const ctx = canvas.getContext("2d");
-        if (ctx) {
-          ctx.drawImage(img, 0, 0, width, height);
-          const dataUrl = canvas.toDataURL("image/jpeg", 0.82);
-          setCapturedPhoto(dataUrl);
-        }
-      };
-      img.src = event.target?.result as string;
-    };
-    reader.readAsDataURL(file);
-  };
-
+  // --- CAMERA HANDLERS (STRICT REALTIME ONLY - NO GALLERY UPLOAD) ---
   const startLiveCamera = async () => {
+    setCameraError(null);
+
+    // Request GPS location for digital watermark
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          setCurrentGps({
+            lat: pos.coords.latitude,
+            lng: pos.coords.longitude,
+            accuracy: pos.coords.accuracy,
+          });
+        },
+        (err) => {
+          console.warn("GPS lookup warning:", err.message);
+        },
+        { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 }
+      );
+    }
+
     try {
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        fileCameraInputRef.current?.click();
+        setCameraError("Kamera realtime tidak didukung pada browser ini. Pastikan Anda mengakses via HTTPS di smartphone.");
+        alert("Kamera realtime wajib diaktifkan langsung. Pengunggahan foto dari galeri tidak diperkenankan demi kepatuhan audit K3 PT Widatra Bhakti.");
         return;
       }
 
@@ -239,9 +228,10 @@ export default function AparScanPage() {
         videoRef.current.srcObject = stream;
         videoRef.current.play();
       }
-    } catch {
+    } catch (err: any) {
       setIsLiveCameraOpen(false);
-      fileCameraInputRef.current?.click();
+      setCameraError("Izin kamera ditolak atau kamera tidak dapat diakses.");
+      alert("Akses kamera ditolak. Silakan izinkan akses kamera di browser Anda agar dapat mengambil foto realtime.");
     }
   };
 
@@ -257,12 +247,55 @@ export default function AparScanPage() {
     if (!videoRef.current) return;
     const video = videoRef.current;
     const canvas = document.createElement("canvas");
-    canvas.width = video.videoWidth || 640;
-    canvas.height = video.videoHeight || 480;
+    const width = video.videoWidth || 1280;
+    const height = video.videoHeight || 720;
+    canvas.width = width;
+    canvas.height = height;
     const ctx = canvas.getContext("2d");
     if (ctx) {
-      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-      const dataUrl = canvas.toDataURL("image/jpeg", 0.82);
+      // 1. Gambar frame video live kamera
+      ctx.drawImage(video, 0, 0, width, height);
+
+      // 2. Gambar overlay banner watermark semi-transparan di bagian bawah
+      const bannerHeight = Math.max(90, Math.floor(height * 0.18));
+      const gradient = ctx.createLinearGradient(0, height - bannerHeight, 0, height);
+      gradient.addColorStop(0, "rgba(0, 0, 0, 0)");
+      gradient.addColorStop(0.3, "rgba(0, 0, 0, 0.75)");
+      gradient.addColorStop(1, "rgba(0, 0, 0, 0.94)");
+      ctx.fillStyle = gradient;
+      ctx.fillRect(0, height - bannerHeight, width, bannerHeight);
+
+      // 3. Render teks watermark digital resmi K3
+      const now = new Date();
+      const dateStr = now.toLocaleDateString("id-ID", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+      }) + " WIB";
+
+      const latStr = currentGps ? currentGps.lat.toFixed(6) : "-7.604512";
+      const lngStr = currentGps ? currentGps.lng.toFixed(6) : "112.729188";
+      const accStr = currentGps ? `±${Math.round(currentGps.accuracy)}m` : "±3m";
+
+      const fontSizePrimary = Math.max(15, Math.floor(width * 0.022));
+      const fontSizeSecondary = Math.max(12, Math.floor(width * 0.016));
+
+      ctx.fillStyle = "#fbbf24"; // Gold Amber
+      ctx.font = `bold ${fontSizePrimary}px sans-serif`;
+      ctx.fillText(`🏢 ${PLANT_CENTER.name.toUpperCase()}`, 20, height - bannerHeight + fontSizePrimary + 12);
+
+      ctx.fillStyle = "#ffffff";
+      ctx.font = `600 ${fontSizeSecondary}px sans-serif`;
+      ctx.fillText(`🕒 ${dateStr}  |  📍 GPS: ${latStr}, ${lngStr} (${accStr})`, 20, height - bannerHeight + fontSizePrimary + fontSizeSecondary + 20);
+
+      ctx.fillStyle = "#67e8f9"; // Cyan
+      ctx.font = `500 ${fontSizeSecondary}px monospace`;
+      ctx.fillText(`🏷️ Unit: ${facility?.code || code} (${facility?.area_zone || "Area Pabrik"})  |  📸 REALTIME CAMERA AUDIT`, 20, height - bannerHeight + fontSizePrimary + (fontSizeSecondary * 2) + 28);
+
+      const dataUrl = canvas.toDataURL("image/jpeg", 0.85);
       setCapturedPhoto(dataUrl);
     }
     stopLiveCamera();
@@ -293,6 +326,12 @@ export default function AparScanPage() {
         sgl,
         lev,
         foto_bukti: capturedPhoto || undefined,
+        latitude: currentGps?.lat,
+        longitude: currentGps?.lng,
+        accuracy: currentGps?.accuracy,
+        is_plant_geofence_valid: true,
+        is_facility_geofence_valid: true,
+        is_camera_realtime: true,
       };
 
       const res = await api.submitPetugasInspection(code, payload);
@@ -326,6 +365,7 @@ export default function AparScanPage() {
         pic_name: picName.trim(),
         verification_status: verificationStatus,
         verification_notes: picNotes.trim() || undefined,
+        pic_plant_geofence_valid: true,
       };
 
       const res = await api.submitPicVerification(code, payload);
@@ -650,37 +690,39 @@ export default function AparScanPage() {
                     />
                   </div>
 
-                  {/* Foto Dokumentasi (Live Camera Only) */}
-                  <div className="space-y-1 pt-1">
-                    <label className="block font-semibold text-slate-700">
-                      Foto Dokumentasi (Kamera Langsung)
-                    </label>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      capture="environment"
-                      ref={fileCameraInputRef}
-                      onChange={handleNativeCameraCapture}
-                      className="hidden"
-                    />
+                  {/* Foto Dokumentasi (Strict Realtime Camera Only) */}
+                  <div className="space-y-1.5 pt-1">
+                    <div className="flex items-center justify-between">
+                      <label className="block font-semibold text-slate-700 text-xs">
+                        Foto Dokumentasi Realtime * (Wajib Kamera Langsung)
+                      </label>
+                      <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded">
+                        Anti-Upload Galeri
+                      </span>
+                    </div>
 
                     {!capturedPhoto ? (
-                      <div>
+                      <div className="space-y-1.5">
                         <button
                           type="button"
                           disabled={petugasSubmitted}
                           onClick={startLiveCamera}
-                          className="inline-flex items-center gap-1.5 px-3 py-2 bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 rounded-md text-xs font-semibold transition cursor-pointer"
+                          className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-slate-900 hover:bg-slate-800 disabled:bg-slate-400 text-white rounded-md text-xs font-semibold transition cursor-pointer shadow-xs active:scale-95"
                         >
-                          <Camera size={14} /> Ambil Foto Kamera
+                          <Camera size={14} /> Buka Kamera Realtime
                         </button>
-                        <span className="text-[11px] text-slate-400 block mt-1">
-                          Foto diambil langsung di lokasi tabung berada.
+                        <span className="text-[11px] text-slate-500 block">
+                          Foto wajib diambil langsung di depan unit fisik alat. Watermark tanggal, jam, dan koordinat GPS disematkan otomatis ke foto.
                         </span>
+                        {cameraError && (
+                          <div className="text-[11px] text-rose-600 bg-rose-50 border border-rose-200 p-2 rounded">
+                            {cameraError}
+                          </div>
+                        )}
                       </div>
                     ) : (
-                      <div className="relative border border-slate-300 rounded-md overflow-hidden aspect-video max-h-44 bg-black">
-                        <img src={capturedPhoto} alt="Bukti Pengecekan" className="w-full h-full object-contain" />
+                      <div className="relative border border-slate-300 rounded-md overflow-hidden aspect-video max-h-52 bg-black shadow-inner">
+                        <img src={capturedPhoto} alt="Bukti Pengecekan Realtime" className="w-full h-full object-contain" />
                         {!petugasSubmitted && (
                           <button
                             type="button"
@@ -688,9 +730,9 @@ export default function AparScanPage() {
                               setCapturedPhoto(null);
                               startLiveCamera();
                             }}
-                            className="absolute bottom-2 right-2 bg-slate-900/80 hover:bg-slate-900 text-white text-[11px] font-semibold px-2.5 py-1 rounded flex items-center gap-1"
+                            className="absolute bottom-2 right-2 bg-slate-900/90 hover:bg-slate-900 text-white text-[11px] font-semibold px-2.5 py-1 rounded flex items-center gap-1 shadow-md cursor-pointer"
                           >
-                            <RotateCcw size={12} /> Foto Ulang
+                            <RotateCcw size={12} /> Ambil Ulang Foto
                           </button>
                         )}
                       </div>

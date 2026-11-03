@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { Header } from "@/components/Header";
 import { 
   Flame, 
@@ -33,6 +33,7 @@ import { QrScanFieldModal } from "@/components/QrScanFieldModal";
 import { RefillQueueModal } from "@/components/RefillQueueModal";
 import { FacilityDetailActionModal } from "@/components/FacilityDetailActionModal";
 import { InspectionDataTable } from "@/components/InspectionDataTable";
+import { syncGeofenceFromSettingsMap } from "@/utils/facilityCoordinates";
 import { api, SafetyFacility, AlertsSummary } from "@/services/api";
 
 const TABS = [
@@ -117,6 +118,14 @@ export default function MonitoringHSEPage() {
           }
         })
         .catch(err => console.error("Failed to load refill summary:", err));
+
+      api.getSettings()
+        .then(res => {
+          if (res?.success && res.data?.map) {
+            syncGeofenceFromSettingsMap(res.data.map);
+          }
+        })
+        .catch(err => console.error("Failed to sync geofence settings:", err));
 
       if (activeTab === "spi") {
         const res = await api.getSpiMetrics();
@@ -211,66 +220,78 @@ export default function MonitoringHSEPage() {
       <main className="flex-1 overflow-y-auto p-4 md:p-5">
         <div className="max-w-7xl mx-auto flex flex-col gap-4">
           
-          {/* Top Control Bar: Header & Primary Actions in single neat row */}
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 bg-white px-5 py-3.5 rounded-xl border border-gray-200 shadow-xs">
-            <div>
+          {/* Top Control Bar: Responsive Header & Primary Actions */}
+          <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4 bg-white px-5 py-4 rounded-xl border border-gray-200 shadow-xs">
+            <div className="min-w-0 flex-1">
               <h1 className="text-lg md:text-xl font-bold text-gray-900 tracking-tight">Kesiapan Alat & Fasilitas K3</h1>
-              <p className="text-xs text-gray-500 mt-0.5">
+              <p className="text-xs text-gray-500 mt-1 leading-relaxed">
                 Pantau kesiapan alat consumable (masa berlaku) & non-consumable (kondisi fisik berkala)
               </p>
             </div>
             
-            <div className="flex items-center gap-2 shrink-0 self-end sm:self-auto flex-wrap">
+            <div className="flex items-center gap-2 flex-wrap w-full xl:w-auto justify-start xl:justify-end">
               {activeTab === "apar" && (
                 <>
                   <button
                     onClick={() => setRefillQueueOpen(true)}
-                    className="inline-flex items-center gap-1.5 bg-amber-600 hover:bg-amber-700 text-white px-3 py-2 rounded-lg transition-all text-xs font-bold shadow-xs cursor-pointer active:scale-95"
-                    title="Lihat 27 Unit Antrean Refill APAR"
+                    className="inline-flex items-center gap-1.5 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200 px-3 py-2 rounded-xl transition-all text-xs font-semibold shadow-2xs cursor-pointer active:scale-95"
+                    title="Lihat Antrean Refill APAR"
                   >
-                    <RefreshCw size={14} />
-                    <span>Antrean Refill ({refillCount})</span>
+                    <RefreshCw size={14} className="text-amber-700" />
+                    <span>Antrean Refill</span>
+                    <span className="bg-amber-200/80 text-amber-900 text-[10px] font-bold px-1.5 py-0.5 rounded-full">
+                      {refillCount}
+                    </span>
                   </button>
                   <button
                     onClick={() => {
                       setSelectedItem(facilities[0] || null);
                       setStickerModalOpen(true);
                     }}
-                    className="inline-flex items-center gap-1.5 bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 rounded-lg transition-all text-xs font-bold shadow-xs cursor-pointer active:scale-95"
+                    className="inline-flex items-center gap-1.5 bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200 px-3 py-2 rounded-xl transition-all text-xs font-semibold shadow-2xs cursor-pointer active:scale-95"
                     title="Cetak Stiker Label QR per Zona"
                   >
-                    <Layers size={14} />
-                    <span>Cetak Label Zona</span>
+                    <Layers size={14} className="text-slate-600" />
+                    <span>Cetak Label</span>
                   </button>
                 </>
               )}
 
-              <button
-                onClick={() => setScannerModalOpen(true)}
-                className="inline-flex items-center gap-1.5 bg-slate-900 hover:bg-slate-800 text-white px-3 py-2 rounded-lg transition-all text-xs font-bold shadow-xs cursor-pointer active:scale-95"
-                title="Scan QR Code Alat di Lapangan"
+              <Link
+                to="/gis-map"
+                className="inline-flex items-center gap-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 px-3 py-2 rounded-xl transition-all text-xs font-bold shadow-2xs cursor-pointer active:scale-95"
+                title="Buka Peta GIS & Radius Geofence Pabrik"
               >
-                <QrCode size={15} />
-                <span>Scan QR Lapangan</span>
-              </button>
+                <MapPin size={14} className="text-emerald-700" />
+                <span>Peta GIS</span>
+              </Link>
 
               <button
                 onClick={loadData}
                 disabled={loading}
-                className="inline-flex items-center gap-1.5 bg-white hover:bg-gray-50 text-gray-700 border border-gray-200 px-2.5 py-2 rounded-lg transition-all text-xs font-semibold shadow-2xs cursor-pointer active:scale-95"
+                className="inline-flex items-center gap-1.5 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 px-2.5 py-2 rounded-xl transition-all text-xs font-semibold shadow-2xs cursor-pointer active:scale-95"
                 title="Muat Ulang Data"
               >
                 <RefreshCw size={14} className={cn(loading && "animate-spin text-primary")} />
                 <span>Refresh</span>
               </button>
 
+              <button
+                onClick={() => setScannerModalOpen(true)}
+                className="inline-flex items-center gap-1.5 bg-slate-900 hover:bg-slate-800 text-white px-3.5 py-2 rounded-xl transition-all text-xs font-bold shadow-xs cursor-pointer active:scale-95"
+                title="Scan QR Code Alat di Lapangan"
+              >
+                <QrCode size={15} />
+                <span>Scan QR Lapangan</span>
+              </button>
+
               {activeTab !== "spi" && activeTab !== "inspeksi" && (
                 <button 
                   onClick={() => setAddModalOpen(true)}
-                  className="inline-flex items-center gap-1.5 bg-primary hover:opacity-90 text-on-primary px-3 py-2 rounded-lg transition-all text-xs font-bold shadow-xs whitespace-nowrap active:scale-[0.98] cursor-pointer"
+                  className="inline-flex items-center gap-1.5 bg-primary hover:bg-primary/90 text-on-primary px-3.5 py-2 rounded-xl transition-all text-xs font-bold shadow-xs whitespace-nowrap active:scale-[0.98] cursor-pointer"
                 >
                   <Plus size={16} />
-                  <span>Tambah Data Baru</span>
+                  <span>Tambah Unit Baru</span>
                 </button>
               )}
             </div>
@@ -373,7 +394,7 @@ export default function MonitoringHSEPage() {
                   </span>
                 </div>
 
-                <div className="grid grid-cols-4 gap-2 mt-3 text-center">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-3 text-center">
                   {/* 1. Baik */}
                   <button
                     type="button"
