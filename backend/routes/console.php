@@ -3,10 +3,20 @@
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 
 Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
 })->purpose('Display an inspiring quote')->hourly();
+
+Artisan::command('hse:reset-passwords', function () {
+    $count = DB::table('users')->update([
+        'password' => Hash::make('password'),
+        'updated_at' => now(),
+    ]);
+    $this->info("Sukses! Sebanyak {$count} akun pengguna telah berhasil di-reset kata sandinya menjadi 'password'.");
+    return 0;
+})->purpose('Reset all user passwords in database to password');
 
 Artisan::command('hse:clean-history {--force : Force cleanup without confirmation}', function () {
     $force = $this->option('force');

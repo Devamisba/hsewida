@@ -157,7 +157,7 @@ export default function ReviewRequestsPage() {
 
   const getRequiredRoleForStatus = (st: string) => {
     switch (st) {
-      case "Menunggu PIC Vendor": return { role: "pic_vendor", label: "PIC Vendor", step: 1 };
+      case "Menunggu PIC Vendor": return { role: "pic_vendor", label: "PIC Widatra", step: 1 };
       case "Menunggu HSE": return { role: "hse", label: "HSE Officer", step: 2 };
       case "Menunggu Head Dept HRD&GA":
       case "Menunggu GA Dept Head": return { role: "ga_dept_head", label: "Head Dept HRD&GA", step: 3 };
@@ -225,14 +225,14 @@ export default function ReviewRequestsPage() {
 
   return (
     <div className="flex-1 flex flex-col h-full bg-background overflow-hidden relative">
-      <Header title={role === 'hse' ? "Review Ijin (HSE)" : role === 'ga_dept_head' ? "Persetujuan (Head Dept HRD&GA)" : role === 'ga_div_head' ? "Persetujuan Akhir (Head Division HRD&GA)" : "Review PIC Vendor"} />
+      <Header title={role === 'hse' ? "Review Ijin (HSE)" : role === 'ga_dept_head' ? "Persetujuan (Head Dept HRD&GA)" : role === 'ga_div_head' ? "Persetujuan Akhir (Head Division HRD&GA)" : "Review PIC Widatra"} />
       
       <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8">
         <div className="max-w-7xl mx-auto space-y-6">
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
             <div>
               <h2 className="text-2xl font-bold text-gray-900">
-                {role === 'hse' ? 'Review Keselamatan (HSE)' : role === 'ga_dept_head' ? 'Persetujuan Head Dept HRD&GA' : role === 'ga_div_head' ? 'Validasi Akhir Head Division HRD&GA' : 'Review PIC Vendor'}
+                {role === 'hse' ? 'Review Keselamatan (HSE)' : role === 'ga_dept_head' ? 'Persetujuan Head Dept HRD&GA' : role === 'ga_div_head' ? 'Validasi Akhir Head Division HRD&GA' : 'Review PIC Widatra (Internal)'}
               </h2>
               <p className="text-sm text-gray-500 mt-1">
                 Daftar ijin kerja yang membutuhkan persetujuan Anda.

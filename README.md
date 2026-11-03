@@ -95,12 +95,12 @@ hse/
 
 ## 👥 Akun Default untuk Pengujian (Seeder)
 
-Seluruh akun default menggunakan password: **`password123`**
+Seluruh akun default menggunakan password: **`password`**
 
 | Email | Role | Nama Lengkap / Departemen | Wewenang Utama |
 |---|---|---|---|
 | `vendor@hse.com` | `pemohon` | PT Maju Mundur (Vendor) | Pengajuan ijin kerja baru (Wizard 4 Steps), riwayat permohonan |
-| `pic@hse.com` | `pic_vendor` | PIC Vendor Widatra | Review Tahap 1: Verifikasi relevansi pekerjaan & vendor |
+| `pic@hse.com` | `pic_vendor` | PIC Widatra (Internal) | Review Tahap 1: Pengawas lapangan internal Widatra Bhakti |
 | `hse@hse.com` | `hse` | Tim K3 / HSE Officer | Review Tahap 2: Keselamatan, JSA, APD, inspeksi fasilitas & CAPA |
 | `ga_dept@hse.com` | `ga_dept_head`| P. Andaru (HRD & GA Dept Head) | Review Tahap 3: Validasi pekerja eksternal, BPJS/asuransi, akses area |
 | `ga_div@hse.com` | `ga_div_head` | P. Effendy (HRD & GA Div Head)| Review Tahap 4: Validasi akhir (*Final Approval*) & aktivasi QR Permit |

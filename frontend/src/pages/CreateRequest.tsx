@@ -378,7 +378,7 @@ export default function CreateRequestPage() {
             </p>
           )}
           <p className="text-gray-500 mb-8 max-w-md">
-            Ijin kerja berhasil tersimpan di sistem dan sedang menunggu verifikasi dari PIC Vendor & Tim K3 (HSE).
+            Ijin kerja berhasil tersimpan di sistem dan sedang menunggu verifikasi dari PIC Internal Widatra & Tim K3 (HSE).
           </p>
           <div className="flex gap-3">
             <button 

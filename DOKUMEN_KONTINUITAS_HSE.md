@@ -37,7 +37,7 @@ B. Status Repositori & Git Terkini
 
 C. Daftar Akun Pengujian & Matriks Otoritas Work Permit (4 Tahap Approval)
 
-Semua akun default menggunakan Password: password123
+Semua akun default menggunakan Password: password
 
 +----+-------------------+--------------------+---------------+----------------------------------------------------------+
 | No | Role Sistem       | Akun NIK / Email   | Nama Pengguna | Tugas & Kewenangan Utama                                 |
@@ -48,8 +48,8 @@ Semua akun default menggunakan Password: password123
 | 2  | Pemohon (Vendor)  | VN10001            | PT Maju       | Mengajukan Ijin Kerja Baru (Form 4 Langkah: Info Umum,   |
 |    |                   | vendor@hse.com     | Mundur        | JSA, APD, Berkas Pekerja & BPJS Ketenagakerjaan)         |
 +----+-------------------+--------------------+---------------+----------------------------------------------------------+
-| 3  | PIC Vendor        | PC10002            | PIC Vendor    | Review Tahap 1: Validasi kelayakan teknis vendor &       |
-|    |                   | pic@hse.com        | Widatra       | kelengkapan identitas pekerja di lapangan                |
+| 3  | PIC Internal      | PC10002            | PIC Widatra   | Review Tahap 1: Pengawas lapangan internal PT Widatra    |
+|    | Widatra           | pic@hse.com        | (Internal)    | Bhakti yang memvalidasi teknis kontraktor di lapangan    |
 +----+-------------------+--------------------+---------------+----------------------------------------------------------+
 | 4  | Tim K3 / HSE      | HS10003            | Tim K3 / HSE  | Review Tahap 2: Validasi risiko bahaya JSA, APD khusus,  |
 |    |                   | hse@hse.com        |               | inspeksi fasilitas K3, dan kepatuhan regulasi K3         |
@@ -69,8 +69,8 @@ Semua akun default menggunakan Password: password123
 D. Daftar Fitur Utama & Modul Sistem yang Telah Tuntas
 
 1. Alur Persetujuan Work Permit Digital 4 Tahap (Multi-Tier Sequential Approval):
-   - Alur: Pemohon -> PIC Vendor -> Tim K3 HSE -> GA Dept Head -> GA Div Head.
-   - Status Permit: Draft -> Submitted -> Review PIC -> Review HSE -> Review GA Dept -> Approved / Rejected.
+   - Alur: Pemohon (Vendor) -> PIC Widatra (Internal) -> Tim K3 HSE -> GA Dept Head -> GA Div Head.
+   - Status Permit: Draft -> Submitted -> Review PIC Widatra -> Review HSE -> Review GA Dept -> Approved / Rejected.
    - Fitur Perpanjangan Waktu (Extension Phase) tanpa perlu input ulang data pekerja & JSA dari nol.
    - Fitur QR Code Verifikasi Publik (/verify-permit/:token) untuk Satpam pos gerbang mengecek validitas permit via kamera HP tanpa login.
 

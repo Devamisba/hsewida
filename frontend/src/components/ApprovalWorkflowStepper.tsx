@@ -32,10 +32,10 @@ const STEPS: StepDef[] = [
   {
     key: "pic_vendor",
     stepNumber: 1,
-    title: "PIC Vendor",
-    subtitle: "Pemeriksaan Kontraktor",
+    title: "PIC Widatra",
+    subtitle: "Pemeriksaan Lapangan",
     roleCode: "pic_vendor",
-    roleName: "PIC / Pengawas Lapangan Vendor",
+    roleName: "PIC Internal PT Widatra Bhakti",
   },
   {
     key: "hse",

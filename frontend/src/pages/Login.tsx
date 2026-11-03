@@ -6,7 +6,7 @@ import { auth } from "@/lib/auth";
 const DEMO_ACCOUNTS = [
   { role: "admin", label: "Admin", nik: "SA12345" },
   { role: "pemohon", label: "Vendor (Pemohon)", nik: "VN10001" },
-  { role: "pic_vendor", label: "PIC Vendor", nik: "PC10002" },
+  { role: "pic_vendor", label: "PIC Widatra (Internal)", nik: "PC10002" },
   { role: "hse", label: "Tim K3 / HSE", nik: "HS10003" },
   { role: "pic_k3", label: "PIC K3 (Monitoring)", nik: "PK10006" },
   { role: "ga_dept_head", label: "Head Dept HRD&GA", nik: "GA10004" },
@@ -60,9 +60,9 @@ export default function LoginPage() {
 
   const handleQuickLogin = (demoNik: string) => {
     setIdentifier(demoNik);
-    setPassword("password123");
+    setPassword("password");
     setShowDemoModal(false);
-    performLogin(demoNik, "password123");
+    performLogin(demoNik, "password");
   };
 
   return (

@@ -820,7 +820,7 @@ export default function AparScanPage() {
                   </button>
 
                   <p className="text-[11px] text-slate-400 text-center pt-1">
-                    Akun PIC K3: <span className="font-mono text-slate-600">pick3@hse.com</span> / <span className="font-mono text-slate-600">password123</span>
+                    Akun PIC K3: <span className="font-mono text-slate-600">pick3@hse.com</span> / <span className="font-mono text-slate-600">password</span>
                   </p>
                 </form>
               </div>

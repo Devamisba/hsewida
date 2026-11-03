@@ -394,7 +394,7 @@ export function PrintPermitModal({ permit, onClose }: PrintPermitModalProps) {
             </div>
             <div className="grid grid-cols-4 divide-x divide-slate-300 text-center">
               <div className="p-3 space-y-8">
-                <span className="font-bold text-slate-600 text-[11px] block">1. PIC Vendor Internal</span>
+                <span className="font-bold text-slate-600 text-[11px] block">1. PIC Internal Widatra</span>
                 <div className="font-bold text-emerald-700 text-xs">TERVERIFIKASI SISTEM</div>
                 <span className="text-[10px] text-slate-500 block border-t pt-1 border-slate-200">PIC PT Widatra Bhakti</span>
               </div>

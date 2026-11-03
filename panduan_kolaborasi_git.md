@@ -122,13 +122,13 @@ git pull origin main
 
 ## 🔑 5. Akun Pengujian Default (Seeder)
 
-**Password untuk semua akun:** `password123`
+**Password untuk semua akun:** `password`
 
 | Role | Akun NIK / Email | Fungsi Utama |
 |---|---|---|
 | Admin | `SA12345` / `admin@hse.com` | Pengaturan master data, RBAC, dan superuser |
 | Vendor (Pemohon) | `VN10001` / `vendor@hse.com` | Pengajuan ijin kerja baru (Form 4 langkah) |
-| PIC Vendor | `PC10002` / `pic@hse.com` | Review Tahap 1 (Verifikasi teknis & vendor) |
+| PIC Widatra | `PC10002` / `pic@hse.com` | Review Tahap 1 (Verifikasi pengawas lapangan Widatra) |
 | Tim K3 (HSE) | `HS10003` / `hse@hse.com` | Review Tahap 2 (JSA, APD, inspeksi fasilitas) |
 | GA Dept Head | `GA10004` / `ga_dept@hse.com` | Review Tahap 3 (Validasi pekerja & BPJS) |
 | GA Div Head | `GA10005` / `ga_div@hse.com` | Review Tahap 4 (Final Approval & Aktivasi QR) |
