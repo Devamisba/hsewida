@@ -18,7 +18,9 @@ import {
   Navigation,
   Crosshair,
   Save,
-  AlertCircle
+  AlertCircle,
+  Edit3,
+  Trash2
 } from "lucide-react";
 import { SafetyFacility, api } from "@/services/api";
 import { QRCodeSVG } from "./QRCodeSVG";
@@ -32,6 +34,8 @@ interface FacilityDetailActionModalProps {
   onShowSticker: (f: SafetyFacility) => void;
   onRefill: (f: SafetyFacility) => void;
   onFacilityUpdated?: (updated: SafetyFacility) => void;
+  onEdit?: (f: SafetyFacility) => void;
+  onDelete?: (f: SafetyFacility) => void;
 }
 
 export function FacilityDetailActionModal({
@@ -41,7 +45,9 @@ export function FacilityDetailActionModal({
   onInspect,
   onShowSticker,
   onRefill,
-  onFacilityUpdated
+  onFacilityUpdated,
+  onEdit,
+  onDelete
 }: FacilityDetailActionModalProps) {
   const [inspections, setInspections] = useState<any[]>([]);
   const [loadingHistory, setLoadingHistory] = useState<boolean>(false);
@@ -248,14 +254,44 @@ export function FacilityDetailActionModal({
             </p>
           </div>
 
-          <button
-            type="button"
-            onClick={onClose}
-            className="text-slate-400 hover:text-slate-700 hover:bg-slate-200/80 p-1.5 rounded-lg transition"
-            title="Tutup Modal"
-          >
-            <X size={18} />
-          </button>
+          <div className="flex items-center gap-1.5 shrink-0">
+            {onEdit && (
+              <button
+                type="button"
+                onClick={() => {
+                  onClose();
+                  onEdit(facility);
+                }}
+                className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-white border border-slate-300 hover:bg-slate-100 text-slate-700 rounded-lg text-xs font-bold transition shadow-2xs cursor-pointer"
+                title="Edit data fasilitas ini"
+              >
+                <Edit3 size={13} className="text-primary" />
+                <span className="hidden sm:inline">Edit</span>
+              </button>
+            )}
+            {onDelete && (
+              <button
+                type="button"
+                onClick={() => {
+                  onClose();
+                  onDelete(facility);
+                }}
+                className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-white border border-rose-200 hover:bg-rose-50 text-rose-700 rounded-lg text-xs font-bold transition shadow-2xs cursor-pointer"
+                title="Hapus / Nonaktifkan unit"
+              >
+                <Trash2 size={13} className="text-rose-600" />
+                <span className="hidden sm:inline">Hapus</span>
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={onClose}
+              className="text-slate-400 hover:text-slate-700 hover:bg-slate-200/80 p-1.5 rounded-lg transition"
+              title="Tutup Modal"
+            >
+              <X size={18} />
+            </button>
+          </div>
         </div>
 
         {/* MODAL BODY (SCROLLABLE) */}
@@ -733,14 +769,45 @@ export function FacilityDetailActionModal({
 
         {/* MODAL FOOTER */}
         <div className="px-5 py-3 border-t border-slate-200 bg-slate-50 flex items-center justify-between text-xs text-slate-500 shrink-0">
-          <span>PT Widatra Bhakti — Manajemen Fasilitas K3</span>
-          <button
-            type="button"
-            onClick={onClose}
-            className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-md font-semibold transition cursor-pointer"
-          >
-            Tutup
-          </button>
+          <div className="flex items-center gap-2">
+            {onDelete && (
+              <button
+                type="button"
+                onClick={() => {
+                  onClose();
+                  onDelete(facility);
+                }}
+                className="text-rose-600 hover:text-rose-800 hover:underline font-semibold flex items-center gap-1 cursor-pointer"
+              >
+                <Trash2 size={13} />
+                <span>Hapus Unit</span>
+              </button>
+            )}
+            <span className="hidden md:inline">PT Widatra Bhakti — Manajemen Fasilitas K3</span>
+          </div>
+
+          <div className="flex items-center gap-2">
+            {onEdit && (
+              <button
+                type="button"
+                onClick={() => {
+                  onClose();
+                  onEdit(facility);
+                }}
+                className="px-3.5 py-2 bg-primary hover:bg-primary/90 text-white rounded-lg font-bold text-xs transition cursor-pointer flex items-center gap-1.5 shadow-2xs"
+              >
+                <Edit3 size={13} />
+                <span>Edit Data Pokok</span>
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-lg font-semibold transition cursor-pointer"
+            >
+              Tutup
+            </button>
+          </div>
         </div>
       </div>
 

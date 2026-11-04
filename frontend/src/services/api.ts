@@ -428,6 +428,19 @@ export const api = {
     });
   },
 
+  updateFacility: async (id: number | string, payload: any) => {
+    return apiRequest(`/monitoring/facilities/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(payload),
+    });
+  },
+
+  deleteFacility: async (id: number | string) => {
+    return apiRequest(`/monitoring/facilities/${id}`, {
+      method: 'DELETE',
+    });
+  },
+
   updateFacilityCoordinates: async (id: number | string, payload: {
     latitude: number;
     longitude: number;

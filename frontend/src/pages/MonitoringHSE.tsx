@@ -21,12 +21,15 @@ import {
   Tag,
   X,
   Layers,
-  ClipboardCheck
+  ClipboardCheck,
+  Edit3,
+  Trash2
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer } from "recharts";
 import { InspectionModal } from "@/components/InspectionModal";
 import { AddInspectionModal } from "@/components/AddInspectionModal";
+import { EditFacilityModal } from "@/components/EditFacilityModal";
 import { FacilityQrStickerModal } from "@/components/FacilityQrStickerModal";
 import { RecordRefillModal } from "@/components/RecordRefillModal";
 import { QrScanFieldModal } from "@/components/QrScanFieldModal";
@@ -72,6 +75,11 @@ export default function MonitoringHSEPage() {
   const [scannerModalOpen, setScannerModalOpen] = useState(false);
   const [refillQueueOpen, setRefillQueueOpen] = useState(false);
   const [detailModalOpen, setDetailModalOpen] = useState(false);
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [facilityToEdit, setFacilityToEdit] = useState<SafetyFacility | null>(null);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [facilityToDelete, setFacilityToDelete] = useState<SafetyFacility | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   // Selected items
   const [selectedItem, setSelectedItem] = useState<any>(null);
@@ -174,6 +182,35 @@ export default function MonitoringHSEPage() {
   const handleOpenDetail = (facility: SafetyFacility) => {
     setSelectedItem(facility);
     setDetailModalOpen(true);
+  };
+
+  const handleOpenEdit = (facility: SafetyFacility) => {
+    setFacilityToEdit(facility);
+    setEditModalOpen(true);
+  };
+
+  const handleRequestDelete = (facility: SafetyFacility) => {
+    setFacilityToDelete(facility);
+    setDeleteConfirmOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!facilityToDelete) return;
+    setDeleting(true);
+    try {
+      const res = await api.deleteFacility(facilityToDelete.id);
+      if (res?.success) {
+        setDeleteConfirmOpen(false);
+        setFacilityToDelete(null);
+        loadData();
+      } else {
+        alert(res?.message || "Gagal menghapus fasilitas.");
+      }
+    } catch (err: any) {
+      alert(err?.response?.data?.message || err?.message || "Gagal menghapus fasilitas.");
+    } finally {
+      setDeleting(false);
+    }
   };
 
   const handleScanSuccess = (facility: SafetyFacility) => {
@@ -564,6 +601,8 @@ export default function MonitoringHSEPage() {
                       onOpenRefillQueue={() => setRefillQueueOpen(true)}
                       onOpenDetail={handleOpenDetail}
                       onShowSticker={handleShowSticker}
+                      onEdit={handleOpenEdit}
+                      onDelete={handleRequestDelete}
                     />
                   )}
                 </>
@@ -629,7 +668,87 @@ export default function MonitoringHSEPage() {
         onInspect={(f) => handleInspect(f, getCategoryTitle(f.category))}
         onShowSticker={handleShowSticker}
         onRefill={handleRefill}
+        onFacilityUpdated={loadData}
+        onEdit={(f) => {
+          setDetailModalOpen(false);
+          handleOpenEdit(f);
+        }}
+        onDelete={(f) => {
+          setDetailModalOpen(false);
+          handleRequestDelete(f);
+        }}
       />
+
+      {/* 8. Modal Edit Data Fasilitas (§CRUD) */}
+      <EditFacilityModal
+        isOpen={editModalOpen}
+        onClose={() => {
+          setEditModalOpen(false);
+          setFacilityToEdit(null);
+        }}
+        facility={facilityToEdit}
+        onSuccess={() => {
+          setEditModalOpen(false);
+          setFacilityToEdit(null);
+          loadData();
+        }}
+        onDeleteRequest={(f) => {
+          setEditModalOpen(false);
+          handleRequestDelete(f);
+        }}
+      />
+
+      {/* 9. Konfirmasi Hapus Fasilitas Modal */}
+      {deleteConfirmOpen && facilityToDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in duration-150">
+          <div className="bg-white rounded-2xl max-w-md w-full shadow-2xl border border-red-100 overflow-hidden animate-in zoom-in-95 duration-150">
+            <div className="p-6">
+              <div className="w-12 h-12 rounded-full bg-red-100 text-red-600 flex items-center justify-center mx-auto mb-4">
+                <Trash2 size={24} />
+              </div>
+              <h3 className="text-lg font-bold text-gray-900 text-center">Hapus Fasilitas K3?</h3>
+              <p className="text-sm text-gray-500 text-center mt-2">
+                Apakah Anda yakin ingin menonaktifkan/menghapus fasilitas{" "}
+                <span className="font-bold text-gray-800">{facilityToDelete.code} - {facilityToDelete.name}</span>?
+              </p>
+              <div className="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-800 leading-relaxed">
+                Unit akan dinonaktifkan dari daftar aktif monitoring. Riwayat inspeksi terdahulu tetap diarsipkan demi kepatuhan audit K3.
+              </div>
+            </div>
+            <div className="px-6 py-4 bg-gray-50 border-t border-gray-100 flex items-center justify-end gap-3">
+              <button
+                type="button"
+                disabled={deleting}
+                onClick={() => {
+                  setDeleteConfirmOpen(false);
+                  setFacilityToDelete(null);
+                }}
+                className="px-4 py-2 text-sm font-semibold text-gray-700 bg-white border border-gray-300 hover:bg-gray-100 rounded-xl transition cursor-pointer disabled:opacity-50"
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                disabled={deleting}
+                onClick={handleConfirmDelete}
+                className="inline-flex items-center gap-2 px-4 py-2 text-sm font-bold text-white bg-red-600 hover:bg-red-700 rounded-xl transition shadow-xs cursor-pointer disabled:opacity-50"
+              >
+                {deleting ? (
+                  <>
+                    <Loader2 size={16} className="animate-spin" />
+                    <span>Menghapus...</span>
+                  </>
+                ) : (
+                  <>
+                    <Trash2 size={16} />
+                    <span>Ya, Hapus Fasilitas</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -649,6 +768,8 @@ interface FacilityDataTableProps {
   onOpenRefillQueue?: () => void;
   onOpenDetail: (f: SafetyFacility) => void;
   onShowSticker: (f: SafetyFacility) => void;
+  onEdit?: (f: SafetyFacility) => void;
+  onDelete?: (f: SafetyFacility) => void;
 }
 
 function FacilityDataTable({
@@ -661,7 +782,9 @@ function FacilityDataTable({
   refillCount = 0,
   onOpenRefillQueue,
   onOpenDetail,
-  onShowSticker
+  onShowSticker,
+  onEdit,
+  onDelete
 }: FacilityDataTableProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [typeFilter, setTypeFilter] = useState<"ALL" | "CONSUMABLE" | "KONDISI">("ALL");
@@ -1011,7 +1134,7 @@ function FacilityDataTable({
                       <MonitoringStatusBadge status={facility.calculated_status || facility.status} />
                     </td>
 
-                    {/* Action Buttons: Cetak QR + Kelola & Riwayat */}
+                    {/* Action Buttons: Cetak QR + Edit + Kelola & Riwayat + Hapus */}
                     <td className="px-4 py-3 text-right whitespace-nowrap">
                       <div className="flex items-center justify-end gap-1.5">
                         <button
@@ -1024,6 +1147,18 @@ function FacilityDataTable({
                           <span>Cetak QR</span>
                         </button>
 
+                        {onEdit && (
+                          <button
+                            type="button"
+                            onClick={() => onEdit(facility)}
+                            title={`Edit Data Fasilitas ${facility.code}`}
+                            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 bg-white border border-blue-200 hover:border-blue-300 hover:bg-blue-50 text-blue-700 rounded-lg text-xs font-bold transition shadow-2xs cursor-pointer active:scale-95"
+                          >
+                            <Edit3 size={13} />
+                            <span>Edit</span>
+                          </button>
+                        )}
+
                         <button 
                           type="button"
                           onClick={() => onOpenDetail(facility)} 
@@ -1033,6 +1168,17 @@ function FacilityDataTable({
                           <Eye size={13} className="text-slate-500" />
                           <span>Kelola & Riwayat</span>
                         </button>
+
+                        {onDelete && (
+                          <button
+                            type="button"
+                            onClick={() => onDelete(facility)}
+                            title={`Hapus/Nonaktifkan Fasilitas ${facility.code}`}
+                            className="inline-flex items-center justify-center p-1.5 bg-white border border-red-200 hover:border-red-300 hover:bg-red-50 text-red-600 rounded-lg text-xs font-bold transition shadow-2xs cursor-pointer active:scale-95"
+                          >
+                            <Trash2 size={13} />
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>

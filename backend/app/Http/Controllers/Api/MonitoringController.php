@@ -523,6 +523,142 @@ class MonitoringController extends Controller
     }
 
     /**
+     * Update an existing safety facility asset (CRUD Update).
+     */
+    public function updateFacility(Request $request, $id)
+    {
+        $facility = SafetyFacility::findOrFail($id);
+
+        $validated = $request->validate([
+            'code' => 'sometimes|required|string|max:50|unique:safety_facilities,code,' . $facility->id,
+            'nama_item' => 'nullable|string|max:150',
+            'name' => 'nullable|string|max:150',
+            'category' => 'sometimes|required|in:apar,hydrant,emergency_door,p3k,safety_mirror,assembly_point',
+            'tipe_item' => 'sometimes|required|in:CONSUMABLE,KONDISI',
+            'location' => 'nullable',
+            'area_zone' => 'nullable|string|max:100',
+            'latitude' => 'nullable|numeric|between:-90,90',
+            'longitude' => 'nullable|numeric|between:-180,180',
+            'specifications' => 'nullable|array',
+            'status' => 'nullable|in:Good,Needs Attention,Critical',
+            'status_aktif' => 'nullable|boolean',
+            // Consumable specific
+            'expired_at' => 'nullable|date',
+            'threshold_warning_hari' => 'nullable|integer|min:1',
+            // Kondisi specific
+            'interval_pemeriksaan_hari' => 'nullable|integer|min:1',
+        ]);
+
+        if (array_key_exists('location', $validated) && !empty($validated['location'])) {
+            if (is_numeric($validated['location'])) {
+                $facility->location_id = $validated['location'];
+            } else {
+                $loc = Location::firstOrCreate(['name' => trim($validated['location'])]);
+                $facility->location_id = $loc->id;
+            }
+        }
+
+        if (isset($validated['code'])) {
+            $facility->code = trim($validated['code']);
+        }
+        if (isset($validated['nama_item'])) {
+            $facility->nama_item = trim($validated['nama_item']);
+        } elseif (isset($validated['name'])) {
+            $facility->nama_item = trim($validated['name']);
+        }
+        if (isset($validated['category'])) {
+            $facility->category = $validated['category'];
+        }
+        if (isset($validated['tipe_item'])) {
+            $facility->tipe_item = $validated['tipe_item'];
+        }
+        if (isset($validated['area_zone'])) {
+            $facility->area_zone = $validated['area_zone'];
+        }
+        if (isset($validated['latitude'])) {
+            $facility->latitude = (float)$validated['latitude'];
+        }
+        if (isset($validated['longitude'])) {
+            $facility->longitude = (float)$validated['longitude'];
+        }
+        if (isset($validated['status'])) {
+            $facility->status = $validated['status'];
+        }
+        if (isset($validated['status_aktif'])) {
+            $facility->status_aktif = (bool)$validated['status_aktif'];
+        }
+
+        // Merge specifications
+        $specs = $facility->specifications ?? [];
+        if (isset($validated['specifications']) && is_array($validated['specifications'])) {
+            $specs = array_merge($specs, $validated['specifications']);
+        }
+        if (isset($validated['latitude'])) {
+            $specs['latitude'] = (float)$validated['latitude'];
+        }
+        if (isset($validated['longitude'])) {
+            $specs['longitude'] = (float)$validated['longitude'];
+        }
+        if (isset($validated['area_zone'])) {
+            $specs['area_zone'] = $validated['area_zone'];
+        }
+        $facility->specifications = $specs;
+        $facility->save();
+
+        // Branching logic update
+        if ($facility->tipe_item === 'CONSUMABLE') {
+            $cycle = FacilityConsumableCycle::firstOrNew(['facility_id' => $facility->id]);
+            if (isset($validated['expired_at'])) {
+                $cycle->expired_at = $validated['expired_at'];
+            }
+            if (isset($validated['threshold_warning_hari'])) {
+                $cycle->threshold_warning_hari = (int)$validated['threshold_warning_hari'];
+            }
+            if (!$cycle->last_refilled_at) {
+                $cycle->last_refilled_at = now()->toDateString();
+            }
+            $cycle->save();
+        } else {
+            $sched = FacilityConditionSchedule::firstOrNew(['facility_id' => $facility->id]);
+            if (isset($validated['interval_pemeriksaan_hari'])) {
+                $sched->interval_pemeriksaan_hari = (int)$validated['interval_pemeriksaan_hari'];
+            }
+            if (!$sched->terakhir_diperiksa) {
+                $sched->terakhir_diperiksa = now()->toDateString();
+            }
+            if (!$sched->status_kondisi_terakhir) {
+                $sched->status_kondisi_terakhir = 'BAIK';
+            }
+            $sched->save();
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => "Data fasilitas {$facility->code} berhasil diperbarui.",
+            'data' => $facility->fresh(['location', 'consumableCycle', 'conditionSchedule', 'inspections']),
+        ]);
+    }
+
+    /**
+     * Delete / deactivate a safety facility asset (CRUD Delete).
+     */
+    public function deleteFacility(Request $request, $id)
+    {
+        $facility = SafetyFacility::findOrFail($id);
+        $code = $facility->code;
+
+        // Soft delete & set status_aktif to false
+        $facility->status_aktif = false;
+        $facility->save();
+        $facility->delete();
+
+        return response()->json([
+            'success' => true,
+            'message' => "Fasilitas {$code} berhasil dihapus / dinonaktifkan.",
+        ]);
+    }
+
+    /**
      * Update GPS coordinates and zone for a specific facility (Master Spasial Fasilitas).
      */
     public function updateFacilityCoordinates(Request $request, $id)
