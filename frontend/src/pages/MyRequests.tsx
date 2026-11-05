@@ -426,26 +426,26 @@ export default function MyRequestsPage() {
           {/* Desktop Table (Boxed Data Table style) */}
           <div className="hidden sm:block bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
             <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse">
-                <thead className="bg-primary-container/20">
+              <table className="w-full text-left text-xs border-collapse">
+                <thead className="bg-slate-50/80 border-b border-gray-200 text-gray-600 text-[11px] uppercase tracking-wider font-bold">
                   <tr>
-                    <th className="px-5 py-4 text-xs font-semibold text-gray-600 uppercase tracking-wider">No. Ijin</th>
-                    <th className="px-5 py-4 text-xs font-semibold text-gray-600 uppercase tracking-wider">Pekerjaan</th>
-                    <th className="px-5 py-4 text-xs font-semibold text-gray-600 uppercase tracking-wider">Lokasi</th>
-                    <th className="px-5 py-4 text-xs font-semibold text-gray-600 uppercase tracking-wider">Tanggal</th>
-                    <th className="px-5 py-4 text-xs font-semibold text-gray-600 uppercase tracking-wider">Status</th>
-                    <th className="px-5 py-4 text-xs font-semibold text-gray-600 uppercase tracking-wider text-right">Aksi</th>
+                    <th className="px-5 py-3.5 w-3/12">No. Ijin</th>
+                    <th className="px-4 py-3.5 w-3/12">Pekerjaan</th>
+                    <th className="px-4 py-3.5 w-2/12">Lokasi</th>
+                    <th className="px-4 py-3.5 w-2/12">Tanggal</th>
+                    <th className="px-4 py-3.5 w-1/12 text-center whitespace-nowrap">Status</th>
+                    <th className="px-5 py-3.5 w-1/12 text-right whitespace-nowrap">Aksi</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
                   {filteredRequests.length > 0 ? (
                     filteredRequests.map((req) => (
-                      <tr key={req.id} className="hover:bg-gray-50/50 transition-colors">
-                        <td className="px-5 py-4 text-sm font-bold text-gray-900 whitespace-nowrap">
-                          <div className="font-mono text-gray-900">{req.id}</div>
+                      <tr key={req.id} className="hover:bg-gray-50/70 transition-colors">
+                        <td className="px-5 py-3.5 whitespace-nowrap">
+                          <div className="font-mono text-xs font-bold text-gray-900">{req.id}</div>
                           {req.requestType === 'Perpanjangan' && (
-                            <div className="mt-1 flex flex-col gap-0.5">
-                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-amber-50 text-amber-800 border border-amber-200" title={`Diperpanjang dari izin ${req.parentPermit?.permitNumber || req.parentPermitId}`}>
+                            <div className="mt-0.5 flex flex-col gap-0.5">
+                              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-50 text-amber-800 border border-amber-200 w-fit" title={`Diperpanjang dari izin ${req.parentPermit?.permitNumber || req.parentPermitId}`}>
                                 Perpanjangan Ke-{req.extensionPhase || 1}
                               </span>
                               {req.hasActiveChild && (
@@ -456,57 +456,61 @@ export default function MyRequestsPage() {
                             </div>
                           )}
                         </td>
-                        <td className="px-5 py-4 text-sm font-medium text-gray-700">{req.jenisPekerjaan}</td>
-                        <td className="px-5 py-4 text-sm text-gray-500">{req.lokasi}</td>
-                        <td className="px-5 py-4 text-sm text-gray-500 whitespace-nowrap">
+                        <td className="px-4 py-3.5 text-xs font-medium text-gray-800">
+                          <div className="line-clamp-1" title={req.jenisPekerjaan}>{req.jenisPekerjaan}</div>
+                        </td>
+                        <td className="px-4 py-3.5 text-xs text-gray-600">
+                          <div className="truncate max-w-[180px]" title={req.lokasi}>{req.lokasi}</div>
+                        </td>
+                        <td className="px-4 py-3.5 text-xs text-gray-600 whitespace-nowrap">
                           <div className="font-medium text-gray-800">{req.mulaiKerja} s.d {req.selesaiKerja}</div>
                           {req.requestType === 'Perpanjangan' && req.cumulativeStartDate && (
-                            <div className="text-[11px] font-semibold text-amber-700 mt-0.5 flex items-center gap-1">
-                              <span>Kumulatif: {req.cumulativeStartDate} s.d {req.cumulativeEndDate}</span>
-                              <span className="text-[10px] bg-amber-100 text-amber-800 px-1 rounded">
+                            <div className="text-[10px] font-semibold text-amber-700 mt-0.5 flex items-center gap-1">
+                              <span>Kumulatif: {req.cumulativeStartDate} - {req.cumulativeEndDate}</span>
+                              <span className="text-[9px] bg-amber-100 text-amber-800 px-1 rounded">
                                 {calculateInclusiveDays(req.cumulativeStartDate, req.cumulativeEndDate)} Hari
                               </span>
                             </div>
                           )}
                         </td>
-                        <td className="px-5 py-4 whitespace-nowrap">
-                          <span className={cn("px-2.5 py-1 rounded-full text-xs font-bold tracking-wide uppercase", getStatusBadge(req.status))}>
+                        <td className="px-4 py-3.5 text-center whitespace-nowrap">
+                          <span className={cn("inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold", getStatusBadge(req.status))}>
                             {formatPermitStatus(req.status)}
                           </span>
                         </td>
-                        <td className="px-5 py-4 text-right whitespace-nowrap">
-                          <div className="flex items-center justify-end gap-2">
+                        <td className="px-5 py-3.5 text-right whitespace-nowrap">
+                          <div className="flex items-center justify-end gap-1.5">
                             {isEligibleForExtension(req.selesaiKerja, req.status, extensionWindowDays) && !req.hasActiveChild && (
                               <button 
                                 onClick={() => handleExtend(req)}
-                                className="p-2 text-amber-600 hover:text-amber-700 hover:bg-amber-50 rounded-lg transition-colors cursor-pointer" 
+                                className="p-1.5 text-amber-700 hover:text-amber-800 hover:bg-amber-50 bg-white border border-amber-200 rounded-lg transition-colors cursor-pointer" 
                                 title={`Perpanjang Ijin Kerja (Fase ${(req.extensionPhase || 0) + 1})`}
                               >
-                                <CalendarPlus size={18} />
+                                <CalendarPlus size={15} />
                               </button>
                             )}
                             <button 
                               onClick={() => setSelectedRequest(req)}
-                              className="p-2 text-gray-400 hover:text-primary hover:bg-primary-container/50 rounded-lg transition-colors cursor-pointer" 
+                              className="p-1.5 text-slate-700 hover:text-slate-900 hover:bg-slate-100 bg-white border border-slate-200 rounded-lg transition-colors cursor-pointer" 
                               title="Lihat Detail"
                             >
-                              <Eye size={18} />
+                              <Eye size={15} />
                             </button>
                             {canPrintPermit(req.status) ? (
                               <button 
                                 onClick={() => handleOpenPrintModal(req)} 
-                                className="p-2 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 rounded-lg transition-colors cursor-pointer" 
+                                className="p-1.5 text-emerald-700 hover:text-emerald-800 hover:bg-emerald-50 bg-white border border-emerald-200 rounded-lg transition-colors cursor-pointer" 
                                 title="Cetak & Unduh Surat Ijin Kerja Resmi"
                               >
-                                <Printer size={18} />
+                                <Printer size={15} />
                               </button>
                             ) : (
                               <button 
                                 disabled
-                                className="p-2 text-gray-300 bg-gray-50 rounded-lg cursor-not-allowed opacity-60" 
+                                className="p-1.5 text-gray-300 bg-gray-50 border border-gray-100 rounded-lg cursor-not-allowed opacity-60" 
                                 title={`Cetak Terkunci: Menunggu persetujuan akhir dari Head Division HRD&GA (Status: ${formatPermitStatus(req.status)})`}
                               >
-                                <Lock size={18} className="text-gray-400" />
+                                <Lock size={15} className="text-gray-400" />
                               </button>
                             )}
                           </div>

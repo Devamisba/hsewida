@@ -116,30 +116,34 @@ export default function DashboardPage() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <button 
                   onClick={() => navigate('/create-request')}
-                  className="group bg-primary text-on-primary p-5 rounded-xl shadow-sm hover:opacity-90 transition-all flex flex-col justify-between h-32 relative overflow-hidden"
+                  className="group bg-slate-900 hover:bg-slate-800 text-white p-4 sm:p-5 rounded-xl shadow-xs transition-all flex items-center justify-between text-left cursor-pointer border border-slate-800 active:scale-[0.99]"
                 >
-                  <PlusCircle size={28} className="mb-2" />
-                  <div className="text-left relative z-10">
-                    <h3 className="font-bold text-lg">Buat Ijin Baru</h3>
-                    <p className="text-primary-container text-xs opacity-90 mt-1">Ajukan Work Permit baru</p>
+                  <div className="flex items-center gap-3.5">
+                    <div className="w-11 h-11 rounded-xl bg-white/10 flex items-center justify-center text-white shrink-0 group-hover:scale-105 transition-transform">
+                      <PlusCircle size={22} />
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-sm sm:text-base text-white">Buat Ijin Baru</h3>
+                      <p className="text-slate-400 text-xs mt-0.5">Ajukan Work Permit keselamatan baru</p>
+                    </div>
                   </div>
-                  <div className="absolute -right-4 -bottom-4 opacity-10 group-hover:scale-110 transition-transform">
-                    <PlusCircle size={100} />
-                  </div>
+                  <ArrowRight size={18} className="text-slate-400 group-hover:text-white group-hover:translate-x-1 transition-all shrink-0" />
                 </button>
 
                 <button 
                   onClick={() => navigate('/history')}
-                  className="group bg-white border border-gray-200 text-gray-800 p-5 rounded-xl shadow-sm hover:bg-gray-50 transition-all flex flex-col justify-between h-32 relative overflow-hidden"
+                  className="group bg-white border border-gray-200 text-gray-800 p-4 sm:p-5 rounded-xl shadow-xs hover:border-gray-300 hover:bg-gray-50/70 transition-all flex items-center justify-between text-left cursor-pointer active:scale-[0.99]"
                 >
-                  <CalendarPlus size={28} className="mb-2 text-warning" />
-                  <div className="text-left relative z-10">
-                    <h3 className="font-bold text-lg">Perpanjang Ijin</h3>
-                    <p className="text-gray-500 text-xs mt-1">Cek Ijin H-3 di Riwayat</p>
+                  <div className="flex items-center gap-3.5">
+                    <div className="w-11 h-11 rounded-xl bg-amber-50 border border-amber-200/60 flex items-center justify-center text-amber-700 shrink-0 group-hover:scale-105 transition-transform">
+                      <CalendarPlus size={22} />
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-sm sm:text-base text-gray-900">Perpanjang Ijin</h3>
+                      <p className="text-gray-500 text-xs mt-0.5">Cek ijin aktif & ajukan perpanjangan</p>
+                    </div>
                   </div>
-                  <div className="absolute -right-4 -bottom-4 opacity-5 group-hover:scale-110 transition-transform">
-                    <CalendarPlus size={100} />
-                  </div>
+                  <ArrowRight size={18} className="text-gray-400 group-hover:text-gray-700 group-hover:translate-x-1 transition-all shrink-0" />
                 </button>
               </div>
 

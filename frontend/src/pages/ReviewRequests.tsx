@@ -257,25 +257,25 @@ export default function ReviewRequestsPage() {
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
             {/* Desktop Table (>= lg) */}
             <div className="hidden lg:block overflow-x-auto">
-              <table className="w-full text-left text-sm whitespace-nowrap">
-                <thead className="bg-gray-50 border-b border-gray-200">
+              <table className="w-full text-left text-xs border-collapse">
+                <thead className="bg-slate-50/80 border-b border-gray-200 text-gray-600 text-[11px] uppercase tracking-wider font-bold">
                   <tr>
-                    <th className="px-6 py-4 font-semibold text-gray-700">ID & Jenis Pekerjaan</th>
-                    <th className="px-6 py-4 font-semibold text-gray-700">Vendor</th>
-                    <th className="px-6 py-4 font-semibold text-gray-700">Lokasi & Tanggal</th>
-                    <th className="px-6 py-4 font-semibold text-gray-700 text-center">Status</th>
-                    <th className="px-6 py-4 font-semibold text-gray-700 text-right">Aksi</th>
+                    <th className="px-5 py-3.5 w-3/12">ID & Pekerjaan</th>
+                    <th className="px-4 py-3.5 w-2/12">Vendor</th>
+                    <th className="px-4 py-3.5 w-3/12">Lokasi & Tanggal</th>
+                    <th className="px-4 py-3.5 w-2/12 text-center whitespace-nowrap">Status</th>
+                    <th className="px-5 py-3.5 w-2/12 text-right whitespace-nowrap">Aksi</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
                   {filteredRequests.length > 0 ? (
                     filteredRequests.map((req) => (
-                      <tr key={req.id} className="hover:bg-gray-50 transition-colors group">
-                        <td className="px-6 py-4">
-                          <div className="font-bold text-gray-900 font-mono">{req.id}</div>
+                      <tr key={req.id} className="hover:bg-gray-50/70 transition-colors group">
+                        <td className="px-5 py-3.5">
+                          <div className="font-bold text-gray-900 font-mono text-xs">{req.id}</div>
                           {req.requestType === 'Perpanjangan' && (
-                            <div className="mt-1 flex flex-col gap-0.5">
-                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-amber-50 text-amber-800 border border-amber-200" title={`Diperpanjang dari izin ${req.parentPermit?.permitNumber || req.parentPermitId}`}>
+                            <div className="mt-0.5 flex flex-col gap-0.5">
+                              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-50 text-amber-800 border border-amber-200 w-fit" title={`Diperpanjang dari izin ${req.parentPermit?.permitNumber || req.parentPermitId}`}>
                                 Perpanjangan Ke-{req.extensionPhase || 1}
                               </span>
                               {req.hasActiveChild && (
@@ -285,42 +285,43 @@ export default function ReviewRequestsPage() {
                               )}
                             </div>
                           )}
-                          <div className="text-gray-500 mt-0.5">{req.jenisPekerjaan}</div>
+                          <div className="text-gray-600 text-xs mt-0.5 line-clamp-1" title={req.jenisPekerjaan}>{req.jenisPekerjaan}</div>
                         </td>
-                        <td className="px-6 py-4">
-                          <div className="font-medium text-gray-800">{req.kontraktor}</div>
-                          <div className="text-xs text-gray-500 mt-0.5">{req.pekerja.length} Pekerja</div>
+                        <td className="px-4 py-3.5">
+                          <div className="font-semibold text-gray-900 text-xs truncate max-w-[180px]" title={req.kontraktor}>{req.kontraktor}</div>
+                          <div className="text-[11px] text-gray-500 mt-0.5">{req.pekerja.length} Pekerja</div>
                         </td>
-                        <td className="px-6 py-4">
-                          <div className="text-gray-800">{req.lokasi}</div>
-                          <div className="text-xs text-gray-600 mt-0.5 font-medium">{req.mulaiKerja} s/d {req.selesaiKerja}</div>
+                        <td className="px-4 py-3.5">
+                          <div className="text-gray-800 text-xs truncate max-w-[200px]" title={req.lokasi}>{req.lokasi}</div>
+                          <div className="text-[11px] text-gray-500 mt-0.5 font-medium whitespace-nowrap">{req.mulaiKerja} s/d {req.selesaiKerja}</div>
                           {req.requestType === 'Perpanjangan' && req.cumulativeStartDate && (
                             <div className="text-[10px] font-semibold text-amber-700 mt-0.5">
                               Kumulatif: {req.cumulativeStartDate} - {req.cumulativeEndDate} ({calculateInclusiveDays(req.cumulativeStartDate, req.cumulativeEndDate)} Hari)
                             </div>
                           )}
                         </td>
-                        <td className="px-6 py-4 text-center">
-                          <span className={cn("inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold", getStatusBadge(req.status))}>
-                            <Clock size={14} /> {formatPermitStatus(req.status)}
+                        <td className="px-4 py-3.5 text-center whitespace-nowrap">
+                          <span className={cn("inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold", getStatusBadge(req.status))}>
+                            <Clock size={12} /> {formatPermitStatus(req.status)}
                           </span>
                         </td>
-                        <td className="px-6 py-4 text-right">
-                          <div className="flex items-center justify-end gap-2">
+                        <td className="px-5 py-3.5 text-right whitespace-nowrap">
+                          <div className="flex items-center justify-end gap-1.5">
                             {req.status === 'Disetujui' && (
                               <button
                                 onClick={() => setPrintPermit(req)}
                                 title="Cetak Dokumen Permit"
-                                className="p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors cursor-pointer"
+                                className="p-1.5 text-gray-600 hover:text-blue-600 bg-white border border-slate-200 hover:bg-blue-50 rounded-lg transition-colors cursor-pointer"
                               >
-                                <Printer size={16} />
+                                <Printer size={14} />
                               </button>
                             )}
                             <button 
                               onClick={() => setSelectedRequest(req)}
-                              className="inline-flex items-center gap-2 px-4 py-2 bg-primary-container/20 text-primary hover:bg-primary hover:text-on-primary rounded-lg text-sm font-semibold transition-colors cursor-pointer"
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-semibold transition cursor-pointer shadow-2xs"
                             >
-                              <Eye size={16} /> Buka & Review
+                              <Eye size={13} />
+                              <span>Review</span>
                             </button>
                           </div>
                         </td>

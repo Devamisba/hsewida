@@ -18,7 +18,6 @@ import {
   QrCode,
   FileSpreadsheet,
   Navigation,
-  Building2,
   Sparkles
 } from "lucide-react";
 import { api, SafetyFacility } from "@/services/api";
@@ -345,11 +344,11 @@ export function InspectionDataTable({
       {/* ======================================================== */}
       <div className="p-4 bg-white border border-slate-200 rounded-xl shadow-xs space-y-3">
         
-        {/* Row 1: Search & Dropdown Filters */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-2.5">
+        {/* Row 1: Search & Dropdown Filters (12-Cols Desktop Grid) */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-2.5">
           
-          {/* 1. Search Box (Takes 2 cols on lg) */}
-          <div className="relative sm:col-span-2">
+          {/* 1. Search Box (Takes 4 cols on lg) */}
+          <div className="relative sm:col-span-2 lg:col-span-4">
             <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
             <input
               type="text"
@@ -363,8 +362,8 @@ export function InspectionDataTable({
             />
           </div>
 
-          {/* 2. Filter Jenis Fasilitas (BARU) */}
-          <div className="flex items-center gap-1.5">
+          {/* 2. Filter Jenis Fasilitas (2 cols on lg) */}
+          <div className="lg:col-span-2 flex items-center gap-1.5">
             <Layers size={14} className="text-slate-400 shrink-0 hidden sm:block" />
             <select
               value={facilityCategory}
@@ -372,7 +371,7 @@ export function InspectionDataTable({
                 setFacilityCategory(e.target.value);
                 setCurrentPage(1);
               }}
-              className="w-full py-2 px-2.5 text-xs border border-slate-300 rounded-lg bg-white font-semibold text-slate-800 focus:outline-none focus:border-slate-600"
+              className="w-full py-2 px-2.5 text-xs border border-slate-300 rounded-lg bg-white font-semibold text-slate-800 focus:outline-none focus:border-slate-600 truncate"
               title="Filter Kategori Fasilitas"
             >
               <option value="apar">APAR ({categoryCounts.apar || 266})</option>
@@ -385,25 +384,27 @@ export function InspectionDataTable({
             </select>
           </div>
 
-          {/* 3. Filter Status Pengecekan (Sudah vs Belum) */}
-          <select
-            value={checkStatusFilter}
-            onChange={(e) => {
-              setCheckStatusFilter(e.target.value);
-              setCurrentPage(1);
-            }}
-            className="w-full py-2 px-2.5 text-xs border border-slate-300 rounded-lg bg-white font-semibold text-slate-800 focus:outline-none focus:border-slate-600"
-            title="Filter Status Pengecekan"
-          >
-            <option value="ALL">Semua Status Cek</option>
-            <option value="UNCHECKED">Belum Dicek ({summary.unchecked || 0})</option>
-            <option value="CHECKED">Sudah Dicek ({summary.checked || 0})</option>
-            <option value="PENDING">Menunggu PIC ({summary.pending_verification || 0})</option>
-            <option value="VERIFIED">Terverifikasi PIC ({summary.verified || 0})</option>
-          </select>
+          {/* 3. Filter Status Pengecekan (2 cols on lg) */}
+          <div className="lg:col-span-2">
+            <select
+              value={checkStatusFilter}
+              onChange={(e) => {
+                setCheckStatusFilter(e.target.value);
+                setCurrentPage(1);
+              }}
+              className="w-full py-2 px-2.5 text-xs border border-slate-300 rounded-lg bg-white font-semibold text-slate-800 focus:outline-none focus:border-slate-600 truncate"
+              title="Filter Status Pengecekan"
+            >
+              <option value="ALL">Semua Status Cek</option>
+              <option value="UNCHECKED">Belum Dicek ({summary.unchecked || 0})</option>
+              <option value="CHECKED">Sudah Dicek ({summary.checked || 0})</option>
+              <option value="PENDING">Menunggu PIC ({summary.pending_verification || 0})</option>
+              <option value="VERIFIED">Terverifikasi PIC ({summary.verified || 0})</option>
+            </select>
+          </div>
 
-          {/* 4. Filter Urutan Data (Sorting - A-01, A-02, ...) */}
-          <div className="flex items-center gap-1.5">
+          {/* 4. Filter Urutan Data (2 cols on lg) */}
+          <div className="lg:col-span-2 flex items-center gap-1.5">
             <ArrowUpDown size={14} className="text-slate-400 shrink-0 hidden sm:block" />
             <select
               value={sortBy}
@@ -411,25 +412,25 @@ export function InspectionDataTable({
                 setSortBy(e.target.value);
                 setCurrentPage(1);
               }}
-              className="w-full py-2 px-2.5 text-xs border border-slate-300 rounded-lg bg-white font-semibold text-slate-800 focus:outline-none focus:border-slate-600"
+              className="w-full py-2 px-2.5 text-xs border border-slate-300 rounded-lg bg-white font-semibold text-slate-800 focus:outline-none focus:border-slate-600 truncate"
               title="Urutan Tampilan Data"
             >
-              <option value="code_asc">Urut Kode (A-01, A-02, ...)</option>
-              <option value="unchecked_first">Prioritas: Belum Dicek Dulu</option>
-              <option value="checked_first">Prioritas: Sudah Dicek Dulu</option>
-              <option value="latest">Waktu Inspeksi Terbaru</option>
+              <option value="code_asc">Urut Kode (A-01, ...)</option>
+              <option value="unchecked_first">Belum Dicek Dulu</option>
+              <option value="checked_first">Sudah Dicek Dulu</option>
+              <option value="latest">Waktu Terbaru</option>
             </select>
           </div>
 
-          {/* 5. Date Range & Reset Button */}
-          <div className="flex items-center gap-1.5">
+          {/* 5. Date Range & Reset Button (2 cols on lg) */}
+          <div className="lg:col-span-2 flex items-center gap-1.5">
             <select
               value={dateRangeFilter}
               onChange={(e) => {
                 setDateRangeFilter(e.target.value);
                 setCurrentPage(1);
               }}
-              className="flex-1 py-2 px-2 text-xs border border-slate-300 rounded-lg bg-white font-medium focus:outline-none focus:border-slate-600"
+              className="w-full py-2 px-2 text-xs border border-slate-300 rounded-lg bg-white font-medium focus:outline-none focus:border-slate-600 truncate"
               title="Filter Waktu Inspeksi"
             >
               <option value="all">Semua Waktu</option>
@@ -504,15 +505,15 @@ export function InspectionDataTable({
         <div className="hidden lg:block overflow-x-auto">
           <table className="w-full text-left border-collapse text-xs">
             <thead>
-              <tr className="bg-slate-50 border-b border-slate-200 text-slate-600 uppercase text-[10px] font-bold tracking-wider">
-                <th className="py-3 px-4">Kode & Zona Fasilitas</th>
-                <th className="py-3 px-4">Status Pengecekan</th>
-                <th className="py-3 px-4">Waktu Inspeksi</th>
-                <th className="py-3 px-4">Tim Pengecekan (Radius Pabrik & Alat)</th>
-                <th className="py-3 px-4">Parameter Fisik</th>
-                <th className="py-3 px-4">Bukti Foto Realtime & Koordinat GPS</th>
-                <th className="py-3 px-4">Verifikasi PIC K3 (Radius Pabrik)</th>
-                <th className="py-3 px-4 text-right">Aksi</th>
+              <tr className="bg-slate-50/80 border-b border-slate-200 text-slate-500 uppercase text-[10px] font-bold tracking-wider">
+                <th className="py-3 px-4 w-52">Kode & Lokasi</th>
+                <th className="py-3 px-4 w-36">Status Cek</th>
+                <th className="py-3 px-4 w-36">Waktu Cek</th>
+                <th className="py-3 px-4 w-44">Pemeriksa Lapangan</th>
+                <th className="py-3 px-4 w-40">Parameter Fisik</th>
+                <th className="py-3 px-4 w-48">Bukti Foto & GPS</th>
+                <th className="py-3 px-4 w-40">Verifikasi PIC</th>
+                <th className="py-3 px-4 text-right w-36">Aksi</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -557,28 +558,28 @@ export function InspectionDataTable({
                       className={`hover:bg-slate-50/80 transition ${!hasInspection ? "bg-slate-50/20" : ""}`}
                     >
                       
-                      {/* 1. Kode & Zona Fasilitas */}
+                      {/* 1. Kode & Lokasi */}
                       <td className="py-3 px-4">
                         <div className="flex items-center gap-1.5 flex-wrap">
                           <span className="font-mono font-bold text-slate-900 bg-slate-100 px-2 py-0.5 rounded text-[11px] border border-slate-200">
                             {row.facility_code || "-"}
                           </span>
                           {row.area_zone && (
-                            <span className="text-[10px] font-bold text-slate-600 bg-white border border-slate-300 px-1.5 py-0.5 rounded">
+                            <span className="text-[10px] font-bold text-slate-600 bg-slate-50 border border-slate-200 px-1.5 py-0.5 rounded">
                               {row.area_zone}
                             </span>
                           )}
                         </div>
-                        <div className="font-semibold text-slate-800 mt-1">
+                        <div className="font-bold text-slate-800 text-xs mt-1 truncate max-w-[200px]" title={row.facility_name || facility?.nama_item || "-"}>
                           {row.facility_name || facility?.nama_item || "-"}
                         </div>
-                        <div className="text-[11px] text-slate-500 flex items-center gap-1 mt-0.5">
-                          <MapPin size={11} className="text-slate-400" />
-                          <span>{row.location_name || "Area Pabrik"}</span>
+                        <div className="text-[11px] text-slate-500 flex items-center gap-1 mt-0.5 truncate max-w-[200px]" title={row.location_name || "Area Pabrik"}>
+                          <MapPin size={11} className="text-slate-400 shrink-0" />
+                          <span className="truncate">{row.location_name || "Area Pabrik"}</span>
                         </div>
                       </td>
 
-                      {/* 2. Status Pengecekan (Sudah vs Belum) */}
+                      {/* 2. Status Pengecekan */}
                       <td className="py-3 px-4 whitespace-nowrap">
                         {hasInspection ? (
                           <div className="space-y-1">
@@ -608,18 +609,18 @@ export function InspectionDataTable({
                               <Clock size={11} className="text-slate-400" />
                               Belum Dicek
                             </span>
-                            <div className="text-[10px] text-slate-400 mt-1">
+                            <div className="text-[10px] text-slate-400 mt-0.5">
                               Menunggu audit
                             </div>
                           </div>
                         )}
                       </td>
 
-                      {/* 3. Waktu Inspeksi */}
+                      {/* 3. Waktu Cek */}
                       <td className="py-3 px-4 whitespace-nowrap">
                         {hasInspection ? (
                           <div>
-                            <div className="font-semibold text-slate-900">
+                            <div className="font-semibold text-slate-900 text-xs">
                               {formatDateTime(row.inspection_date)}
                             </div>
                             {row.inspection_id && (
@@ -633,36 +634,33 @@ export function InspectionDataTable({
                         )}
                       </td>
 
-                      {/* 4. Tim Pengecekan Lapangan (Radius Pabrik & Alat) */}
+                      {/* 4. Pemeriksa Lapangan */}
                       <td className="py-3 px-4">
                         {hasInspection ? (
                           <div className="space-y-1">
-                            <div className="font-bold text-slate-800 flex items-center gap-1">
-                              <User size={12} className="text-slate-400" />
-                              <span>{inspector}</span>
+                            <div className="font-bold text-slate-800 text-xs flex items-center gap-1 truncate max-w-[170px]" title={inspector}>
+                              <User size={12} className="text-slate-400 shrink-0" />
+                              <span className="truncate">{inspector}</span>
                             </div>
-                            <div className="flex flex-col gap-0.5">
-                              <span className="inline-flex items-center gap-1 text-[9px] font-bold text-emerald-800 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded w-fit" title="Terverifikasi dalam radius kawasan pabrik PT Widatra Bhakti (<250m)">
-                                <Building2 size={9} />
-                                Radius Pabrik (&lt;250m)
-                              </span>
-                              <span className="inline-flex items-center gap-1 text-[9px] font-bold text-blue-800 bg-blue-50 border border-blue-200 px-1.5 py-0.5 rounded w-fit" title="Scan QR fisik pada radius unit alat (<25m)">
-                                <QrCode size={9} />
-                                QR Fisik Cocok (&lt;25m)
-                              </span>
-                            </div>
-                            <div className="mt-0.5">
+                            <div className="flex items-center gap-1 flex-wrap">
                               {isPass ? (
-                                <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded">
-                                  <CheckCircle2 size={10} />
-                                  Lolos (Baik)
+                                <span className="inline-flex items-center gap-1 text-[9px] font-bold text-emerald-800 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded">
+                                  <CheckCircle2 size={9} />
+                                  Baik
                                 </span>
                               ) : (
-                                <span className="inline-flex items-center gap-1 text-[10px] font-bold text-rose-700 bg-rose-50 border border-rose-200 px-1.5 py-0.5 rounded">
-                                  <AlertTriangle size={10} />
-                                  Ada Temuan
+                                <span className="inline-flex items-center gap-1 text-[9px] font-bold text-rose-800 bg-rose-50 border border-rose-200 px-1.5 py-0.5 rounded">
+                                  <AlertTriangle size={9} />
+                                  Temuan
                                 </span>
                               )}
+                              <span 
+                                className="inline-flex items-center gap-0.5 text-[9px] font-bold text-slate-600 bg-slate-100 border border-slate-200 px-1.5 py-0.5 rounded cursor-help"
+                                title="Terverifikasi dalam radius kawasan pabrik PT Widatra Bhakti (<250m) & QR fisik (<25m)"
+                              >
+                                <MapPin size={9} className="text-slate-500" />
+                                &lt;250m
+                              </span>
                             </div>
                           </div>
                         ) : (
@@ -670,7 +668,7 @@ export function InspectionDataTable({
                         )}
                       </td>
 
-                      {/* 5. Parameter Fisik (Smart Compact Indicator) */}
+                      {/* 5. Parameter Fisik */}
                       <td className="py-3 px-4">
                         {hasInspection && results.length > 0 ? (() => {
                           const totalParams = results.length;
@@ -680,7 +678,7 @@ export function InspectionDataTable({
                           if (allPassed) {
                             return (
                               <div className="flex flex-col gap-0.5" title={results.map((r: any) => `${r.code || r.item}: ${r.jawaban || 'OK'}`).join(' | ')}>
-                                <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-850 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded w-fit">
+                                <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-800 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded w-fit">
                                   <CheckCircle2 size={10} className="text-emerald-600" />
                                   {passedParams}/{totalParams} Normal
                                 </span>
@@ -691,11 +689,11 @@ export function InspectionDataTable({
 
                           return (
                             <div className="flex flex-col gap-1">
-                              <span className="inline-flex items-center gap-1 text-[10px] font-bold text-rose-850 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded w-fit">
+                              <span className="inline-flex items-center gap-1 text-[10px] font-bold text-rose-800 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded w-fit">
                                 <AlertTriangle size={10} className="text-rose-600" />
                                 {totalParams - passedParams} Kendala
                               </span>
-                              <div className="flex flex-wrap gap-0.5 max-w-[190px]">
+                              <div className="flex flex-wrap gap-0.5 max-w-[170px]">
                                 {results.filter((r: any) => !(r.passed !== false && r.jawaban !== "Rusak" && r.jawaban !== "Karat / Rusak")).map((r: any, rIdx: number) => (
                                   <span key={rIdx} className="text-[9px] font-bold text-rose-700 bg-rose-100/70 border border-rose-200 px-1.5 py-0.5 rounded">
                                     {r.code || r.item}: {r.jawaban}
@@ -709,66 +707,62 @@ export function InspectionDataTable({
                         )}
                       </td>
 
-                      {/* 6. Catatan & Bukti Realtime */}
-                      <td className="py-3 px-4 max-w-[240px]">
+                      {/* 6. Bukti Foto & GPS */}
+                      <td className="py-3 px-4 max-w-[200px]">
                         {hasInspection ? (
-                          <>
-                            <p className="text-[11px] text-slate-600 line-clamp-2" title={row.notes || "-"}>
-                              {row.notes || "-"}
-                            </p>
-                            {photos.length > 0 && (
-                              <div className="mt-1.5 space-y-1">
-                                <div className="flex items-center gap-1.5">
-                                  {photos.map((photo: string, pIdx: number) => (
-                                    <button
-                                      key={pIdx}
-                                      type="button"
-                                      onClick={() => {
-                                        setActivePhoto(photo);
-                                        setActivePhotoMeta(row);
-                                      }}
-                                      className="relative w-9 h-9 rounded border border-slate-300 overflow-hidden hover:opacity-90 transition group cursor-pointer shadow-2xs"
-                                      title="Klik untuk melihat foto realtime dan watermark koordinat GPS"
-                                    >
-                                      <img src={photo} alt="Bukti Realtime" className="w-full h-full object-cover" />
-                                      <div className="absolute inset-0 bg-black/20 group-hover:bg-transparent flex items-center justify-center">
-                                        <Camera size={11} className="text-white drop-shadow" />
-                                      </div>
-                                    </button>
-                                  ))}
-                                  <span className="inline-flex items-center gap-1 text-[9px] font-bold text-purple-800 bg-purple-50 border border-purple-200 px-1.5 py-0.5 rounded">
-                                    <Sparkles size={9} />
-                                    Realtime
-                                  </span>
-                                </div>
-                                <div className="text-[9px] text-slate-500 flex items-center gap-1 font-mono">
-                                  <Navigation size={9} className="text-slate-400" />
-                                  <span>{row.gps_coordinates || "-7.644263, 112.694194"}</span>
-                                </div>
-                              </div>
+                          <div className="space-y-1">
+                            {row.notes && (
+                              <p className="text-[11px] text-slate-600 line-clamp-1" title={row.notes}>
+                                {row.notes}
+                              </p>
                             )}
-                          </>
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              {photos.length > 0 && photos.map((photo: string, pIdx: number) => (
+                                <button
+                                  key={pIdx}
+                                  type="button"
+                                  onClick={() => {
+                                    setActivePhoto(photo);
+                                    setActivePhotoMeta(row);
+                                  }}
+                                  className="relative w-8 h-8 rounded border border-slate-300 overflow-hidden hover:opacity-90 transition group cursor-pointer shadow-2xs shrink-0"
+                                  title="Lihat foto realtime & watermark GPS"
+                                >
+                                  <img src={photo} alt="Bukti" className="w-full h-full object-cover" />
+                                  <div className="absolute inset-0 bg-black/20 group-hover:bg-transparent flex items-center justify-center">
+                                    <Camera size={10} className="text-white drop-shadow" />
+                                  </div>
+                                </button>
+                              ))}
+                              {photos.length > 0 && (
+                                <span className="inline-flex items-center gap-0.5 text-[9px] font-bold text-purple-700 bg-purple-50 border border-purple-200 px-1.5 py-0.5 rounded">
+                                  <Sparkles size={9} />
+                                  Foto
+                                </span>
+                              )}
+                            </div>
+                            <div className="text-[9px] text-slate-400 flex items-center gap-1 font-mono truncate" title={row.gps_coordinates || "-7.644263, 112.694194"}>
+                              <Navigation size={9} className="text-slate-400 shrink-0" />
+                              <span className="truncate">{row.gps_coordinates || "-7.644263, 112.694194"}</span>
+                            </div>
+                          </div>
                         ) : (
                           <span className="text-[11px] text-slate-400">-</span>
                         )}
                       </td>
 
-                      {/* 7. Verifikasi PIC K3 (Radius Pabrik) */}
+                      {/* 7. Verifikasi PIC */}
                       <td className="py-3 px-4 whitespace-nowrap">
                         {hasInspection ? (
                           isVerified ? (
-                            <div className="space-y-1">
-                              <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded">
-                                <CheckCircle2 size={11} />
+                            <div className="space-y-0.5">
+                              <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded">
+                                <CheckCircle2 size={10} />
                                 Terverifikasi
                               </span>
-                              <div className="text-[11px] text-slate-700 font-semibold">
+                              <div className="text-[11px] text-slate-800 font-semibold truncate max-w-[150px]" title={pic || "PIC K3 Widatra"}>
                                 {pic || "PIC K3 Widatra"}
                               </div>
-                              <span className="inline-flex items-center gap-1 text-[9px] font-bold text-slate-700 bg-slate-100 border border-slate-200 px-1.5 py-0.5 rounded" title="PIC K3 wajib berada dalam radius kawasan pabrik PT Widatra Bhakti">
-                                <Building2 size={9} />
-                                Radius Pabrik Valid (&lt;250m)
-                              </span>
                               {row.verified_at && (
                                 <div className="text-[10px] text-slate-400">
                                   {formatDateTime(row.verified_at)}
@@ -776,13 +770,13 @@ export function InspectionDataTable({
                               )}
                             </div>
                           ) : (
-                            <div className="space-y-1">
-                              <span className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-800 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded">
-                                <Clock size={11} />
-                                Menunggu Verifikasi
+                            <div className="space-y-0.5">
+                              <span className="inline-flex items-center gap-1 text-[10px] font-bold text-amber-800 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded">
+                                <Clock size={10} />
+                                Menunggu PIC
                               </span>
-                              <div className="text-[10px] text-amber-700">
-                                Wajib di kawasan pabrik
+                              <div className="text-[9px] text-slate-400">
+                                Di radius pabrik
                               </div>
                             </div>
                           )
@@ -806,11 +800,11 @@ export function InspectionDataTable({
                                   onOpenFacilityDetail(facility);
                                 }
                               }}
-                              className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-md text-xs font-semibold transition cursor-pointer shadow-2xs"
+                              className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-semibold transition cursor-pointer shadow-2xs"
                               title={`Inspeksi APAR ${row.facility_code} Sekarang`}
                             >
                               <ClipboardList size={12} />
-                              <span>Cek Sekarang</span>
+                              <span>Cek</span>
                             </button>
                           )}
 
@@ -819,7 +813,7 @@ export function InspectionDataTable({
                             <button
                               type="button"
                               onClick={() => handleOpenQuickVerify(row)}
-                              className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-md text-xs font-semibold transition cursor-pointer shadow-2xs"
+                              className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-semibold transition cursor-pointer shadow-2xs"
                               title="Verifikasi Hasil Inspeksi Ini"
                             >
                               <Check size={12} />
@@ -832,11 +826,10 @@ export function InspectionDataTable({
                             <button
                               type="button"
                               onClick={() => onShowSticker(facility)}
-                              className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-white border border-purple-200 hover:border-purple-300 hover:bg-purple-50 text-purple-700 rounded-md text-xs font-semibold transition cursor-pointer shadow-2xs"
+                              className="p-1.5 bg-white border border-slate-200 hover:border-purple-300 hover:bg-purple-50 text-slate-600 hover:text-purple-700 rounded-lg text-xs font-semibold transition cursor-pointer"
                               title={`Cetak Label QR ${row.facility_code}`}
                             >
-                              <QrCode size={12} />
-                              <span>QR</span>
+                              <QrCode size={13} />
                             </button>
                           )}
 
@@ -845,7 +838,7 @@ export function InspectionDataTable({
                             <button
                               type="button"
                               onClick={() => onOpenFacilityDetail(facility)}
-                              className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 rounded-md text-xs font-semibold transition cursor-pointer"
+                              className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 rounded-lg text-xs font-semibold transition cursor-pointer"
                               title="Buka Menu Aksi & Riwayat"
                             >
                               <Eye size={12} className="text-slate-500" />

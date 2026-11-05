@@ -266,12 +266,12 @@ export default function MonitoringHSEPage() {
                 <>
                   <button
                     onClick={() => setRefillQueueOpen(true)}
-                    className="inline-flex items-center gap-1.5 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200 px-3 py-2 rounded-xl transition-all text-xs font-semibold shadow-2xs cursor-pointer active:scale-95"
+                    className="inline-flex items-center gap-1.5 bg-white hover:bg-amber-50/70 text-slate-700 hover:text-amber-900 border border-slate-200 hover:border-amber-300 px-3 py-2 rounded-xl transition-all text-xs font-semibold shadow-2xs cursor-pointer active:scale-95"
                     title="Lihat Antrean Refill APAR"
                   >
-                    <RefreshCw size={14} className="text-amber-700" />
+                    <RefreshCw size={14} className="text-amber-600" />
                     <span>Antrean Refill</span>
-                    <span className="bg-amber-200/80 text-amber-900 text-[10px] font-bold px-1.5 py-0.5 rounded-full">
+                    <span className="bg-amber-100 text-amber-900 text-[10px] font-bold px-1.5 py-0.5 rounded-full">
                       {refillCount}
                     </span>
                   </button>
@@ -280,10 +280,10 @@ export default function MonitoringHSEPage() {
                       setSelectedItem(facilities[0] || null);
                       setStickerModalOpen(true);
                     }}
-                    className="inline-flex items-center gap-1.5 bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200 px-3 py-2 rounded-xl transition-all text-xs font-semibold shadow-2xs cursor-pointer active:scale-95"
+                    className="inline-flex items-center gap-1.5 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 hover:border-slate-300 px-3 py-2 rounded-xl transition-all text-xs font-semibold shadow-2xs cursor-pointer active:scale-95"
                     title="Cetak Stiker Label QR per Zona"
                   >
-                    <Layers size={14} className="text-slate-600" />
+                    <Layers size={14} className="text-slate-500" />
                     <span>Cetak Label</span>
                   </button>
                 </>
@@ -291,17 +291,17 @@ export default function MonitoringHSEPage() {
 
               <Link
                 to="/gis-map"
-                className="inline-flex items-center gap-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 px-3 py-2 rounded-xl transition-all text-xs font-bold shadow-2xs cursor-pointer active:scale-95"
+                className="inline-flex items-center gap-1.5 bg-white hover:bg-emerald-50/70 text-slate-700 hover:text-emerald-800 border border-slate-200 hover:border-emerald-300 px-3 py-2 rounded-xl transition-all text-xs font-semibold shadow-2xs cursor-pointer active:scale-95"
                 title="Buka Peta GIS & Radius Geofence Pabrik"
               >
-                <MapPin size={14} className="text-emerald-700" />
+                <MapPin size={14} className="text-emerald-600" />
                 <span>Peta GIS</span>
               </Link>
 
               <button
                 onClick={loadData}
                 disabled={loading}
-                className="inline-flex items-center gap-1.5 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 px-2.5 py-2 rounded-xl transition-all text-xs font-semibold shadow-2xs cursor-pointer active:scale-95"
+                className="inline-flex items-center gap-1.5 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 hover:border-slate-300 px-3 py-2 rounded-xl transition-all text-xs font-semibold shadow-2xs cursor-pointer active:scale-95"
                 title="Muat Ulang Data"
               >
                 <RefreshCw size={14} className={cn(loading && "animate-spin text-primary")} />
@@ -333,7 +333,7 @@ export default function MonitoringHSEPage() {
           {activeTab !== "inspeksi" && alertsSummary && (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               {/* Card 1: Consumable (APAR / P3K) */}
-              <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm flex flex-col justify-between">
+              <div className="bg-white rounded-xl border border-gray-200 p-4 sm:p-5 shadow-xs flex flex-col justify-between">
                 <div className="flex items-center justify-between pb-3 border-b border-gray-100">
                   <div className="flex items-center gap-2.5">
                     <div className="p-2 rounded-lg bg-amber-50 text-amber-600">
@@ -349,25 +349,25 @@ export default function MonitoringHSEPage() {
                   </span>
                 </div>
 
-                <div className="grid grid-cols-5 gap-1.5 sm:gap-2 mt-3 text-center">
+                <div className="grid grid-cols-5 gap-1.5 sm:gap-2 lg:gap-2.5 mt-3 text-center">
                   {/* 1. Aman (>1th) */}
                   <button
                     type="button"
                     onClick={() => handleToggleStatusFilter("AMAN", "CONSUMABLE")}
                     title="Klik untuk memfilter alat berstatus AMAN (> 1 Tahun)"
                     className={cn(
-                      "p-1.5 sm:p-2.5 rounded-xl border text-center transition-all cursor-pointer select-none",
+                      "p-1.5 sm:p-2.5 lg:p-3 rounded-xl border text-center transition-all cursor-pointer select-none flex flex-col justify-between",
                       statusFilter === "AMAN"
                         ? "bg-emerald-100 border-emerald-500 ring-2 ring-emerald-500/50 shadow-xs"
                         : "bg-emerald-50/70 border-emerald-100 hover:bg-emerald-100/60 hover:border-emerald-300"
                     )}
                   >
-                    <div className="flex items-center justify-center gap-1 text-[10px] sm:text-[11px] text-emerald-700 font-bold mb-0.5 whitespace-nowrap">
+                    <div className="flex items-center justify-center gap-1 text-[10px] sm:text-[11px] lg:text-xs text-emerald-700 font-bold mb-0.5 whitespace-nowrap">
                       <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block" />
                       <span className="truncate">Aman</span>
                     </div>
-                    <p className="text-base sm:text-xl font-extrabold text-emerald-700">{alertsSummary.consumable?.aman || 0}</p>
-                    <span className="text-[9px] sm:text-[10px] text-emerald-600 font-medium whitespace-nowrap block">&gt; 1 Thn</span>
+                    <p className="text-base sm:text-xl lg:text-2xl font-black text-emerald-700 my-0.5">{alertsSummary.consumable?.aman || 0}</p>
+                    <span className="text-[9px] sm:text-[10px] lg:text-[11px] text-emerald-600 font-semibold whitespace-nowrap block">&gt; 1 Thn</span>
                   </button>
 
                   {/* 2. H-1 Tahun */}
@@ -376,18 +376,18 @@ export default function MonitoringHSEPage() {
                     onClick={() => handleToggleStatusFilter("H_1TAHUN", "CONSUMABLE")}
                     title="Klik untuk memfilter alat dalam horizon H-1 Tahun (5-12 Bulan)"
                     className={cn(
-                      "p-1.5 sm:p-2.5 rounded-xl border text-center transition-all cursor-pointer select-none",
+                      "p-1.5 sm:p-2.5 lg:p-3 rounded-xl border text-center transition-all cursor-pointer select-none flex flex-col justify-between",
                       statusFilter === "H_1TAHUN"
                         ? "bg-yellow-100 border-yellow-500 ring-2 ring-yellow-500/50 shadow-xs"
                         : "bg-yellow-50/70 border-yellow-100 hover:bg-yellow-100/60 hover:border-yellow-300"
                     )}
                   >
-                    <div className="flex items-center justify-center gap-1 text-[10px] sm:text-[11px] text-yellow-800 font-bold mb-0.5 whitespace-nowrap">
+                    <div className="flex items-center justify-center gap-1 text-[10px] sm:text-[11px] lg:text-xs text-yellow-800 font-bold mb-0.5 whitespace-nowrap">
                       <span className="w-1.5 h-1.5 rounded-full bg-yellow-500 inline-block" />
                       <span className="truncate">H-1 Thn</span>
                     </div>
-                    <p className="text-base sm:text-xl font-extrabold text-yellow-800">{alertsSummary.consumable?.h_1tahun || 0}</p>
-                    <span className="text-[9px] sm:text-[10px] text-yellow-700 font-medium whitespace-nowrap block">5-12 Bln</span>
+                    <p className="text-base sm:text-xl lg:text-2xl font-black text-yellow-800 my-0.5">{alertsSummary.consumable?.h_1tahun || 0}</p>
+                    <span className="text-[9px] sm:text-[10px] lg:text-[11px] text-yellow-700 font-semibold whitespace-nowrap block">5-12 Bln</span>
                   </button>
 
                   {/* 3. H-5 Bulan */}
@@ -396,18 +396,18 @@ export default function MonitoringHSEPage() {
                     onClick={() => handleToggleStatusFilter("H_5BULAN", "CONSUMABLE")}
                     title="Klik untuk memfilter alat dalam horizon H-5 Bulan (1-5 Bulan)"
                     className={cn(
-                      "p-1.5 sm:p-2.5 rounded-xl border text-center transition-all cursor-pointer select-none",
+                      "p-1.5 sm:p-2.5 lg:p-3 rounded-xl border text-center transition-all cursor-pointer select-none flex flex-col justify-between",
                       statusFilter === "H_5BULAN"
                         ? "bg-amber-100 border-amber-500 ring-2 ring-amber-500/50 shadow-xs"
                         : "bg-amber-50/70 border-amber-100 hover:bg-amber-100/60 hover:border-amber-300"
                     )}
                   >
-                    <div className="flex items-center justify-center gap-1 text-[10px] sm:text-[11px] text-amber-800 font-bold mb-0.5 whitespace-nowrap">
+                    <div className="flex items-center justify-center gap-1 text-[10px] sm:text-[11px] lg:text-xs text-amber-800 font-bold mb-0.5 whitespace-nowrap">
                       <span className="w-1.5 h-1.5 rounded-full bg-amber-500 inline-block" />
                       <span className="truncate">H-5 Bln</span>
                     </div>
-                    <p className="text-base sm:text-xl font-extrabold text-amber-800">{alertsSummary.consumable?.h_5bulan || 0}</p>
-                    <span className="text-[9px] sm:text-[10px] text-amber-700 font-medium whitespace-nowrap block">1-5 Bln</span>
+                    <p className="text-base sm:text-xl lg:text-2xl font-black text-amber-800 my-0.5">{alertsSummary.consumable?.h_5bulan || 0}</p>
+                    <span className="text-[9px] sm:text-[10px] lg:text-[11px] text-amber-700 font-semibold whitespace-nowrap block">1-5 Bln</span>
                   </button>
 
                   {/* 4. H-1 Bulan */}
@@ -416,20 +416,20 @@ export default function MonitoringHSEPage() {
                     onClick={() => handleToggleStatusFilter("MENDEKATI_KADALUARSA", "CONSUMABLE")}
                     title="Klik untuk memfilter alat mendekati batas kadaluarsa (H-1 Bulan / <30 Hari)"
                     className={cn(
-                      "p-1.5 sm:p-2.5 rounded-xl border text-center transition-all cursor-pointer select-none",
+                      "p-1.5 sm:p-2.5 lg:p-3 rounded-xl border text-center transition-all cursor-pointer select-none flex flex-col justify-between",
                       statusFilter === "MENDEKATI_KADALUARSA" || statusFilter === "H_1BULAN"
                         ? "bg-orange-100 border-orange-500 ring-2 ring-orange-500/50 shadow-xs"
                         : "bg-orange-50/70 border-orange-100 hover:bg-orange-100/60 hover:border-orange-300"
                     )}
                   >
-                    <div className="flex items-center justify-center gap-1 text-[10px] sm:text-[11px] text-orange-800 font-bold mb-0.5 whitespace-nowrap">
+                    <div className="flex items-center justify-center gap-1 text-[10px] sm:text-[11px] lg:text-xs text-orange-800 font-bold mb-0.5 whitespace-nowrap">
                       <span className="w-1.5 h-1.5 rounded-full bg-orange-500 inline-block" />
                       <span className="truncate">H-1 Bln</span>
                     </div>
-                    <p className="text-base sm:text-xl font-extrabold text-orange-800">
+                    <p className="text-base sm:text-xl lg:text-2xl font-black text-orange-800 my-0.5">
                       {alertsSummary.consumable?.h_1bulan ?? alertsSummary.consumable?.h30 ?? 0}
                     </p>
-                    <span className="text-[9px] sm:text-[10px] text-orange-700 font-medium whitespace-nowrap block">&lt; 30 Hari</span>
+                    <span className="text-[9px] sm:text-[10px] lg:text-[11px] text-orange-700 font-semibold whitespace-nowrap block">&lt; 30 Hari</span>
                   </button>
 
                   {/* 5. Kadaluarsa */}
@@ -438,24 +438,24 @@ export default function MonitoringHSEPage() {
                     onClick={() => handleToggleStatusFilter("KADALUARSA", "CONSUMABLE")}
                     title="Klik untuk memfilter alat yang sudah KADALUARSA"
                     className={cn(
-                      "p-1.5 sm:p-2.5 rounded-xl border text-center transition-all cursor-pointer select-none",
+                      "p-1.5 sm:p-2.5 lg:p-3 rounded-xl border text-center transition-all cursor-pointer select-none flex flex-col justify-between",
                       statusFilter === "KADALUARSA"
                         ? "bg-red-100 border-red-500 ring-2 ring-red-500/50 shadow-xs"
                         : "bg-red-50/70 border-red-100 hover:bg-red-100/60 hover:border-red-300"
                     )}
                   >
-                    <div className="flex items-center justify-center gap-1 text-[10px] sm:text-[11px] text-red-700 font-bold mb-0.5 whitespace-nowrap">
+                    <div className="flex items-center justify-center gap-1 text-[10px] sm:text-[11px] lg:text-xs text-red-700 font-bold mb-0.5 whitespace-nowrap">
                       <span className="w-1.5 h-1.5 rounded-full bg-red-500 inline-block" />
                       <span className="truncate">Expired</span>
                     </div>
-                    <p className="text-base sm:text-xl font-extrabold text-red-700">{alertsSummary.consumable?.kadaluarsa || 0}</p>
-                    <span className="text-[9px] sm:text-[10px] text-red-600 font-medium whitespace-nowrap block">&lt; 0 Hari</span>
+                    <p className="text-base sm:text-xl lg:text-2xl font-black text-red-700 my-0.5">{alertsSummary.consumable?.kadaluarsa || 0}</p>
+                    <span className="text-[9px] sm:text-[10px] lg:text-[11px] text-red-600 font-semibold whitespace-nowrap block">&lt; 0 Hari</span>
                   </button>
                 </div>
               </div>
 
               {/* Card 2: Kondisi Fisik (Hydrant, Pintu, Rambu, Titik Kumpul) */}
-              <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm flex flex-col justify-between">
+              <div className="bg-white rounded-xl border border-gray-200 p-4 sm:p-5 shadow-xs flex flex-col justify-between">
                 <div className="flex items-center justify-between pb-3 border-b border-gray-100">
                   <div className="flex items-center gap-2.5">
                     <div className="p-2 rounded-lg bg-blue-50 text-blue-600">
@@ -471,24 +471,25 @@ export default function MonitoringHSEPage() {
                   </span>
                 </div>
 
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-3 text-center">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 lg:gap-2.5 mt-3 text-center">
                   {/* 1. Baik */}
                   <button
                     type="button"
                     onClick={() => handleToggleStatusFilter("BAIK", "KONDISI")}
                     title="Klik untuk memfilter alat kondisi BAIK"
                     className={cn(
-                      "p-3 rounded-xl border text-center transition-all cursor-pointer select-none",
+                      "p-2 sm:p-2.5 lg:p-3 rounded-xl border text-center transition-all cursor-pointer select-none flex flex-col justify-between",
                       statusFilter === "BAIK"
                         ? "bg-emerald-100 border-emerald-500 ring-2 ring-emerald-500/50 shadow-xs"
                         : "bg-emerald-50/70 border-emerald-100 hover:bg-emerald-100/60 hover:border-emerald-300"
                     )}
                   >
-                    <div className="flex items-center justify-center gap-1 text-xs text-emerald-700 font-semibold mb-1">
-                      <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block" />
-                      Baik
+                    <div className="flex items-center justify-center gap-1 text-[10px] sm:text-[11px] lg:text-xs text-emerald-700 font-bold mb-0.5 whitespace-nowrap">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block" />
+                      <span className="truncate">Baik</span>
                     </div>
-                    <p className="text-2xl font-bold text-emerald-700">{alertsSummary.kondisi?.baik || 0}</p>
+                    <p className="text-base sm:text-xl lg:text-2xl font-black text-emerald-700 my-0.5">{alertsSummary.kondisi?.baik || 0}</p>
+                    <span className="text-[9px] sm:text-[10px] lg:text-[11px] text-emerald-600 font-semibold whitespace-nowrap block">Normal / Siap</span>
                   </button>
 
                   {/* 2. Perhatian */}
@@ -497,17 +498,18 @@ export default function MonitoringHSEPage() {
                     onClick={() => handleToggleStatusFilter("PERLU_PERHATIAN", "KONDISI")}
                     title="Klik untuk memfilter alat kondisi PERLU PERHATIAN"
                     className={cn(
-                      "p-3 rounded-xl border text-center transition-all cursor-pointer select-none",
+                      "p-2 sm:p-2.5 lg:p-3 rounded-xl border text-center transition-all cursor-pointer select-none flex flex-col justify-between",
                       statusFilter === "PERLU_PERHATIAN"
                         ? "bg-amber-100 border-amber-500 ring-2 ring-amber-500/50 shadow-xs"
                         : "bg-amber-50/70 border-amber-100 hover:bg-amber-100/60 hover:border-amber-300"
                     )}
                   >
-                    <div className="flex items-center justify-center gap-1 text-xs text-amber-700 font-semibold mb-1">
-                      <span className="w-2 h-2 rounded-full bg-amber-500 inline-block" />
-                      Perhatian
+                    <div className="flex items-center justify-center gap-1 text-[10px] sm:text-[11px] lg:text-xs text-amber-800 font-bold mb-0.5 whitespace-nowrap">
+                      <span className="w-1.5 h-1.5 rounded-full bg-amber-500 inline-block" />
+                      <span className="truncate">Perhatian</span>
                     </div>
-                    <p className="text-2xl font-bold text-amber-700">{alertsSummary.kondisi?.perhatian || 0}</p>
+                    <p className="text-base sm:text-xl lg:text-2xl font-black text-amber-800 my-0.5">{alertsSummary.kondisi?.perhatian || 0}</p>
+                    <span className="text-[9px] sm:text-[10px] lg:text-[11px] text-amber-700 font-semibold whitespace-nowrap block">Butuh Cek</span>
                   </button>
 
                   {/* 3. Rusak */}
@@ -516,17 +518,18 @@ export default function MonitoringHSEPage() {
                     onClick={() => handleToggleStatusFilter("RUSAK", "KONDISI")}
                     title="Klik untuk memfilter alat kondisi RUSAK / PERLU TINDAKAN"
                     className={cn(
-                      "p-3 rounded-xl border text-center transition-all cursor-pointer select-none",
+                      "p-2 sm:p-2.5 lg:p-3 rounded-xl border text-center transition-all cursor-pointer select-none flex flex-col justify-between",
                       statusFilter === "RUSAK"
                         ? "bg-red-100 border-red-500 ring-2 ring-red-500/50 shadow-xs"
                         : "bg-red-50/70 border-red-100 hover:bg-red-100/60 hover:border-red-300"
                     )}
                   >
-                    <div className="flex items-center justify-center gap-1 text-xs text-red-700 font-semibold mb-1">
-                      <span className="w-2 h-2 rounded-full bg-red-500 inline-block" />
-                      Rusak
+                    <div className="flex items-center justify-center gap-1 text-[10px] sm:text-[11px] lg:text-xs text-red-700 font-bold mb-0.5 whitespace-nowrap">
+                      <span className="w-1.5 h-1.5 rounded-full bg-red-500 inline-block" />
+                      <span className="truncate">Rusak</span>
                     </div>
-                    <p className="text-2xl font-bold text-red-700">{alertsSummary.kondisi?.rusak || 0}</p>
+                    <p className="text-base sm:text-xl lg:text-2xl font-black text-red-700 my-0.5">{alertsSummary.kondisi?.rusak || 0}</p>
+                    <span className="text-[9px] sm:text-[10px] lg:text-[11px] text-red-600 font-semibold whitespace-nowrap block">Perbaikan</span>
                   </button>
 
                   {/* 4. Terlewat */}
@@ -535,17 +538,18 @@ export default function MonitoringHSEPage() {
                     onClick={() => handleToggleStatusFilter("JADWAL_TERLEWAT", "KONDISI")}
                     title="Klik untuk memfilter alat dengan JADWAL INSPEKSI TERLEWAT"
                     className={cn(
-                      "p-3 rounded-xl border text-center transition-all cursor-pointer select-none",
+                      "p-2 sm:p-2.5 lg:p-3 rounded-xl border text-center transition-all cursor-pointer select-none flex flex-col justify-between",
                       statusFilter === "JADWAL_TERLEWAT"
                         ? "bg-slate-200 border-slate-500 ring-2 ring-slate-500/50 shadow-xs"
                         : "bg-slate-50 border-slate-200 hover:bg-slate-100 hover:border-slate-300"
                     )}
                   >
-                    <div className="flex items-center justify-center gap-1 text-xs text-slate-700 font-semibold mb-1">
-                      <span className="w-2 h-2 rounded-full bg-slate-400 inline-block" />
-                      Terlewat
+                    <div className="flex items-center justify-center gap-1 text-[10px] sm:text-[11px] lg:text-xs text-slate-700 font-bold mb-0.5 whitespace-nowrap">
+                      <span className="w-1.5 h-1.5 rounded-full bg-slate-400 inline-block" />
+                      <span className="truncate">Terlewat</span>
                     </div>
-                    <p className="text-2xl font-bold text-slate-700">{alertsSummary.kondisi?.terlewat || 0}</p>
+                    <p className="text-base sm:text-xl lg:text-2xl font-black text-slate-700 my-0.5">{alertsSummary.kondisi?.terlewat || 0}</p>
+                    <span className="text-[9px] sm:text-[10px] lg:text-[11px] text-slate-600 font-semibold whitespace-nowrap block">Jadwal Lewat</span>
                   </button>
                 </div>
               </div>
@@ -1192,17 +1196,26 @@ function FacilityDataTable({
                       <MonitoringStatusBadge status={facility.expiry_tier || facility.calculated_status || facility.status} />
                     </td>
 
-                    {/* Action Buttons: Cetak QR + Edit + Kelola & Riwayat + Hapus */}
+                    {/* Action Buttons: Detail & Riwayat (Primary) + QR + Edit + Hapus (Icons) */}
                     <td className="px-4 py-3 text-right whitespace-nowrap">
                       <div className="flex items-center justify-end gap-1.5">
+                        <button 
+                          type="button"
+                          onClick={() => onOpenDetail(facility)} 
+                          title="Buka Menu Aksi & Riwayat Monitoring"
+                          className="inline-flex items-center gap-1.5 px-2.5 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-semibold transition shadow-2xs cursor-pointer active:scale-95"
+                        >
+                          <Eye size={13} />
+                          <span>Detail</span>
+                        </button>
+
                         <button
                           type="button"
                           onClick={() => onShowSticker(facility)}
                           title={`Cetak Label QR Stiker ${facility.code}`}
-                          className="inline-flex items-center gap-1.5 px-2.5 py-1.5 bg-white border border-purple-200 hover:border-purple-300 hover:bg-purple-50 text-purple-700 rounded-lg text-xs font-bold transition shadow-2xs cursor-pointer active:scale-95"
+                          className="p-1.5 bg-white border border-slate-200 hover:border-purple-300 hover:bg-purple-50 text-slate-600 hover:text-purple-700 rounded-lg text-xs font-semibold transition cursor-pointer active:scale-95"
                         >
                           <QrCode size={13} />
-                          <span>Cetak QR</span>
                         </button>
 
                         {onEdit && (
@@ -1210,29 +1223,18 @@ function FacilityDataTable({
                             type="button"
                             onClick={() => onEdit(facility)}
                             title={`Edit Data Fasilitas ${facility.code}`}
-                            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 bg-white border border-blue-200 hover:border-blue-300 hover:bg-blue-50 text-blue-700 rounded-lg text-xs font-bold transition shadow-2xs cursor-pointer active:scale-95"
+                            className="p-1.5 bg-white border border-slate-200 hover:border-blue-300 hover:bg-blue-50 text-slate-600 hover:text-blue-700 rounded-lg text-xs font-semibold transition cursor-pointer active:scale-95"
                           >
                             <Edit3 size={13} />
-                            <span>Edit</span>
                           </button>
                         )}
-
-                        <button 
-                          type="button"
-                          onClick={() => onOpenDetail(facility)} 
-                          title="Buka Menu Aksi & Riwayat Monitoring"
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-300 hover:border-slate-400 hover:bg-slate-50 text-slate-800 rounded-lg text-xs font-bold transition shadow-xs cursor-pointer active:scale-95"
-                        >
-                          <Eye size={13} className="text-slate-500" />
-                          <span>Kelola & Riwayat</span>
-                        </button>
 
                         {onDelete && (
                           <button
                             type="button"
                             onClick={() => onDelete(facility)}
                             title={`Hapus/Nonaktifkan Fasilitas ${facility.code}`}
-                            className="inline-flex items-center justify-center p-1.5 bg-white border border-red-200 hover:border-red-300 hover:bg-red-50 text-red-600 rounded-lg text-xs font-bold transition shadow-2xs cursor-pointer active:scale-95"
+                            className="p-1.5 bg-white border border-slate-200 hover:border-red-300 hover:bg-red-50 text-slate-600 hover:text-red-600 rounded-lg text-xs font-semibold transition cursor-pointer active:scale-95"
                           >
                             <Trash2 size={13} />
                           </button>
