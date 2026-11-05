@@ -396,7 +396,10 @@ export const api = {
   submitPicVerification: async (code: string, payload: {
     pic_name: string;
     verification_status: 'VERIFIED' | 'REVISE' | 'REFILL_REQUESTED';
-    verification_notes?: string;
+    verification_notes?: string | null;
+    pic_plant_geofence_valid?: boolean;
+    pic_latitude?: number | null;
+    pic_longitude?: number | null;
   }) => {
     return apiRequest(`/monitoring/scan/${encodeURIComponent(code)}/pic`, {
       method: 'POST',

@@ -1089,79 +1089,109 @@ class MonitoringController extends Controller
         $facility = SafetyFacility::where('code', $cleanCode)
             ->orWhere('qr_code_id', $cleanCode)
             ->orWhere('qr_code_id', 'QR-APAR-' . $cleanCode)
-            ->firstOrFail();
+            ->first();
 
-        $validated = $request->validate([
-            'inspector_name' => 'required|string|max:150', // Native text input
-            'notes' => 'required|string|min:3',           // Mandatory catatan
-            'tbg' => 'required|boolean',                  // Tabung
-            'slg' => 'required|boolean',                  // Selang
-            'nozz' => 'required|boolean',                 // Nozzle
-            'sgl' => 'required|boolean',                  // Segel & pin
-            'lev' => 'required|boolean',                  // Lever & tekanan
-            'foto_bukti' => 'nullable|string',            // Real-time camera photo
-            'latitude' => 'nullable|numeric',
-            'longitude' => 'nullable|numeric',
-            'accuracy' => 'nullable|numeric',
-            'is_plant_geofence_valid' => 'nullable|boolean',
-            'is_facility_geofence_valid' => 'nullable|boolean',
-            'is_camera_realtime' => 'nullable|boolean',
-        ]);
-
-        $allPassed = $validated['tbg'] && $validated['slg'] && $validated['nozz'] && $validated['sgl'] && $validated['lev'];
-        $resultStatus = $allPassed ? 'Pass' : 'Fail';
-
-        // Checklists breakdown matching official 5 parameters
-        $checklistResults = [
-            ['id' => 'tbg', 'code' => 'Tbg', 'label' => 'Kondisi Tabung', 'passed' => $validated['tbg'], 'jawaban' => $validated['tbg'] ? 'Baik' : 'Karat / Rusak'],
-            ['id' => 'slg', 'code' => 'Slg', 'label' => 'Selang (Hose)', 'passed' => $validated['slg'], 'jawaban' => $validated['slg'] ? 'Baik / Fleksibel' : 'Retak / Tersumbat'],
-            ['id' => 'nozz', 'code' => 'Nozz', 'label' => 'Nozzle (Corong)', 'passed' => $validated['nozz'], 'jawaban' => $validated['nozz'] ? 'Bersih / Utuh' : 'Pecah / Buntu'],
-            ['id' => 'sgl', 'code' => 'Sgl', 'label' => 'Segel & Pin', 'passed' => $validated['sgl'], 'jawaban' => $validated['sgl'] ? 'Utuh Terkunci' : 'Putus / Hilang'],
-            ['id' => 'lev', 'code' => 'Lev', 'label' => 'Lever & Tekanan', 'passed' => $validated['lev'], 'jawaban' => $validated['lev'] ? 'Normal (Zona Hijau)' : 'Kurang / Macet'],
-        ];
-
-        $photos = !empty($validated['foto_bukti']) ? [$validated['foto_bukti']] : [];
-
-        $inspection = FacilityInspection::create([
-            'facility_id' => $facility->id,
-            'inspector_id' => auth()->id(),
-            'inspector_name' => $validated['inspector_name'],
-            'inspection_date' => now()->toDateString(),
-            'tipe_checklist' => 'CONSUMABLE_CHECK',
-            'checklist_results' => $checklistResults,
-            'result_status' => $resultStatus,
-            'inspection_stage' => 'PETUGAS',
-            'notes' => $validated['notes'],
-            'foto_bukti' => $photos,
-        ]);
-
-        // Update facility specifications with tracking metadata
-        $specs = $facility->specifications ?? [];
-        $specs['last_inspector_name'] = $validated['inspector_name'];
-        $specs['inspection_stage'] = 'PETUGAS_SUBMITTED';
-        $specs['inspection_status_label'] = "Diinspeksi oleh {$validated['inspector_name']} — Menunggu Verifikasi PIC";
-        $specs['last_inspection_id'] = $inspection->id;
-        $specs['is_plant_geofence_valid'] = $request->boolean('is_plant_geofence_valid', true);
-        $specs['is_facility_geofence_valid'] = $request->boolean('is_facility_geofence_valid', true);
-        $specs['is_camera_realtime'] = $request->boolean('is_camera_realtime', true);
-        if ($request->filled('latitude') && $request->filled('longitude')) {
-            $specs['gps_coordinates'] = "{$request->latitude}, {$request->longitude}";
-            $specs['gps_accuracy'] = $request->filled('accuracy') ? "±{$request->accuracy}m" : "±3m";
+        if (!$facility && is_numeric($code)) {
+            $facility = SafetyFacility::find($code);
         }
 
-        $facility->specifications = $specs;
-        $facility->last_inspected_at = now()->toDateString();
-        $facility->status = $allPassed ? 'Good' : 'Needs Attention';
-        $facility->save();
+        if (!$facility) {
+            return response()->json([
+                'success' => false,
+                'message' => "Fasilitas K3 dengan kode/ID '{$cleanCode}' tidak ditemukan dalam sistem.",
+            ], 404);
+        }
 
-        return response()->json([
-            'success' => true,
-            'message' => "Inspeksi oleh Petugas {$validated['inspector_name']} berhasil disimpan. Menunggu verifikasi PIC.",
-            'data' => [
-                'facility' => $facility,
-                'inspection' => $inspection,
-            ]
-        ]);
+        try {
+            $validated = $request->validate([
+                'inspector_name' => 'required|string|max:150', // Native text input
+                'notes' => 'required|string|min:3',           // Mandatory catatan
+                'tbg' => 'required|boolean',                  // Tabung
+                'slg' => 'required|boolean',                  // Selang
+                'nozz' => 'required|boolean',                 // Nozzle
+                'sgl' => 'required|boolean',                  // Segel & pin
+                'lev' => 'required|boolean',                  // Lever & tekanan
+                'foto_bukti' => 'nullable|string',            // Real-time camera photo
+                'latitude' => 'nullable|numeric',
+                'longitude' => 'nullable|numeric',
+                'accuracy' => 'nullable|numeric',
+                'is_plant_geofence_valid' => 'nullable|boolean',
+                'is_facility_geofence_valid' => 'nullable|boolean',
+                'is_camera_realtime' => 'nullable|boolean',
+            ]);
+
+            $allPassed = $validated['tbg'] && $validated['slg'] && $validated['nozz'] && $validated['sgl'] && $validated['lev'];
+            $resultStatus = $allPassed ? 'Pass' : 'Fail';
+
+            // Checklists breakdown matching official 5 parameters
+            $checklistResults = [
+                ['id' => 'tbg', 'code' => 'Tbg', 'label' => 'Kondisi Tabung', 'passed' => $validated['tbg'], 'jawaban' => $validated['tbg'] ? 'Baik' : 'Karat / Rusak'],
+                ['id' => 'slg', 'code' => 'Slg', 'label' => 'Selang (Hose)', 'passed' => $validated['slg'], 'jawaban' => $validated['slg'] ? 'Baik / Fleksibel' : 'Retak / Tersumbat'],
+                ['id' => 'nozz', 'code' => 'Nozz', 'label' => 'Nozzle (Corong)', 'passed' => $validated['nozz'], 'jawaban' => $validated['nozz'] ? 'Bersih / Utuh' : 'Pecah / Buntu'],
+                ['id' => 'sgl', 'code' => 'Sgl', 'label' => 'Segel & Pin', 'passed' => $validated['sgl'], 'jawaban' => $validated['sgl'] ? 'Utuh Terkunci' : 'Putus / Hilang'],
+                ['id' => 'lev', 'code' => 'Lev', 'label' => 'Lever & Tekanan', 'passed' => $validated['lev'], 'jawaban' => $validated['lev'] ? 'Normal (Zona Hijau)' : 'Kurang / Macet'],
+            ];
+
+            $photos = $request->filled('foto_bukti') ? [$request->input('foto_bukti')] : [];
+
+            $inspection = FacilityInspection::create([
+                'facility_id' => $facility->id,
+                'inspector_id' => auth()->id(),
+                'inspector_name' => $validated['inspector_name'],
+                'inspection_date' => now()->toDateString(),
+                'tipe_checklist' => 'CONSUMABLE_CHECK',
+                'checklist_results' => $checklistResults,
+                'result_status' => $resultStatus,
+                'inspection_stage' => 'PETUGAS',
+                'notes' => $validated['notes'],
+                'foto_bukti' => $photos,
+            ]);
+
+            // Update facility specifications with tracking metadata
+            $specs = $facility->specifications ?? [];
+            $specs['last_inspector_name'] = $validated['inspector_name'];
+            $specs['inspection_stage'] = 'PETUGAS_SUBMITTED';
+            $specs['inspection_status_label'] = "Diinspeksi oleh {$validated['inspector_name']} — Menunggu Verifikasi PIC";
+            $specs['last_inspection_id'] = $inspection->id;
+            $specs['is_plant_geofence_valid'] = $request->boolean('is_plant_geofence_valid', true);
+            $specs['is_facility_geofence_valid'] = $request->boolean('is_facility_geofence_valid', true);
+            $specs['is_camera_realtime'] = $request->boolean('is_camera_realtime', true);
+            if ($request->filled('latitude') && $request->filled('longitude')) {
+                $specs['gps_coordinates'] = "{$request->latitude}, {$request->longitude}";
+                $specs['gps_accuracy'] = $request->filled('accuracy') ? "±{$request->accuracy}m" : "±3m";
+            }
+
+            $facility->specifications = $specs;
+            $facility->last_inspected_at = now()->toDateString();
+            $facility->status = $allPassed ? 'Good' : 'Needs Attention';
+            $facility->save();
+
+            if ($facility->conditionSchedule) {
+                $facility->conditionSchedule->update([
+                    'terakhir_diperiksa' => now()->toDateString(),
+                    'status_kondisi_terakhir' => $allPassed ? 'BAIK' : 'PERLU_PERBAIKAN',
+                ]);
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => "Inspeksi oleh Petugas {$validated['inspector_name']} berhasil disimpan. Menunggu verifikasi PIC.",
+                'data' => [
+                    'facility' => $facility,
+                    'inspection' => $inspection,
+                ]
+            ]);
+        } catch (\Illuminate\Validation\ValidationException $ve) {
+            throw $ve;
+        } catch (\Throwable $e) {
+            \Log::error("Petugas inspection error for facility {$cleanCode}: " . $e->getMessage(), [
+                'trace' => $e->getTraceAsString(),
+            ]);
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal menyimpan inspeksi petugas: ' . $e->getMessage(),
+            ], 500);
+        }
     }
 
     /**
@@ -1173,56 +1203,88 @@ class MonitoringController extends Controller
         $facility = SafetyFacility::where('code', $cleanCode)
             ->orWhere('qr_code_id', $cleanCode)
             ->orWhere('qr_code_id', 'QR-APAR-' . $cleanCode)
-            ->firstOrFail();
-
-        $validated = $request->validate([
-            'pic_name' => 'required|string|max:150', // Native text input
-            'verification_status' => 'required|in:VERIFIED,REVISE,REFILL_REQUESTED',
-            'verification_notes' => 'nullable|string',
-            'pic_latitude' => 'nullable|numeric',
-            'pic_longitude' => 'nullable|numeric',
-            'pic_plant_geofence_valid' => 'nullable|boolean',
-        ]);
-
-        $latestInspection = FacilityInspection::where('facility_id', $facility->id)
-            ->latest()
             ->first();
 
-        $inspectorName = $latestInspection?->inspector_name
-            ?? ($facility->specifications['last_inspector_name'] ?? 'Petugas Lapangan');
+        if (!$facility && is_numeric($code)) {
+            $facility = SafetyFacility::find($code);
+        }
 
-        if ($latestInspection) {
-            $latestInspection->update([
-                'pic_name' => $validated['pic_name'],
-                'inspection_stage' => 'PIC_VERIFIED',
-                'verified_at' => now(),
-                'verification_status' => $validated['verification_status'],
-                'verification_notes' => $validated['verification_notes'],
+        if (!$facility) {
+            return response()->json([
+                'success' => false,
+                'message' => "Fasilitas K3 dengan kode/ID '{$cleanCode}' tidak ditemukan dalam sistem.",
+            ], 404);
+        }
+
+        try {
+            $validated = $request->validate([
+                'pic_name' => 'required|string|max:150', // Native text input
+                'verification_status' => 'required|in:VERIFIED,REVISE,REFILL_REQUESTED',
+                'verification_notes' => 'nullable|string',
+                'pic_latitude' => 'nullable|numeric',
+                'pic_longitude' => 'nullable|numeric',
+                'pic_plant_geofence_valid' => 'nullable|boolean',
             ]);
+
+            $latestInspection = FacilityInspection::where('facility_id', $facility->id)
+                ->latest('id')
+                ->first();
+
+            $inspectorName = $latestInspection?->inspector_name
+                ?? ($facility->specifications['last_inspector_name'] ?? 'Petugas Lapangan');
+
+            $verificationNotes = $request->input('verification_notes', $validated['verification_notes'] ?? null);
+
+            if ($latestInspection) {
+                $latestInspection->update([
+                    'pic_name' => $validated['pic_name'],
+                    'inspection_stage' => 'PIC_VERIFIED',
+                    'verified_at' => now(),
+                    'verification_status' => $validated['verification_status'],
+                    'verification_notes' => $verificationNotes,
+                ]);
+            }
+
+            // Update facility specifications
+            $specs = $facility->specifications ?? [];
+            $specs['last_pic_name'] = $validated['pic_name'];
+            $specs['inspection_stage'] = 'PIC_VERIFIED';
+            $specs['inspection_status_label'] = "Terverifikasi Penuh oleh PIC {$validated['pic_name']} (Pemeriksa: {$inspectorName})";
+            $specs['pic_plant_geofence_valid'] = $request->boolean('pic_plant_geofence_valid', true);
+
+            if ($validated['verification_status'] === 'REFILL_REQUESTED') {
+                $specs['is_refill_queue'] = true;
+            }
+
+            $facility->specifications = $specs;
+            $facility->save();
+
+            if ($facility->conditionSchedule) {
+                $facility->conditionSchedule->update([
+                    'terakhir_diperiksa' => now()->toDateString(),
+                    'status_kondisi_terakhir' => ($validated['verification_status'] === 'VERIFIED') ? 'BAIK' : 'PERLU_PERBAIKAN',
+                ]);
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => "Verifikasi oleh PIC {$validated['pic_name']} atas pemeriksaan {$inspectorName} berhasil disimpan.",
+                'data' => [
+                    'facility' => $facility,
+                    'status_label' => $specs['inspection_status_label'],
+                ]
+            ]);
+        } catch (\Illuminate\Validation\ValidationException $ve) {
+            throw $ve;
+        } catch (\Throwable $e) {
+            \Log::error("PIC verification error for facility {$cleanCode}: " . $e->getMessage(), [
+                'trace' => $e->getTraceAsString(),
+            ]);
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal menyimpan verifikasi PIC: ' . $e->getMessage(),
+            ], 500);
         }
-
-        // Update facility specifications
-        $specs = $facility->specifications ?? [];
-        $specs['last_pic_name'] = $validated['pic_name'];
-        $specs['inspection_stage'] = 'PIC_VERIFIED';
-        $specs['inspection_status_label'] = "Terverifikasi Penuh oleh PIC {$validated['pic_name']} (Pemeriksa: {$inspectorName})";
-        $specs['pic_plant_geofence_valid'] = $request->boolean('pic_plant_geofence_valid', true);
-
-        if ($validated['verification_status'] === 'REFILL_REQUESTED') {
-            $specs['is_refill_queue'] = true;
-        }
-
-        $facility->specifications = $specs;
-        $facility->save();
-
-        return response()->json([
-            'success' => true,
-            'message' => "Verifikasi oleh PIC {$validated['pic_name']} atas pemeriksaan {$inspectorName} berhasil disimpan.",
-            'data' => [
-                'facility' => $facility,
-                'status_label' => $specs['inspection_status_label'],
-            ]
-        ]);
     }
 
     /**

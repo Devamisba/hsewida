@@ -364,7 +364,7 @@ export default function AparScanPage() {
       const payload = {
         pic_name: picName.trim(),
         verification_status: verificationStatus,
-        verification_notes: picNotes.trim() || undefined,
+        verification_notes: picNotes.trim() ? picNotes.trim() : null,
         pic_plant_geofence_valid: true,
       };
 

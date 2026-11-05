@@ -182,7 +182,8 @@ export function InspectionDataTable({
       const res = await api.submitPicVerification(code, {
         pic_name: picName.trim(),
         verification_status: verifyStatus,
-        verification_notes: verifyNotes.trim() || undefined,
+        verification_notes: verifyNotes.trim() ? verifyNotes.trim() : null,
+        pic_plant_geofence_valid: true,
       });
 
       if (res.success) {
