@@ -1,18 +1,20 @@
 import { auth } from '@/lib/auth';
 
-// API Base URL from env or dynamic hostname (supports reverse proxy Nginx, localhost, and mobile LAN access)
+// API Base URL from dynamic hostname (supports reverse proxy Nginx on production domain, localhost, and mobile LAN access)
 export const API_BASE_URL = (() => {
-  if ((import.meta as any).env?.VITE_API_BASE_URL) {
-    return (import.meta as any).env.VITE_API_BASE_URL;
-  }
   if (typeof window !== 'undefined' && window.location) {
-    const isViteDev = window.location.port === '5173' || window.location.port === '3000';
-    if (isViteDev) {
-      // Local development on Vite dev server (desktop or LAN IP on mobile)
+    const isDev = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+    const isVitePort = window.location.port === '5173' || window.location.port === '3000';
+    if (isDev && isVitePort) {
       return `${window.location.protocol}//${window.location.hostname}:8000/api/v1`;
     }
-    // Production (calls /api/v1 on same origin, proxied by Nginx to backend 8787)
-    return `${window.location.origin}/api/v1`;
+    // Production (calls /api/v1 on same origin, proxied by Nginx to backend)
+    if (!isDev) {
+      return `${window.location.origin}/api/v1`;
+    }
+  }
+  if ((import.meta as any).env?.VITE_API_BASE_URL) {
+    return (import.meta as any).env.VITE_API_BASE_URL;
   }
   return 'http://localhost:8000/api/v1';
 })();
