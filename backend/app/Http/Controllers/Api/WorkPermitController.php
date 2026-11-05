@@ -132,7 +132,15 @@ class WorkPermitController extends Controller
     public function history(Request $request)
     {
         $user = $request->user();
-        $roleCode = $user->role ? $user->role->code : '';
+        $roleCode = strtolower($user->role ? $user->role->code : '');
+
+        // Poin 8: Menu riwayat di role Pemohon/Kontraktor tidak ada
+        if (in_array($roleCode, ['pemohon', 'kontraktor', 'vendor', 'contractor'])) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Role Pemohon/Kontraktor tidak memiliki akses ke menu Riwayat. Seluruh perizinan Anda terpusat di menu Ijin Saya.',
+            ], 403);
+        }
 
         $query = WorkPermit::with([
             'location', 
@@ -147,15 +155,27 @@ class WorkPermitController extends Controller
             'childPermits:id,parent_permit_id,permit_number,status,request_type,extension_phase'
         ]);
 
-        if ($roleCode === 'pemohon') {
-            $query->where('user_id', $user->id);
+        // Poin 7: Menu riwayat HANYA menampilkan ijin kerja yang sudah Selesai atau Habis Kontrak (atau Ditolak)
+        $today = now()->format('Y-m-d');
+        $query->where(function($q) use ($today) {
+            $q->where('status', 'Selesai')
+              ->orWhere('status', 'Ditolak')
+              ->orWhere(function($sub) use ($today) {
+                  $sub->where('status', 'Disetujui')
+                      ->where('end_date', '<', $today);
+              });
+        });
+
+        // Filter tab tambahan jika disediakan
+        if ($request->has('status') && !empty($request->status) && $request->status !== 'ALL') {
+            if ($request->status === 'Habis Kontrak' || $request->status === 'Expired') {
+                $query->where('status', 'Disetujui')->where('end_date', '<', $today);
+            } else {
+                $query->where('status', $request->status);
+            }
         }
 
-        if ($request->has('status') && !empty($request->status)) {
-            $query->where('status', $request->status);
-        }
-
-        $permits = $query->orderBy('created_at', 'desc')
+        $permits = $query->orderBy('end_date', 'desc')
             ->orderBy('id', 'desc')
             ->get();
 

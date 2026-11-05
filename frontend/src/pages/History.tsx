@@ -20,14 +20,13 @@ import {
   CalendarRange,
   Layers,
   Infinity as InfinityIcon,
-  Hourglass,
-  XCircle,
+    XCircle,
   ShieldCheck,
   FileSpreadsheet,
   Search,
   RotateCcw
 } from "lucide-react";
-import { cn, calculateInclusiveDays, formatPermitStatus } from "@/lib/utils";
+import { cn, calculateInclusiveDays, formatPermitStatus, formatDateDDMMYY } from "@/lib/utils";
 import { api } from "@/services/api";
 import { auth } from "@/lib/auth";
 import { PrintPermitModal } from "@/components/PrintPermitModal";
@@ -246,7 +245,7 @@ export default function HistoryPage() {
 
   // Filter States sesuai Foto Referensi
   const [timePeriod, setTimePeriod] = useState<"all" | "today" | "this_week" | "this_month" | "last_month" | "custom">("all");
-  const [statusFilter, setStatusFilter] = useState<"ALL" | "Disetujui" | "Selesai" | "PENDING" | "Ditolak">("ALL");
+  const [statusFilter, setStatusFilter] = useState<"ALL" | "Selesai" | "Disetujui" | "Ditolak">("ALL");
   const [customStartDate, setCustomStartDate] = useState<string>("");
   const [customEndDate, setCustomEndDate] = useState<string>("");
   const [searchQuery, setSearchQuery] = useState<string>("");
@@ -276,11 +275,7 @@ export default function HistoryPage() {
 
       // 2. Filter Status Ijin Kerja
       if (statusFilter !== "ALL") {
-        if (statusFilter === "PENDING") {
-          if (!req.status?.startsWith("Menunggu")) return false;
-        } else if (req.status !== statusFilter) {
-          return false;
-        }
+        if (req.status !== statusFilter) return false;
       }
 
       // 3. Filter Periode Waktu
@@ -362,9 +357,8 @@ export default function HistoryPage() {
     else if (timePeriod === "custom") periodLabel = "Rentang Kustom";
 
     let statusLabel = "Semua Status";
-    if (statusFilter === "Disetujui") statusLabel = "Disetujui";
+    if (statusFilter === "Disetujui") statusLabel = "Habis Kontrak";
     else if (statusFilter === "Selesai") statusLabel = "Selesai";
-    else if (statusFilter === "PENDING") statusLabel = "Menunggu Approval";
     else if (statusFilter === "Ditolak") statusLabel = "Ditolak";
 
     let customRange = "";
@@ -685,26 +679,7 @@ export default function HistoryPage() {
                   </span>
                 </button>
 
-                {/* Menunggu / Pending */}
-                <button
-                  type="button"
-                  onClick={() => setStatusFilter("PENDING")}
-                  className={cn(
-                    "inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer",
-                    statusFilter === "PENDING"
-                      ? "bg-[#162f65] text-white shadow-xs"
-                      : "bg-white text-slate-700 border border-slate-200 hover:bg-slate-50"
-                  )}
-                >
-                  <Hourglass size={13} className={statusFilter === "PENDING" ? "text-white" : "text-amber-600"} />
-                  <span>Menunggu / Pending</span>
-                  <span className={cn(
-                    "px-1.5 py-0.2 rounded-full text-[10px] font-mono font-bold",
-                    statusFilter === "PENDING" ? "bg-white/20 text-white" : "bg-slate-100 text-slate-600"
-                  )}>
-                    {statusCounts.pending}
-                  </span>
-                </button>
+                
 
                 {/* Ditolak */}
                 <button
@@ -807,10 +782,10 @@ export default function HistoryPage() {
                         <td className="px-5 py-4 text-sm font-medium text-gray-700">{req.jenisPekerjaan}</td>
                         <td className="px-5 py-4 text-sm text-gray-500">{req.lokasi}</td>
                         <td className="px-5 py-4 text-sm text-gray-500 whitespace-nowrap">
-                          <div className="font-medium text-gray-800">{req.mulaiKerja} s.d {req.selesaiKerja}</div>
+                          <div className="font-medium text-gray-800">{formatDateDDMMYY(req.mulaiKerja)} s/d {formatDateDDMMYY(req.selesaiKerja)}</div>
                           {req.requestType === 'Perpanjangan' && req.cumulativeStartDate && (
                             <div className="text-[11px] font-semibold text-amber-700 mt-0.5 flex items-center gap-1">
-                              <span>Kumulatif: {req.cumulativeStartDate} s.d {req.cumulativeEndDate}</span>
+                              <span>Kumulatif: {formatDateDDMMYY(req.cumulativeStartDate)} s/d {formatDateDDMMYY(req.cumulativeEndDate)}</span>
                               <span className="text-[10px] bg-amber-100 text-amber-800 px-1 rounded">
                                 {calculateInclusiveDays(req.cumulativeStartDate, req.cumulativeEndDate)} Hari
                               </span>
@@ -937,10 +912,10 @@ export default function HistoryPage() {
                   
                   <div className="pt-3 border-t border-gray-100 flex items-center justify-between">
                     <div className="text-xs">
-                      <div className="font-medium text-gray-800">{req.mulaiKerja} s.d {req.selesaiKerja}</div>
+                      <div className="font-medium text-gray-800">{formatDateDDMMYY(req.mulaiKerja)} s/d {formatDateDDMMYY(req.selesaiKerja)}</div>
                       {req.requestType === 'Perpanjangan' && req.cumulativeStartDate && (
                         <div className="text-[10px] font-semibold text-amber-700 mt-0.5">
-                          Kumulatif: {req.cumulativeStartDate} - {req.cumulativeEndDate} ({calculateInclusiveDays(req.cumulativeStartDate, req.cumulativeEndDate)} Hari)
+                          Kumulatif: {formatDateDDMMYY(req.cumulativeStartDate)} s/d {formatDateDDMMYY(req.cumulativeEndDate)} ({calculateInclusiveDays(req.cumulativeStartDate, req.cumulativeEndDate)} Hari)
                         </div>
                       )}
                     </div>
@@ -1121,7 +1096,7 @@ export default function HistoryPage() {
                           Periode Aktif Fase {selectedRequest.extensionPhase || 1}:
                         </span>
                         <strong className="text-sm text-amber-900 block mt-0.5 font-mono">
-                          {selectedRequest.mulaiKerja} s.d {selectedRequest.selesaiKerja}
+                          {formatDateDDMMYY(selectedRequest.mulaiKerja)} s/d {formatDateDDMMYY(selectedRequest.selesaiKerja)}
                         </strong>
                         <span className="text-amber-800 text-[11px] font-medium block mt-1">
                           Durasi: {calculateInclusiveDays(selectedRequest.mulaiKerja, selectedRequest.selesaiKerja)} Hari Kalender (Maks. 6)
@@ -1130,7 +1105,7 @@ export default function HistoryPage() {
                       <div className="bg-amber-100/70 p-3 rounded-lg border border-amber-300">
                         <span className="text-amber-900 block font-bold">Rentang Kumulatif Proyek:</span>
                         <strong className="text-sm text-amber-950 block mt-0.5 font-mono">
-                          {selectedRequest.cumulativeStartDate} s.d {selectedRequest.cumulativeEndDate}
+                          {formatDateDDMMYY(selectedRequest.cumulativeStartDate)} s/d {formatDateDDMMYY(selectedRequest.cumulativeEndDate)}
                         </strong>
                         <span className="text-amber-900 font-bold text-[11px] block mt-1">
                           Total Durasi Proyek: {calculateInclusiveDays(selectedRequest.cumulativeStartDate, selectedRequest.cumulativeEndDate)} Hari Kalender
@@ -1150,7 +1125,7 @@ export default function HistoryPage() {
                     <div><span className="block text-xs text-gray-500">Tipe Request</span><span className="font-semibold text-gray-900">{selectedRequest.requestType}</span></div>
                     <div><span className="block text-xs text-gray-500">Nama Vendor</span><span className="font-semibold text-gray-900">{selectedRequest.namaKontraktor}</span></div>
                     <div><span className="block text-xs text-gray-500">Lokasi Kerja</span><span className="font-semibold text-gray-900">{selectedRequest.lokasi}</span></div>
-                    <div><span className="block text-xs text-gray-500">Tanggal Pelaksanaan</span><span className="font-semibold text-gray-900">{selectedRequest.mulaiKerja} s.d {selectedRequest.selesaiKerja}</span></div>
+                    <div><span className="block text-xs text-gray-500">Tanggal Pelaksanaan</span><span className="font-semibold text-gray-900">{formatDateDDMMYY(selectedRequest.mulaiKerja)} s/d {formatDateDDMMYY(selectedRequest.selesaiKerja)}</span></div>
                     <div><span className="block text-xs text-gray-500">Jam Kerja</span><span className="font-semibold text-gray-900">{selectedRequest.jamKerjaMulai} - {selectedRequest.jamKerjaAkhir}</span></div>
                     <div><span className="block text-xs text-gray-500">Total Tenaga Kerja</span><span className="font-semibold text-gray-900">{selectedRequest.totalTenagaKerja} Orang</span></div>
                     

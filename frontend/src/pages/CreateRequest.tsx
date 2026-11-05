@@ -110,6 +110,7 @@ export default function CreateRequestPage() {
 
         // Step 4
         jsa: extendState.jsa?.length ? extendState.jsa : [],
+        disclaimerAccepted: false,
       };
     }
 
@@ -305,6 +306,12 @@ export default function CreateRequestPage() {
   };
 
   const handleSubmit = async () => {
+    // Disclaimer acceptance validation (Poin 6)
+    if (!formData.disclaimerAccepted) {
+      setSubmitError("Pernyataan & Disclaimer Keselamatan Kerja (K3) wajib dicentang sebelum mengirimkan pengajuan.");
+      setIsSubmitting(false);
+      return;
+    }
     setIsSubmitting(true);
     setSubmitError("");
 

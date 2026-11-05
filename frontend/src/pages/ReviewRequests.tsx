@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Header } from "@/components/Header";
-import { CheckCircle, XCircle, Clock, Eye, CheckSquare, Search, Briefcase, AlertTriangle, Users, FileCheck, X, Shield, FileText, Printer, Lock, CalendarPlus } from "lucide-react";
-import { cn, calculateInclusiveDays, formatPermitStatus } from "@/lib/utils";
+import { CheckCircle, XCircle, Clock, Eye, CheckSquare, Search, Briefcase, AlertTriangle, Users, FileCheck, X, Shield, Printer, Lock, CalendarPlus } from "lucide-react";
+import { cn, calculateInclusiveDays, formatPermitStatus, formatDateDDMMYY } from "@/lib/utils";
 import { api } from "@/services/api";
 import { auth } from "@/lib/auth";
 import { PrintPermitModal } from "@/components/PrintPermitModal";
@@ -105,6 +105,7 @@ export default function ReviewRequestsPage() {
   const [printPermit, setPrintPermit] = useState<any | null>(null);
   const [closeModal, setCloseModal] = useState<{isOpen: boolean, id: string | null, rawId?: any, notes: string}>({isOpen: false, id: null, notes: ""});
   const [previewPhoto, setPreviewPhoto] = useState<string | null>(null);
+  const [disclaimerChecked, setDisclaimerChecked] = useState(false);
   const role = auth.getRole(); // 'pic_vendor', 'hse', 'ga_dept_head', 'ga_div_head', 'admin'
 
   const fetchQueue = async () => {
@@ -293,10 +294,10 @@ export default function ReviewRequestsPage() {
                         </td>
                         <td className="px-4 py-3.5">
                           <div className="text-gray-800 text-xs truncate max-w-[200px]" title={req.lokasi}>{req.lokasi}</div>
-                          <div className="text-[11px] text-gray-500 mt-0.5 font-medium whitespace-nowrap">{req.mulaiKerja} s/d {req.selesaiKerja}</div>
+                          <div className="text-[11px] text-gray-500 mt-0.5 font-medium whitespace-nowrap">{formatDateDDMMYY(req.mulaiKerja)} s/d {formatDateDDMMYY(req.selesaiKerja)}</div>
                           {req.requestType === 'Perpanjangan' && req.cumulativeStartDate && (
                             <div className="text-[10px] font-semibold text-amber-700 mt-0.5">
-                              Kumulatif: {req.cumulativeStartDate} - {req.cumulativeEndDate} ({calculateInclusiveDays(req.cumulativeStartDate, req.cumulativeEndDate)} Hari)
+                              Kumulatif: {formatDateDDMMYY(req.cumulativeStartDate)} - {formatDateDDMMYY(req.cumulativeEndDate)} ({calculateInclusiveDays(req.cumulativeStartDate, req.cumulativeEndDate)} Hari)
                             </div>
                           )}
                         </td>
@@ -317,7 +318,7 @@ export default function ReviewRequestsPage() {
                               </button>
                             )}
                             <button 
-                              onClick={() => setSelectedRequest(req)}
+                              onClick={() => { setSelectedRequest(req); setDisclaimerChecked(false); }}
                               className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-semibold transition cursor-pointer shadow-2xs"
                             >
                               <Eye size={13} />
@@ -368,11 +369,11 @@ export default function ReviewRequestsPage() {
                         <span className="font-semibold text-gray-700">Lokasi:</span> {req.lokasi}
                       </div>
                       <div className="text-gray-500 flex items-center gap-1">
-                        <span className="font-semibold text-gray-700">Tanggal:</span> {req.mulaiKerja} s/d {req.selesaiKerja}
+                        <span className="font-semibold text-gray-700">Tanggal:</span> {formatDateDDMMYY(req.mulaiKerja)} s/d {formatDateDDMMYY(req.selesaiKerja)}
                       </div>
                       {req.requestType === 'Perpanjangan' && req.cumulativeStartDate && (
                         <div className="text-[10px] font-semibold text-amber-700">
-                          Kumulatif: {req.cumulativeStartDate} - {req.cumulativeEndDate} ({calculateInclusiveDays(req.cumulativeStartDate, req.cumulativeEndDate)} Hari)
+                          Kumulatif: {formatDateDDMMYY(req.cumulativeStartDate)} - {formatDateDDMMYY(req.cumulativeEndDate)} ({calculateInclusiveDays(req.cumulativeStartDate, req.cumulativeEndDate)} Hari)
                         </div>
                       )}
                     </div>
@@ -390,7 +391,7 @@ export default function ReviewRequestsPage() {
                       )}
                       <button 
                         type="button"
-                        onClick={() => setSelectedRequest(req)}
+                        onClick={() => { setSelectedRequest(req); setDisclaimerChecked(false); }}
                         className="flex-1 inline-flex items-center justify-center gap-2 py-2.5 px-4 bg-primary text-on-primary rounded-lg text-xs font-bold transition-all shadow-xs cursor-pointer active:scale-98"
                       >
                         <Eye size={15} /> Buka & Review
@@ -512,7 +513,7 @@ export default function ReviewRequestsPage() {
                           Periode Aktif Fase {selectedRequest.extensionPhase || 1}:
                         </span>
                         <strong className="text-sm text-amber-900 block mt-0.5 font-mono">
-                          {selectedRequest.mulaiKerja} s.d {selectedRequest.selesaiKerja}
+                          {formatDateDDMMYY(selectedRequest.mulaiKerja)} s/d {formatDateDDMMYY(selectedRequest.selesaiKerja)}
                         </strong>
                         <span className="text-amber-800 text-[11px] font-medium block mt-1">
                           Durasi: {calculateInclusiveDays(selectedRequest.mulaiKerja, selectedRequest.selesaiKerja)} Hari Kalender (Maks. 6)
@@ -521,7 +522,7 @@ export default function ReviewRequestsPage() {
                       <div className="bg-amber-100/70 p-3 rounded-lg border border-amber-300">
                         <span className="text-amber-900 block font-bold">Rentang Kumulatif Proyek:</span>
                         <strong className="text-sm text-amber-950 block mt-0.5 font-mono">
-                          {selectedRequest.cumulativeStartDate} s.d {selectedRequest.cumulativeEndDate}
+                          {formatDateDDMMYY(selectedRequest.cumulativeStartDate)} s/d {formatDateDDMMYY(selectedRequest.cumulativeEndDate)}
                         </strong>
                         <span className="text-amber-900 font-bold text-[11px] block mt-1">
                           Total Durasi Proyek: {calculateInclusiveDays(selectedRequest.cumulativeStartDate, selectedRequest.cumulativeEndDate)} Hari Kalender
@@ -541,7 +542,7 @@ export default function ReviewRequestsPage() {
                     <div><span className="block text-xs text-gray-500">Nama Vendor</span><span className="font-semibold text-gray-900">{selectedRequest.kontraktor}</span></div>
                     <div><span className="block text-xs text-gray-500">Jenis Pekerjaan</span><span className="font-semibold text-gray-900">{selectedRequest.jenisPekerjaan}</span></div>
                     <div><span className="block text-xs text-gray-500">Lokasi Kerja</span><span className="font-semibold text-gray-900">{selectedRequest.lokasi}</span></div>
-                    <div><span className="block text-xs text-gray-500">Tanggal Pelaksanaan</span><span className="font-semibold text-gray-900">{selectedRequest.mulaiKerja} s.d {selectedRequest.selesaiKerja}</span></div>
+                    <div><span className="block text-xs text-gray-500">Tanggal Pelaksanaan</span><span className="font-semibold text-gray-900">{formatDateDDMMYY(selectedRequest.mulaiKerja)} s/d {formatDateDDMMYY(selectedRequest.selesaiKerja)}</span></div>
                     <div><span className="block text-xs text-gray-500">Jam Kerja</span><span className="font-semibold text-gray-900">{selectedRequest.jamKerjaMulai} - {selectedRequest.jamKerjaAkhir}</span></div>
                     <div><span className="block text-xs text-gray-500">Total Tenaga Kerja</span><span className="font-semibold text-gray-900">{selectedRequest.pekerja.length} Orang</span></div>
                     
@@ -697,13 +698,22 @@ export default function ReviewRequestsPage() {
                 
                 {/* 5. Deklarasi */}
                 <section>
-                  <div className="bg-info-container/20 p-5 rounded-xl border border-info-container/40 flex items-start gap-3">
-                    <FileText className="text-info shrink-0 mt-0.5" size={20} />
-                    <p className="text-sm text-gray-800 leading-relaxed">
-                      <strong className="block text-info mb-1 text-base">Pernyataan Reviewer:</strong>
-                      Dengan menekan tombol <strong>Setujui Dokumen</strong> di bawah, saya menyatakan telah memeriksa persyaratan K3 (HSE) / kelengkapan administrasi (GA) secara menyeluruh. Saya bertanggung jawab atas verifikasi dokumen ini dan mengizinkan pekerjaan dilanjutkan ke tahap berikutnya sesuai dengan prosedur keselamatan perusahaan.
-                    </p>
-                  </div>
+                  <label className="bg-blue-50/80 p-4 sm:p-5 rounded-xl border-2 border-blue-200 hover:border-blue-300 flex items-start gap-3 cursor-pointer select-none transition-all">
+                    <input
+                      type="checkbox"
+                      id="reviewer-disclaimer-checkbox"
+                      checked={disclaimerChecked}
+                      onChange={(e) => setDisclaimerChecked(e.target.checked)}
+                      className="w-4 h-4 mt-1 text-primary border-blue-300 rounded focus:ring-primary cursor-pointer shrink-0"
+                    />
+                    <div className="text-xs text-slate-800 leading-relaxed">
+                      <strong className="block text-blue-900 mb-1 text-sm font-bold flex items-center gap-1.5">
+                        <FileCheck size={16} className="text-blue-700" />
+                        Pernyataan & Disclaimer Otorisasi Reviewer (Wajib Dicentang)
+                      </strong>
+                      Saya menyatakan telah memeriksa persyaratan K3 (HSE), kesiapan pekerja, dan kelengkapan dokumen ijin kerja ini secara seksama. Dengan mencentang pernyataan ini, saya bertanggung jawab atas verifikasi dokumen ini dan mengotorisasi pekerjaan untuk dilanjutkan ke tahap berikutnya sesuai wewenang saya.
+                    </div>
+                  </label>
                 </section>
 
               </div>
@@ -761,7 +771,14 @@ export default function ReviewRequestsPage() {
                         </button>
                         <button 
                           onClick={() => handleApprove(selectedRequest.id, selectedRequest.rawId)}
-                          className="flex-1 sm:flex-none px-4 py-2 text-xs sm:text-sm font-bold text-white bg-success rounded-lg hover:opacity-90 flex items-center justify-center gap-1.5 transition-colors shadow-sm cursor-pointer"
+                          disabled={!disclaimerChecked}
+                          className={cn(
+                            "flex-1 sm:flex-none px-4 py-2 text-xs sm:text-sm font-bold rounded-lg flex items-center justify-center gap-1.5 transition-colors shadow-sm",
+                            disclaimerChecked
+                              ? "text-white bg-success hover:opacity-90 cursor-pointer"
+                              : "text-slate-400 bg-slate-200 cursor-not-allowed shadow-none"
+                          )}
+                          title={!disclaimerChecked ? "Harap centang Disclaimer & Pernyataan Reviewer terlebih dahulu" : "Setujui Dokumen"}
                         >
                           <CheckCircle size={16} /> Setujui
                         </button>

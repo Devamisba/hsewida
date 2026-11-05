@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { format, addDays, isBefore, startOfToday } from "date-fns";
 import { ClipboardList, HardHat, Building2, CalendarClock } from "lucide-react";
-import { cn, calculateInclusiveDays } from "@/lib/utils";
+import { cn, calculateInclusiveDays, formatDateDDMMYY } from "@/lib/utils";
 import { api } from "@/services/api";
 import { auth } from "@/lib/auth";
 
@@ -246,7 +246,7 @@ export function Step1DataKontraktor({ data, updateData }: { data: any, updateDat
                     <span className="text-[10px] text-slate-500 block mt-0.5">
                       {data.extensionPhase && data.extensionPhase > 1 && data.parentPermitNumber && data.parentPermitNumber !== data.rootPermitNumber
                         ? `Lanjutan dari: ${data.parentPermitNumber}`
-                        : (data.parentStartDate ? `Masa Awal: ${data.rootStartDate || data.parentStartDate}` : "Telah diverifikasi")}
+                        : (data.parentStartDate ? `Masa Awal: ${formatDateDDMMYY(data.rootStartDate || data.parentStartDate)}` : "Telah diverifikasi")}
                     </span>
                   </div>
 
@@ -255,7 +255,7 @@ export function Step1DataKontraktor({ data, updateData }: { data: any, updateDat
                       Periode Aktif {data.extensionPhase ? `Fase ${data.extensionPhase}` : "Lanjutan"}
                     </span>
                     <strong className="text-blue-900 text-xs block">
-                      {data.mulaiKerja ? `${data.mulaiKerja} s/d ${data.selesaiKerja || '...'}` : 'Pilih tanggal'}
+                      {data.mulaiKerja ? `${formatDateDDMMYY(data.mulaiKerja)} s/d ${formatDateDDMMYY(data.selesaiKerja)}` : 'Pilih tanggal'}
                     </strong>
                     <span className="text-[10px] text-slate-500 block mt-0.5">
                       Durasi Izin: <span className="font-semibold text-blue-700">{calculateInclusiveDays(data.mulaiKerja, data.selesaiKerja)} Hari</span> {maxPermitDays > 0 ? `(Maks. ${maxPermitDays} Hari)` : "(Tanpa Batas)"}
@@ -265,7 +265,7 @@ export function Step1DataKontraktor({ data, updateData }: { data: any, updateDat
                   <div className="bg-amber-100/90 p-2.5 rounded-lg border border-amber-300">
                     <span className="text-[10px] uppercase font-bold text-amber-900 block">Rentang Kumulatif Proyek</span>
                     <strong className="text-amber-950 text-xs font-bold font-mono block">
-                      {data.rootStartDate || data.parentStartDate || data.mulaiKerja || '...'} s/d {data.selesaiKerja || '...'}
+                      {formatDateDDMMYY(data.rootStartDate || data.parentStartDate || data.mulaiKerja)} s/d {formatDateDDMMYY(data.selesaiKerja)}
                     </strong>
                     <span className="text-[10px] text-amber-800 font-semibold block mt-0.5">
                       Total Akumulasi: {calculateInclusiveDays(data.rootStartDate || data.parentStartDate || data.mulaiKerja, data.selesaiKerja)} Hari Kalender

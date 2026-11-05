@@ -24,3 +24,28 @@ export function formatPermitStatus(status?: string | null): string {
   if (status === "Menunggu PIC Vendor") return "Menunggu PIC Widatra";
   return status;
 }
+
+export function formatDateDDMMYY(dateStr?: string | null): string {
+  if (!dateStr) return "-";
+  try {
+    const clean = String(dateStr).slice(0, 10);
+    const parts = clean.split("-");
+    if (parts.length === 3) {
+      const year = parts[0];
+      const month = parts[1];
+      const day = parts[2];
+      const yy = year.length === 4 ? year.slice(-2) : year;
+      return `${day}/${month}/${yy}`;
+    }
+    const d = new Date(dateStr);
+    if (!isNaN(d.getTime())) {
+      const dd = String(d.getDate()).padStart(2, "0");
+      const mm = String(d.getMonth() + 1).padStart(2, "0");
+      const yy = String(d.getFullYear()).slice(-2);
+      return `${dd}/${mm}/${yy}`;
+    }
+    return dateStr;
+  } catch {
+    return dateStr || "-";
+  }
+}

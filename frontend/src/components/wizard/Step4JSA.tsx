@@ -1,4 +1,4 @@
-import { AlertTriangle, Plus, Trash2 } from "lucide-react";
+import { AlertTriangle, Plus, Trash2, ShieldCheck } from "lucide-react";
 
 
 export function Step4JSA({ data, updateData }: { data: any, updateData: any }) {
@@ -136,7 +136,7 @@ export function Step4JSA({ data, updateData }: { data: any, updateData: any }) {
         ))}
       </div>
 
-      {/* Unified Add JSA Button at bottom */}
+            {/* Unified Add JSA Button at bottom */}
       <div className="pt-4 flex justify-end">
         <button 
           onClick={addJsaRow}
@@ -145,6 +145,26 @@ export function Step4JSA({ data, updateData }: { data: any, updateData: any }) {
           <Plus size={16} />
           Tambah JSA
         </button>
+      </div>
+
+      {/* Pernyataan & Disclaimer Keselamatan (K3) Pemohon (Wajib Dicentang) */}
+      <div className="pt-6 border-t border-gray-200">
+        <label className="flex items-start gap-3.5 p-4 sm:p-5 rounded-xl border-2 border-blue-200 bg-blue-50/70 hover:border-blue-300 transition-colors cursor-pointer select-none">
+          <input
+            type="checkbox"
+            id="contractor-disclaimer-checkbox"
+            checked={Boolean(data.disclaimerAccepted)}
+            onChange={(e) => updateData({ disclaimerAccepted: e.target.checked })}
+            className="w-4 h-4 mt-1 text-primary border-blue-300 rounded focus:ring-primary cursor-pointer shrink-0"
+          />
+          <div className="text-xs text-slate-800 leading-relaxed">
+            <strong className="block text-blue-900 mb-1 text-sm font-bold flex items-center gap-1.5">
+              <ShieldCheck size={16} className="text-blue-700 shrink-0" />
+              Pernyataan &amp; Disclaimer Keselamatan Kerja (K3) Pemohon (Wajib Dicentang)
+            </strong>
+            Saya menyatakan dengan sadar dan bertanggung jawab bahwa seluruh informasi, identifikasi potensi bahaya pekerjaan (Job Safety Analysis / JSA), data personel tenaga kerja, serta kelengkapan Alat Pelindung Diri (APD) yang diajukan dalam formulir ini telah sesuai dengan kondisi aktual di lapangan. Seluruh pekerja bersedia mematuhi Standard Operating Procedure (SOP) dan peraturan K3 PT Widatra Bhakti.
+          </div>
+        </label>
       </div>
 
     </div>

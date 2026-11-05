@@ -20,6 +20,8 @@ export default function DashboardPage() {
   });
   const navigate = useNavigate();
   const userName = auth.getUser()?.name || "Mitra Rekanan PT Widatra Bhakti";
+  const userRole = auth.getRole();
+  const isVendorRole = ["pemohon", "vendor", "kontraktor", "contractor"].includes((userRole || "").toLowerCase().trim());
 
   useEffect(() => {
     const fetchDashboard = async (period = chartPeriod) => {
@@ -73,7 +75,7 @@ export default function DashboardPage() {
   <div className="flex items-center gap-2 bg-rose-50 border border-rose-200 text-rose-600 p-3 rounded-md mb-4">
     <AlertTriangle size={20} />
     <span className="font-medium">Ada izin yang akan berakhir dalam 3 hari ke depan. Segera periksa dan perpanjang!</span>
-    <button onClick={() => navigate('/history', { state: { filterExpiringSoon: true } })} className="ml-auto text-rose-600 hover:underline font-semibold">
+    <button onClick={() => navigate(isVendorRole ? '/my-requests' : '/history', { state: { filterExpiringSoon: true } })} className="ml-auto text-rose-600 hover:underline font-semibold">
       Lihat Detail
     </button>
   </div>
@@ -131,7 +133,7 @@ export default function DashboardPage() {
                 </button>
 
                 <button 
-                  onClick={() => navigate('/history')}
+                  onClick={() => navigate(isVendorRole ? '/my-requests' : '/history')}
                   className="group bg-white border border-gray-200 text-gray-800 p-4 sm:p-5 rounded-xl shadow-xs hover:border-gray-300 hover:bg-gray-50/70 transition-all flex items-center justify-between text-left cursor-pointer active:scale-[0.99]"
                 >
                   <div className="flex items-center gap-3.5">

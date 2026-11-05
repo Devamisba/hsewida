@@ -1,9 +1,9 @@
 import { useRef, useState, useEffect } from "react";
-import { X, Printer, ShieldCheck, Download, Loader2, FileText, Lock, AlertTriangle } from "lucide-react";
+import { X, Printer, Download, Loader2, FileText, Lock, AlertTriangle } from "lucide-react";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas-pro";
 import { QRCodeSVG } from "./QRCodeSVG";
-import { cn, calculateInclusiveDays, formatPermitStatus } from "@/lib/utils";
+import { cn, calculateInclusiveDays, formatPermitStatus, formatDateDDMMYY } from "@/lib/utils";
 
 interface PrintPermitModalProps {
   permit: any;
@@ -242,30 +242,60 @@ export function PrintPermitModal({ permit, onClose }: PrintPermitModalProps) {
               className="p-6 sm:p-10 md:p-12 text-slate-900 bg-white font-sans space-y-6 border border-slate-200 rounded-xl shadow-sm print:border-none print:shadow-none print:p-0"
             >
               
-              {/* Document Header */}
-              <div className="border-b-2 border-slate-900 pb-4 flex justify-between items-start">
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2">
-                    <ShieldCheck size={28} className="text-blue-700" />
-                    <h1 className="text-2xl font-black uppercase tracking-tight">PT WIDATRA BHAKTI</h1>
+              {/* Document Control Header (Format Resmi Standar Pabrik PT Widatra Bhakti) */}
+              <div className="border-2 border-slate-900 rounded-xl overflow-hidden mb-2">
+                <div className="grid grid-cols-12 divide-x-2 divide-slate-900 bg-slate-50 text-slate-900">
+                  {/* Left: Company & Dept info */}
+                  <div className="col-span-12 sm:col-span-5 p-3 sm:p-4 flex items-center gap-3">
+                    <div className="w-12 h-12 rounded-xl bg-blue-900 text-white flex items-center justify-center shrink-0 shadow-xs font-black text-xl">
+                      WB
+                    </div>
+                    <div>
+                      <h1 className="text-base sm:text-lg font-black uppercase tracking-tight text-slate-900">
+                        PT WIDATRA BHAKTI
+                      </h1>
+                      <p className="text-[10px] font-bold text-blue-900 uppercase">
+                        Departemen K3 &amp; Keselamatan Lingkungan (HSE)
+                      </p>
+                      <p className="text-[9px] text-slate-500 leading-tight">
+                        Pandaan - Pasuruan, Jawa Timur | Telp Darurat: 112 / (0343) 631000
+                      </p>
+                    </div>
                   </div>
-                  <p className="text-xs font-bold text-slate-600">DEPARTEMEN KESEHATAN, KESELAMATAN KERJA & LINGKUNGAN (HSE)</p>
-                  <p className="text-[11px] text-slate-500">Jl. Raya Pandaan - Bangil, Pasuruan, Jawa Timur — Telepon Darurat: 112 / (0343) 631000</p>
-                </div>
 
-                <div className="text-right border-2 border-slate-900 p-2.5 rounded-xl bg-slate-50 flex items-center gap-3">
-                  {(permit.qrToken || permit.qr_code_token) && (
-                    <div className="bg-white p-1 rounded-lg border border-slate-300 shrink-0">
-                      <QRCodeSVG value={permit.qrToken || permit.qr_code_token} size={48} />
-                    </div>
-                  )}
-                  <div>
-                    <div className="text-[10px] uppercase font-bold text-slate-500">
-                      SURAT IJIN KERJA AMAN {extensionPhase > 0 ? `(PERPANJANGAN KE-${extensionPhase})` : ""}
-                    </div>
-                    <div className="text-base font-black font-mono text-blue-900">{permit.id || permit.permit_number}</div>
-                    <div className={cn("text-[10px] font-bold", isApproved ? "text-emerald-700" : "text-amber-700")}>
-                      STATUS: {permit.status?.toUpperCase() || (isApproved ? 'DISETUJUI' : 'DRAFT')}
+                  {/* Center: Title & SIKA Number */}
+                  <div className="col-span-12 sm:col-span-4 p-3 sm:p-4 flex flex-col justify-center text-center bg-white border-t-2 sm:border-t-0 border-slate-900">
+                    <span className="text-[10px] font-extrabold uppercase text-slate-500 tracking-wider">
+                      FORMULIR SISTEM MANAJEMEN K3 (SMK3)
+                    </span>
+                    <h2 className="text-sm sm:text-base font-black uppercase text-blue-950 tracking-tight">
+                      SURAT IJIN KERJA AMAN (SIKA)
+                    </h2>
+                    <span className="text-[10px] font-mono font-bold text-slate-600">
+                      {permit.id || permit.permit_number || "SIKA-WB-2026"}
+                    </span>
+                    {isExtension && (
+                      <span className="mt-0.5 inline-block text-[9px] font-bold text-amber-800 bg-amber-100 border border-amber-300 px-1.5 py-0.2 rounded-full mx-auto">
+                        Perpanjangan Ke-{extensionPhase || 1}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Right: Document Control Box & QR */}
+                  <div className="col-span-12 sm:col-span-3 p-2.5 sm:p-3 text-[9px] flex items-center justify-between sm:flex-col sm:justify-center sm:items-center text-center bg-slate-50 border-t-2 sm:border-t-0 border-slate-900">
+                    {(permit.qrToken || permit.qr_code_token) ? (
+                      <div className="bg-white p-1 rounded-md border border-slate-300 shadow-2xs mb-1">
+                        <QRCodeSVG value={permit.qrToken || permit.qr_code_token} size={42} />
+                      </div>
+                    ) : (
+                      <div className="text-[9px] font-mono text-slate-400 mb-1">PTWB-VERIFIED</div>
+                    )}
+                    <div className="text-left sm:text-center font-mono space-y-0.5 text-slate-700">
+                      <div><strong>No. Dok:</strong> WB-HSE-FM-01</div>
+                      <div><strong>Revisi:</strong> 02 | <strong>Tgl:</strong> 01/01/26</div>
+                      <div className={cn("font-bold text-[9px] uppercase", isApproved ? "text-emerald-700" : "text-amber-700")}>
+                        ● {isApproved ? "DISETUJUI RESMI" : "DRAFT PENGAJUAN"}
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -289,12 +319,12 @@ export function PrintPermitModal({ permit, onClose }: PrintPermitModalProps) {
                 <span className="text-slate-500 block">
                   Masa Berlaku Ijin {extensionPhase > 0 ? `(Fase ${extensionPhase} Aktif)` : "(Periode Aktif)"}:
                 </span>
-                <strong>{permit.mulaiKerja} s/d {permit.selesaiKerja} ({permit.jamKerjaMulai} - {permit.jamKerjaAkhir} WIB)</strong>
+                <strong>{formatDateDDMMYY(permit.mulaiKerja)} s/d {formatDateDDMMYY(permit.selesaiKerja)} ({permit.jamKerjaMulai} - {permit.jamKerjaAkhir} WIB)</strong>
                 {isExtension && (
                   <div className="mt-1.5 p-2 bg-amber-50/90 border border-amber-200 rounded-md text-[11px] text-amber-900 leading-tight">
                     <div className="font-bold flex items-center gap-1.5 flex-wrap">
                       <span>Rentang Kumulatif Proyek:</span>
-                      <span className="font-mono text-amber-950 underline">{cumulativeStart} s/d {cumulativeEnd}</span>
+                      <span className="font-mono text-amber-950 underline">{formatDateDDMMYY(cumulativeStart)} s/d {formatDateDDMMYY(cumulativeEnd)}</span>
                       <span className="bg-amber-200 text-amber-900 px-1.5 py-0.5 rounded text-[10px] font-semibold">
                         Total {cumulativeDays} Hari Kalender
                       </span>
@@ -387,10 +417,34 @@ export function PrintPermitModal({ permit, onClose }: PrintPermitModalProps) {
             </table>
           </div>
 
-          {/* 4. Four Sign-off Approval Boxes */}
+                    {/* IV. Pernyataan & Disclaimer Keselamatan K3 (Dicentang [✓]) */}
+          <div className="border-2 border-blue-900/30 bg-blue-50/60 rounded-xl p-3.5 text-xs space-y-2">
+            <div className="flex items-center gap-2 text-blue-950 font-bold text-xs uppercase tracking-wide">
+              <span className="w-5 h-5 rounded-md bg-emerald-600 text-white flex items-center justify-center text-xs font-black shrink-0">
+                ✓
+              </span>
+              <span>IV. PERNYATAAN &amp; DISCLAIMER KESELAMATAN (K3) TELAH DICENTANG &amp; DISETUJUI</span>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-[11px] text-slate-700 leading-snug">
+              <div className="p-2.5 bg-white/90 rounded-lg border border-blue-150">
+                <span className="font-bold text-blue-900 block mb-0.5 flex items-center gap-1">
+                  <span className="text-emerald-700 font-bold">☑</span> Pernyataan Pemohon / Kontraktor Pelaksana:
+                </span>
+                Telah membaca, memahami, dan menyetujui seluruh ketentuan K3 PT Widatra Bhakti. Pekerjaan akan dilaksanakan sesuai prosedur aman, JSA terlampir, dan APD wajib digunakan secara disiplin selama berada di area pabrik.
+              </div>
+              <div className="p-2.5 bg-white/90 rounded-lg border border-blue-150">
+                <span className="font-bold text-blue-900 block mb-0.5 flex items-center gap-1">
+                  <span className="text-emerald-700 font-bold">☑</span> Pernyataan Otorisasi Reviewer &amp; HSE PT Widatra Bhakti:
+                </span>
+                Telah memeriksa persyaratan teknis, kesiapan pekerja, dan kelayakan mitigasi bahaya di lapangan. Surat Ijin Kerja Aman ini diotorisasi secara digital dan sah berlaku sesuai masa berlakunya.
+              </div>
+            </div>
+          </div>
+
+          {/* V. Four Sign-off Approval Boxes */}
           <div className="border border-slate-300 rounded-xl overflow-hidden text-xs">
             <div className="bg-slate-100 font-bold px-4 py-2 border-b border-slate-300 uppercase tracking-wider text-slate-800">
-              IV. PENGESAHAN & PERSETUJUAN OTORISASI BERJENJANG
+              V. PENGESAHAN & PERSETUJUAN OTORISASI BERJENJANG
             </div>
             <div className="grid grid-cols-4 divide-x divide-slate-300 text-center">
               <div className="p-3 space-y-8">
