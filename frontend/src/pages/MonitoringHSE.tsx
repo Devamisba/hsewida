@@ -21,7 +21,6 @@ import {
   Tag,
   X,
   Layers,
-  ClipboardCheck,
   Edit3,
   Trash2
 } from "lucide-react";
@@ -35,14 +34,12 @@ import { RecordRefillModal } from "@/components/RecordRefillModal";
 import { QrScanFieldModal } from "@/components/QrScanFieldModal";
 import { RefillQueueModal } from "@/components/RefillQueueModal";
 import { FacilityDetailActionModal } from "@/components/FacilityDetailActionModal";
-import { InspectionDataTable } from "@/components/InspectionDataTable";
 import { syncGeofenceFromSettingsMap } from "@/utils/facilityCoordinates";
 import { api, SafetyFacility, AlertsSummary } from "@/services/api";
 
 const TABS = [
   { id: "all", label: "Semua Unit", icon: ShieldCheck },
   { id: "apar", label: "APAR", icon: Flame },
-  { id: "inspeksi", label: "Inspeksi", icon: ClipboardCheck },
   { id: "hydrant", label: "Hydrant", icon: Droplet },
   { id: "emergency", label: "Pintu Emergency", icon: DoorOpen },
   { id: "p3k", label: "P3K", icon: Cross },
@@ -140,8 +137,6 @@ export default function MonitoringHSEPage() {
         if (res.success) {
           setSpiData(res.data);
         }
-      } else if (activeTab === "inspeksi") {
-        // Handled internally by InspectionDataTable
       } else {
         const category = TAB_TO_CATEGORY[activeTab];
         const res = await api.getFacilities(category);
@@ -563,52 +558,36 @@ export default function MonitoringHSEPage() {
             })}
           </div>
 
-          {/* Tab Contents */}
-          {activeTab === "inspeksi" ? (
-            <div id="inspeksi-section" className="flex-1 flex flex-col min-h-[420px]">
-              <InspectionDataTable 
-                onOpenFacilityDetail={handleOpenDetail} 
-                onShowSticker={handleShowSticker}
-                onInspectFacility={(f) => {
-                  if (!f.category || f.category === "apar") {
-                    navigate(`/scan/apar/${f.code}`);
-                  } else {
-                    handleInspect(f, getCategoryTitle(f.category));
-                  }
-                }}
-              />
-            </div>
-          ) : (
-            <div id="facilities-table-section" className="flex-1 flex flex-col bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden min-h-[420px]">
-              {loading ? (
-                <div className="flex-1 flex flex-col items-center justify-center py-24 text-gray-400">
-                  <Loader2 className="w-8 h-8 animate-spin text-primary mb-3" />
-                  <p className="text-sm font-medium">Memuat data fasilitas K3...</p>
-                </div>
-              ) : (
-                <>
-                  {activeTab === "spi" ? (
-                    <SPIMonitoring spiData={spiData} />
-                  ) : (
-                    <FacilityDataTable 
-                      category={activeTab}
-                      facilities={facilities}
-                      statusFilter={statusFilter}
-                      onStatusFilterChange={setStatusFilter}
-                      zoneFilter={zoneFilter}
-                      onZoneFilterChange={setZoneFilter}
-                      refillCount={refillCount}
-                      onOpenRefillQueue={() => setRefillQueueOpen(true)}
-                      onOpenDetail={handleOpenDetail}
-                      onShowSticker={handleShowSticker}
-                      onEdit={handleOpenEdit}
-                      onDelete={handleRequestDelete}
-                    />
-                  )}
-                </>
-              )}
-            </div>
-          )}
+          {/* Tab Contents: Facilities Table or SPI Monitoring */}
+          <div id="facilities-table-section" className="flex-1 flex flex-col bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden min-h-[420px]">
+            {loading ? (
+              <div className="flex-1 flex flex-col items-center justify-center py-24 text-gray-400">
+                <Loader2 className="w-8 h-8 animate-spin text-primary mb-3" />
+                <p className="text-sm font-medium">Memuat data fasilitas K3...</p>
+              </div>
+            ) : (
+              <>
+                {activeTab === "spi" ? (
+                  <SPIMonitoring spiData={spiData} />
+                ) : (
+                  <FacilityDataTable 
+                    category={activeTab}
+                    facilities={facilities}
+                    statusFilter={statusFilter}
+                    onStatusFilterChange={setStatusFilter}
+                    zoneFilter={zoneFilter}
+                    onZoneFilterChange={setZoneFilter}
+                    refillCount={refillCount}
+                    onOpenRefillQueue={() => setRefillQueueOpen(true)}
+                    onOpenDetail={handleOpenDetail}
+                    onShowSticker={handleShowSticker}
+                    onEdit={handleOpenEdit}
+                    onDelete={handleRequestDelete}
+                  />
+                )}
+              </>
+            )}
+          </div>
 
         </div>
       </main>

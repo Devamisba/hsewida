@@ -16,7 +16,8 @@ import {
   X,
   Keyboard,
   MapPin,
-  ChevronDown
+  ChevronDown,
+  ClipboardCheck
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { auth } from "@/lib/auth";
@@ -110,6 +111,12 @@ export const NAVIGATION_CONFIG: NavItem[] = [
         name: "Monitoring K3",
         href: "/monitoring",
         icon: ShieldCheck,
+        roles: ["admin", "hse", "pic_k3"],
+      },
+      {
+        name: "Inspeksi K3",
+        href: "/inspeksi",
+        icon: ClipboardCheck,
         roles: ["admin", "hse", "pic_k3"],
       },
       {
