@@ -205,6 +205,14 @@ export function InspectionDataTable({
     if (!dateStr) return "-";
     try {
       const d = new Date(dateStr);
+      const hasTime = dateStr.includes(":") || (dateStr.includes("T") && dateStr.length > 10);
+      if (!hasTime) {
+        return d.toLocaleDateString("id-ID", {
+          day: "numeric",
+          month: "short",
+          year: "numeric",
+        });
+      }
       return d.toLocaleDateString("id-ID", {
         day: "numeric",
         month: "short",

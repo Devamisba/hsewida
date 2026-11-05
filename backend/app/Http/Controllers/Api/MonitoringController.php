@@ -398,7 +398,7 @@ class MonitoringController extends Controller
                 'check_status_label' => $checkStatusLabel,
                 // Latest inspection details (if inspected)
                 'inspection_id' => $latest?->id,
-                'inspection_date' => $latest?->inspection_date ?? $latest?->created_at,
+                'inspection_date' => $latest?->created_at ? $latest->created_at->format('Y-m-d H:i:s') : $latest?->inspection_date,
                 'inspector_name' => $latest?->inspector_name ?? ($latest?->inspector?->name ?? null),
                 'pic_name' => $latest?->pic_name ?? null,
                 'tipe_checklist' => $latest?->tipe_checklist,
@@ -407,7 +407,7 @@ class MonitoringController extends Controller
                 'inspection_stage' => $latest?->inspection_stage,
                 'verification_status' => $latest?->verification_status,
                 'verification_notes' => $latest?->verification_notes,
-                'verified_at' => $latest?->verified_at,
+                'verified_at' => $latest?->verified_at ? ($latest->verified_at instanceof \Carbon\Carbon ? $latest->verified_at->format('Y-m-d H:i:s') : Carbon::parse($latest->verified_at)->format('Y-m-d H:i:s')) : null,
                 'notes' => $latest?->notes,
                 'foto_bukti' => $latest?->foto_bukti ?? [],
                 // Geofence & Realtime Camera Validation
