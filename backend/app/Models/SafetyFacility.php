@@ -40,6 +40,7 @@ class SafetyFacility extends Model
     protected $appends = [
         'calculated_status',
         'days_until_expired',
+        'expiry_tier',
         'is_overdue',
     ];
 
@@ -139,6 +140,23 @@ class SafetyFacility extends Model
                 return -1 * abs((int)$today->diffInDays($expired));
             }
             return abs((int)$today->diffInDays($expired));
+        }
+        return null;
+    }
+
+    /**
+     * 5-Tier Expiry Horizon for Consumables (Aman >1th, H-1 Thn, H-5 Bln, H-1 Bln, Kadaluarsa).
+     */
+    public function getExpiryTierAttribute(): ?string
+    {
+        if ($this->tipe_item === 'CONSUMABLE') {
+            $days = $this->days_until_expired;
+            if ($days === null) return 'AMAN';
+            if ($days < 0) return 'KADALUARSA';
+            if ($days <= 30) return 'H_1BULAN';
+            if ($days <= 150) return 'H_5BULAN';
+            if ($days <= 365) return 'H_1TAHUN';
+            return 'AMAN';
         }
         return null;
     }

@@ -532,6 +532,7 @@ export interface SafetyFacility {
   status_aktif?: boolean;
   calculated_status?: string;
   days_until_expired?: number | null;
+  expiry_tier?: string;
   is_overdue?: boolean;
   last_inspected_at?: string;
   consumable_cycle?: ConsumableCycle;
@@ -544,6 +545,9 @@ export interface AlertsSummary {
   consumable: {
     total: number;
     aman: number;
+    h_1tahun?: number;
+    h_5bulan?: number;
+    h_1bulan?: number;
     h30: number;
     kadaluarsa: number;
   };

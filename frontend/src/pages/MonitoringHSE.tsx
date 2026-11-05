@@ -349,62 +349,107 @@ export default function MonitoringHSEPage() {
                   </span>
                 </div>
 
-                <div className="grid grid-cols-3 gap-2.5 mt-3 text-center">
-                  {/* 1. Aman (>30h) */}
+                <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 mt-3 text-center">
+                  {/* 1. Aman (>1th) */}
                   <button
                     type="button"
                     onClick={() => handleToggleStatusFilter("AMAN", "CONSUMABLE")}
-                    title="Klik untuk memfilter alat berstatus AMAN (>30 Hari)"
+                    title="Klik untuk memfilter alat berstatus AMAN (> 1 Tahun)"
                     className={cn(
-                      "p-3 rounded-xl border text-center transition-all cursor-pointer select-none",
+                      "p-2.5 rounded-xl border text-center transition-all cursor-pointer select-none",
                       statusFilter === "AMAN"
                         ? "bg-emerald-100 border-emerald-500 ring-2 ring-emerald-500/50 shadow-xs"
                         : "bg-emerald-50/70 border-emerald-100 hover:bg-emerald-100/60 hover:border-emerald-300"
                     )}
                   >
-                    <div className="flex items-center justify-center gap-1 text-xs text-emerald-700 font-semibold mb-1">
-                      <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block" />
-                      Aman (&gt;30h)
+                    <div className="flex items-center justify-center gap-1 text-[11px] text-emerald-700 font-bold mb-0.5 whitespace-nowrap">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block" />
+                      Aman (&gt;1th)
                     </div>
-                    <p className="text-2xl font-bold text-emerald-700">{alertsSummary.consumable?.aman || 0}</p>
+                    <p className="text-xl font-extrabold text-emerald-700">{alertsSummary.consumable?.aman || 0}</p>
+                    <span className="text-[10px] text-emerald-600 font-medium">&gt; 365 Hari</span>
                   </button>
 
-                  {/* 2. H-30 Hari */}
+                  {/* 2. H-1 Tahun */}
                   <button
                     type="button"
-                    onClick={() => handleToggleStatusFilter("MENDEKATI_KADALUARSA", "CONSUMABLE")}
-                    title="Klik untuk memfilter alat mendekati batas kadaluarsa (H-30 Hari)"
+                    onClick={() => handleToggleStatusFilter("H_1TAHUN", "CONSUMABLE")}
+                    title="Klik untuk memfilter alat dalam horizon H-1 Tahun (5-12 Bulan)"
                     className={cn(
-                      "p-3 rounded-xl border text-center transition-all cursor-pointer select-none",
-                      statusFilter === "MENDEKATI_KADALUARSA"
+                      "p-2.5 rounded-xl border text-center transition-all cursor-pointer select-none",
+                      statusFilter === "H_1TAHUN"
+                        ? "bg-yellow-100 border-yellow-500 ring-2 ring-yellow-500/50 shadow-xs"
+                        : "bg-yellow-50/70 border-yellow-100 hover:bg-yellow-100/60 hover:border-yellow-300"
+                    )}
+                  >
+                    <div className="flex items-center justify-center gap-1 text-[11px] text-yellow-800 font-bold mb-0.5 whitespace-nowrap">
+                      <span className="w-1.5 h-1.5 rounded-full bg-yellow-500 inline-block" />
+                      H-1 Thn
+                    </div>
+                    <p className="text-xl font-extrabold text-yellow-800">{alertsSummary.consumable?.h_1tahun || 0}</p>
+                    <span className="text-[10px] text-yellow-700 font-medium">5-12 Bln</span>
+                  </button>
+
+                  {/* 3. H-5 Bulan */}
+                  <button
+                    type="button"
+                    onClick={() => handleToggleStatusFilter("H_5BULAN", "CONSUMABLE")}
+                    title="Klik untuk memfilter alat dalam horizon H-5 Bulan (1-5 Bulan)"
+                    className={cn(
+                      "p-2.5 rounded-xl border text-center transition-all cursor-pointer select-none",
+                      statusFilter === "H_5BULAN"
                         ? "bg-amber-100 border-amber-500 ring-2 ring-amber-500/50 shadow-xs"
                         : "bg-amber-50/70 border-amber-100 hover:bg-amber-100/60 hover:border-amber-300"
                     )}
                   >
-                    <div className="flex items-center justify-center gap-1 text-xs text-amber-700 font-semibold mb-1">
-                      <span className="w-2 h-2 rounded-full bg-amber-500 inline-block" />
-                      H-30 Hari
+                    <div className="flex items-center justify-center gap-1 text-[11px] text-amber-800 font-bold mb-0.5 whitespace-nowrap">
+                      <span className="w-1.5 h-1.5 rounded-full bg-amber-500 inline-block" />
+                      H-5 Bln
                     </div>
-                    <p className="text-2xl font-bold text-amber-700">{alertsSummary.consumable?.h30 || 0}</p>
+                    <p className="text-xl font-extrabold text-amber-800">{alertsSummary.consumable?.h_5bulan || 0}</p>
+                    <span className="text-[10px] text-amber-700 font-medium">1-5 Bln</span>
                   </button>
 
-                  {/* 3. Kadaluarsa */}
+                  {/* 4. H-1 Bulan */}
+                  <button
+                    type="button"
+                    onClick={() => handleToggleStatusFilter("MENDEKATI_KADALUARSA", "CONSUMABLE")}
+                    title="Klik untuk memfilter alat mendekati batas kadaluarsa (H-1 Bulan / <30 Hari)"
+                    className={cn(
+                      "p-2.5 rounded-xl border text-center transition-all cursor-pointer select-none",
+                      statusFilter === "MENDEKATI_KADALUARSA" || statusFilter === "H_1BULAN"
+                        ? "bg-orange-100 border-orange-500 ring-2 ring-orange-500/50 shadow-xs"
+                        : "bg-orange-50/70 border-orange-100 hover:bg-orange-100/60 hover:border-orange-300"
+                    )}
+                  >
+                    <div className="flex items-center justify-center gap-1 text-[11px] text-orange-800 font-bold mb-0.5 whitespace-nowrap">
+                      <span className="w-1.5 h-1.5 rounded-full bg-orange-500 inline-block" />
+                      H-1 Bln
+                    </div>
+                    <p className="text-xl font-extrabold text-orange-800">
+                      {alertsSummary.consumable?.h_1bulan ?? alertsSummary.consumable?.h30 ?? 0}
+                    </p>
+                    <span className="text-[10px] text-orange-700 font-medium">&lt; 30 Hari</span>
+                  </button>
+
+                  {/* 5. Kadaluarsa */}
                   <button
                     type="button"
                     onClick={() => handleToggleStatusFilter("KADALUARSA", "CONSUMABLE")}
                     title="Klik untuk memfilter alat yang sudah KADALUARSA"
                     className={cn(
-                      "p-3 rounded-xl border text-center transition-all cursor-pointer select-none",
+                      "p-2.5 rounded-xl border text-center transition-all cursor-pointer select-none",
                       statusFilter === "KADALUARSA"
                         ? "bg-red-100 border-red-500 ring-2 ring-red-500/50 shadow-xs"
                         : "bg-red-50/70 border-red-100 hover:bg-red-100/60 hover:border-red-300"
                     )}
                   >
-                    <div className="flex items-center justify-center gap-1 text-xs text-red-700 font-semibold mb-1">
-                      <span className="w-2 h-2 rounded-full bg-red-500 inline-block" />
+                    <div className="flex items-center justify-center gap-1 text-[11px] text-red-700 font-bold mb-0.5 whitespace-nowrap">
+                      <span className="w-1.5 h-1.5 rounded-full bg-red-500 inline-block" />
                       Kadaluarsa
                     </div>
-                    <p className="text-2xl font-bold text-red-700">{alertsSummary.consumable?.kadaluarsa || 0}</p>
+                    <p className="text-xl font-extrabold text-red-700">{alertsSummary.consumable?.kadaluarsa || 0}</p>
+                    <span className="text-[10px] text-red-600 font-medium">&lt; 0 Hari</span>
                   </button>
                 </div>
               </div>
@@ -784,8 +829,11 @@ function FacilityDataTable({
 
   const getStatusLabel = (status: string) => {
     switch (status) {
-      case "AMAN": return "Aman (>30h)";
-      case "MENDEKATI_KADALUARSA": return "H-30 Hari";
+      case "AMAN": return "Aman (> 1 Tahun)";
+      case "H_1TAHUN": return "H-1 Tahun (5-12 Bulan)";
+      case "H_5BULAN": return "H-5 Bulan (1-5 Bulan)";
+      case "MENDEKATI_KADALUARSA":
+      case "H_1BULAN": return "H-1 Bulan (< 30 Hari)";
       case "KADALUARSA": return "Kadaluarsa";
       case "BAIK": return "Kondisi Baik";
       case "PERLU_PERHATIAN": return "Perhatian";
@@ -812,20 +860,41 @@ function FacilityDataTable({
 
     // Status filter from summary cards
     if (statusFilter) {
-      const s = (f.calculated_status || f.status || "").toUpperCase();
       if (statusFilter === "AMAN") {
-        if (s !== "AMAN" && s !== "GOOD") return false;
-      } else if (statusFilter === "MENDEKATI_KADALUARSA") {
-        if (s !== "MENDEKATI_KADALUARSA" && s !== "H-30" && s !== "WARNING") return false;
+        if (f.tipe_item === "CONSUMABLE") {
+          const days = f.days_until_expired;
+          if (days !== null && days !== undefined && days <= 365) return false;
+        } else {
+          const s = (f.calculated_status || f.status || "").toUpperCase();
+          if (s !== "AMAN" && s !== "GOOD" && s !== "BAIK") return false;
+        }
+      } else if (statusFilter === "H_1TAHUN") {
+        if (f.tipe_item !== "CONSUMABLE") return false;
+        const days = f.days_until_expired;
+        if (days === null || days === undefined || days <= 150 || days > 365) return false;
+      } else if (statusFilter === "H_5BULAN") {
+        if (f.tipe_item !== "CONSUMABLE") return false;
+        const days = f.days_until_expired;
+        if (days === null || days === undefined || days <= 30 || days > 150) return false;
+      } else if (statusFilter === "MENDEKATI_KADALUARSA" || statusFilter === "H_1BULAN") {
+        if (f.tipe_item !== "CONSUMABLE") return false;
+        const days = f.days_until_expired;
+        if (days === null || days === undefined || days < 0 || days > 30) return false;
       } else if (statusFilter === "KADALUARSA") {
-        if (s !== "KADALUARSA" && s !== "EXPIRED" && s !== "CRITICAL") return false;
+        if (f.tipe_item !== "CONSUMABLE") return false;
+        const days = f.days_until_expired;
+        if (days === null || days === undefined || days >= 0) return false;
       } else if (statusFilter === "BAIK") {
+        const s = (f.calculated_status || f.status || "").toUpperCase();
         if (s !== "BAIK" && s !== "GOOD") return false;
       } else if (statusFilter === "PERLU_PERHATIAN") {
+        const s = (f.calculated_status || f.status || "").toUpperCase();
         if (s !== "PERLU_PERHATIAN" && s !== "NEEDS ATTENTION") return false;
       } else if (statusFilter === "RUSAK") {
+        const s = (f.calculated_status || f.status || "").toUpperCase();
         if (s !== "RUSAK" && s !== "CRITICAL") return false;
       } else if (statusFilter === "JADWAL_TERLEWAT") {
+        const s = (f.calculated_status || f.status || "").toUpperCase();
         if (s !== "JADWAL_TERLEWAT" && !f.is_overdue) return false;
       }
     }
@@ -1087,12 +1156,22 @@ function FacilityDataTable({
                               facility.days_until_expired < 0 
                                 ? "text-red-600 font-bold" 
                                 : facility.days_until_expired <= 30 
-                                  ? "text-amber-600 font-bold" 
-                                  : "text-gray-500"
+                                  ? "text-orange-600 font-bold" 
+                                  : facility.days_until_expired <= 150
+                                    ? "text-amber-700 font-semibold"
+                                    : facility.days_until_expired <= 365
+                                      ? "text-yellow-700 font-semibold"
+                                      : "text-emerald-700 font-semibold"
                             )}>
                               {facility.days_until_expired < 0 
                                 ? `Kadaluarsa ${Math.abs(facility.days_until_expired)} hari lalu` 
-                                : `${facility.days_until_expired} hari lagi`}
+                                : facility.days_until_expired <= 30
+                                  ? `H-1 Bln (${facility.days_until_expired} hari lagi)`
+                                  : facility.days_until_expired <= 150
+                                    ? `H-5 Bln (${facility.days_until_expired} hari lagi)`
+                                    : facility.days_until_expired <= 365
+                                      ? `H-1 Thn (${facility.days_until_expired} hari lagi)`
+                                      : `Aman (${facility.days_until_expired} hari lagi)`}
                             </span>
                           )}
                         </div>
@@ -1110,7 +1189,7 @@ function FacilityDataTable({
 
                     {/* Status K3 */}
                     <td className="px-4 py-3 whitespace-nowrap">
-                      <MonitoringStatusBadge status={facility.calculated_status || facility.status} />
+                      <MonitoringStatusBadge status={facility.expiry_tier || facility.calculated_status || facility.status} />
                     </td>
 
                     {/* Action Buttons: Cetak QR + Edit + Kelola & Riwayat + Hapus */}
@@ -1236,11 +1315,27 @@ export function MonitoringStatusBadge({ status }: { status: string }) {
       </span>
     );
   }
-  if (s === "MENDEKATI_KADALUARSA" || s === "H-30" || s === "WARNING" || s === "NEEDS ATTENTION") {
+  if (s === "H_1TAHUN" || s === "H-1 TAHUN") {
     return (
-      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-50 text-amber-700 border border-amber-200">
+      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-yellow-50 text-yellow-800 border border-yellow-200">
+        <span className="w-1.5 h-1.5 rounded-full bg-yellow-500" />
+        H-1 TAHUN
+      </span>
+    );
+  }
+  if (s === "H_5BULAN" || s === "H-5 BULAN") {
+    return (
+      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-50 text-amber-800 border border-amber-200">
         <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
-        H-30 PERHATIAN
+        H-5 BULAN
+      </span>
+    );
+  }
+  if (s === "MENDEKATI_KADALUARSA" || s === "H-30" || s === "H_1BULAN" || s === "H-1 BULAN" || s === "WARNING" || s === "NEEDS ATTENTION") {
+    return (
+      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-orange-50 text-orange-800 border border-orange-200">
+        <span className="w-1.5 h-1.5 rounded-full bg-orange-500" />
+        H-1 BULAN
       </span>
     );
   }

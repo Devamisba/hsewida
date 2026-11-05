@@ -914,9 +914,12 @@ class MonitoringController extends Controller
 
         $consumable = [
             'total' => 0,
-            'aman' => 0,
-            'h30' => 0,
-            'kadaluarsa' => 0,
+            'aman' => 0,          // > 365 hari (> 1 Tahun)
+            'h_1tahun' => 0,      // 151 - 365 hari (5-12 Bulan)
+            'h_5bulan' => 0,      // 31 - 150 hari (1-5 Bulan)
+            'h_1bulan' => 0,      // 0 - 30 hari (< 30 Hari)
+            'h30' => 0,           // alias for backwards compatibility
+            'kadaluarsa' => 0,    // < 0 hari
         ];
 
         $kondisi = [
@@ -930,14 +933,27 @@ class MonitoringController extends Controller
         ];
 
         foreach ($facilities as $f) {
-            $st = $f->calculated_status;
             if ($f->tipe_item === 'CONSUMABLE') {
                 $consumable['total']++;
-                if ($st === 'AMAN') $consumable['aman']++;
-                elseif ($st === 'MENDEKATI_KADALUARSA') $consumable['h30']++;
-                elseif ($st === 'KADALUARSA') $consumable['kadaluarsa']++;
+                $days = $f->days_until_expired;
+
+                if ($days === null) {
+                    $consumable['aman']++;
+                } elseif ($days < 0) {
+                    $consumable['kadaluarsa']++;
+                } elseif ($days <= 30) {
+                    $consumable['h_1bulan']++;
+                    $consumable['h30']++;
+                } elseif ($days <= 150) {
+                    $consumable['h_5bulan']++;
+                } elseif ($days <= 365) {
+                    $consumable['h_1tahun']++;
+                } else {
+                    $consumable['aman']++;
+                }
             } else {
                 $kondisi['total']++;
+                $st = $f->calculated_status;
                 if ($st === 'BAIK') $kondisi['baik']++;
                 elseif ($st === 'PERLU_PERHATIAN') {
                     $kondisi['perlu_perhatian']++;
