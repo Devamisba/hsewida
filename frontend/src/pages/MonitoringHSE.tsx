@@ -349,25 +349,25 @@ export default function MonitoringHSEPage() {
                   </span>
                 </div>
 
-                <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 mt-3 text-center">
+                <div className="grid grid-cols-5 gap-1.5 sm:gap-2 mt-3 text-center">
                   {/* 1. Aman (>1th) */}
                   <button
                     type="button"
                     onClick={() => handleToggleStatusFilter("AMAN", "CONSUMABLE")}
                     title="Klik untuk memfilter alat berstatus AMAN (> 1 Tahun)"
                     className={cn(
-                      "p-2.5 rounded-xl border text-center transition-all cursor-pointer select-none",
+                      "p-1.5 sm:p-2.5 rounded-xl border text-center transition-all cursor-pointer select-none",
                       statusFilter === "AMAN"
                         ? "bg-emerald-100 border-emerald-500 ring-2 ring-emerald-500/50 shadow-xs"
                         : "bg-emerald-50/70 border-emerald-100 hover:bg-emerald-100/60 hover:border-emerald-300"
                     )}
                   >
-                    <div className="flex items-center justify-center gap-1 text-[11px] text-emerald-700 font-bold mb-0.5 whitespace-nowrap">
+                    <div className="flex items-center justify-center gap-1 text-[10px] sm:text-[11px] text-emerald-700 font-bold mb-0.5 whitespace-nowrap">
                       <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block" />
-                      Aman (&gt;1th)
+                      <span className="truncate">Aman</span>
                     </div>
-                    <p className="text-xl font-extrabold text-emerald-700">{alertsSummary.consumable?.aman || 0}</p>
-                    <span className="text-[10px] text-emerald-600 font-medium">&gt; 365 Hari</span>
+                    <p className="text-base sm:text-xl font-extrabold text-emerald-700">{alertsSummary.consumable?.aman || 0}</p>
+                    <span className="text-[9px] sm:text-[10px] text-emerald-600 font-medium whitespace-nowrap block">&gt; 1 Thn</span>
                   </button>
 
                   {/* 2. H-1 Tahun */}
@@ -376,18 +376,18 @@ export default function MonitoringHSEPage() {
                     onClick={() => handleToggleStatusFilter("H_1TAHUN", "CONSUMABLE")}
                     title="Klik untuk memfilter alat dalam horizon H-1 Tahun (5-12 Bulan)"
                     className={cn(
-                      "p-2.5 rounded-xl border text-center transition-all cursor-pointer select-none",
+                      "p-1.5 sm:p-2.5 rounded-xl border text-center transition-all cursor-pointer select-none",
                       statusFilter === "H_1TAHUN"
                         ? "bg-yellow-100 border-yellow-500 ring-2 ring-yellow-500/50 shadow-xs"
                         : "bg-yellow-50/70 border-yellow-100 hover:bg-yellow-100/60 hover:border-yellow-300"
                     )}
                   >
-                    <div className="flex items-center justify-center gap-1 text-[11px] text-yellow-800 font-bold mb-0.5 whitespace-nowrap">
+                    <div className="flex items-center justify-center gap-1 text-[10px] sm:text-[11px] text-yellow-800 font-bold mb-0.5 whitespace-nowrap">
                       <span className="w-1.5 h-1.5 rounded-full bg-yellow-500 inline-block" />
-                      H-1 Thn
+                      <span className="truncate">H-1 Thn</span>
                     </div>
-                    <p className="text-xl font-extrabold text-yellow-800">{alertsSummary.consumable?.h_1tahun || 0}</p>
-                    <span className="text-[10px] text-yellow-700 font-medium">5-12 Bln</span>
+                    <p className="text-base sm:text-xl font-extrabold text-yellow-800">{alertsSummary.consumable?.h_1tahun || 0}</p>
+                    <span className="text-[9px] sm:text-[10px] text-yellow-700 font-medium whitespace-nowrap block">5-12 Bln</span>
                   </button>
 
                   {/* 3. H-5 Bulan */}
@@ -396,18 +396,18 @@ export default function MonitoringHSEPage() {
                     onClick={() => handleToggleStatusFilter("H_5BULAN", "CONSUMABLE")}
                     title="Klik untuk memfilter alat dalam horizon H-5 Bulan (1-5 Bulan)"
                     className={cn(
-                      "p-2.5 rounded-xl border text-center transition-all cursor-pointer select-none",
+                      "p-1.5 sm:p-2.5 rounded-xl border text-center transition-all cursor-pointer select-none",
                       statusFilter === "H_5BULAN"
                         ? "bg-amber-100 border-amber-500 ring-2 ring-amber-500/50 shadow-xs"
                         : "bg-amber-50/70 border-amber-100 hover:bg-amber-100/60 hover:border-amber-300"
                     )}
                   >
-                    <div className="flex items-center justify-center gap-1 text-[11px] text-amber-800 font-bold mb-0.5 whitespace-nowrap">
+                    <div className="flex items-center justify-center gap-1 text-[10px] sm:text-[11px] text-amber-800 font-bold mb-0.5 whitespace-nowrap">
                       <span className="w-1.5 h-1.5 rounded-full bg-amber-500 inline-block" />
-                      H-5 Bln
+                      <span className="truncate">H-5 Bln</span>
                     </div>
-                    <p className="text-xl font-extrabold text-amber-800">{alertsSummary.consumable?.h_5bulan || 0}</p>
-                    <span className="text-[10px] text-amber-700 font-medium">1-5 Bln</span>
+                    <p className="text-base sm:text-xl font-extrabold text-amber-800">{alertsSummary.consumable?.h_5bulan || 0}</p>
+                    <span className="text-[9px] sm:text-[10px] text-amber-700 font-medium whitespace-nowrap block">1-5 Bln</span>
                   </button>
 
                   {/* 4. H-1 Bulan */}
@@ -416,20 +416,20 @@ export default function MonitoringHSEPage() {
                     onClick={() => handleToggleStatusFilter("MENDEKATI_KADALUARSA", "CONSUMABLE")}
                     title="Klik untuk memfilter alat mendekati batas kadaluarsa (H-1 Bulan / <30 Hari)"
                     className={cn(
-                      "p-2.5 rounded-xl border text-center transition-all cursor-pointer select-none",
+                      "p-1.5 sm:p-2.5 rounded-xl border text-center transition-all cursor-pointer select-none",
                       statusFilter === "MENDEKATI_KADALUARSA" || statusFilter === "H_1BULAN"
                         ? "bg-orange-100 border-orange-500 ring-2 ring-orange-500/50 shadow-xs"
                         : "bg-orange-50/70 border-orange-100 hover:bg-orange-100/60 hover:border-orange-300"
                     )}
                   >
-                    <div className="flex items-center justify-center gap-1 text-[11px] text-orange-800 font-bold mb-0.5 whitespace-nowrap">
+                    <div className="flex items-center justify-center gap-1 text-[10px] sm:text-[11px] text-orange-800 font-bold mb-0.5 whitespace-nowrap">
                       <span className="w-1.5 h-1.5 rounded-full bg-orange-500 inline-block" />
-                      H-1 Bln
+                      <span className="truncate">H-1 Bln</span>
                     </div>
-                    <p className="text-xl font-extrabold text-orange-800">
+                    <p className="text-base sm:text-xl font-extrabold text-orange-800">
                       {alertsSummary.consumable?.h_1bulan ?? alertsSummary.consumable?.h30 ?? 0}
                     </p>
-                    <span className="text-[10px] text-orange-700 font-medium">&lt; 30 Hari</span>
+                    <span className="text-[9px] sm:text-[10px] text-orange-700 font-medium whitespace-nowrap block">&lt; 30 Hari</span>
                   </button>
 
                   {/* 5. Kadaluarsa */}
@@ -438,18 +438,18 @@ export default function MonitoringHSEPage() {
                     onClick={() => handleToggleStatusFilter("KADALUARSA", "CONSUMABLE")}
                     title="Klik untuk memfilter alat yang sudah KADALUARSA"
                     className={cn(
-                      "p-2.5 rounded-xl border text-center transition-all cursor-pointer select-none",
+                      "p-1.5 sm:p-2.5 rounded-xl border text-center transition-all cursor-pointer select-none",
                       statusFilter === "KADALUARSA"
                         ? "bg-red-100 border-red-500 ring-2 ring-red-500/50 shadow-xs"
                         : "bg-red-50/70 border-red-100 hover:bg-red-100/60 hover:border-red-300"
                     )}
                   >
-                    <div className="flex items-center justify-center gap-1 text-[11px] text-red-700 font-bold mb-0.5 whitespace-nowrap">
+                    <div className="flex items-center justify-center gap-1 text-[10px] sm:text-[11px] text-red-700 font-bold mb-0.5 whitespace-nowrap">
                       <span className="w-1.5 h-1.5 rounded-full bg-red-500 inline-block" />
-                      Kadaluarsa
+                      <span className="truncate">Expired</span>
                     </div>
-                    <p className="text-xl font-extrabold text-red-700">{alertsSummary.consumable?.kadaluarsa || 0}</p>
-                    <span className="text-[10px] text-red-600 font-medium">&lt; 0 Hari</span>
+                    <p className="text-base sm:text-xl font-extrabold text-red-700">{alertsSummary.consumable?.kadaluarsa || 0}</p>
+                    <span className="text-[9px] sm:text-[10px] text-red-600 font-medium whitespace-nowrap block">&lt; 0 Hari</span>
                   </button>
                 </div>
               </div>
@@ -1056,8 +1056,8 @@ function FacilityDataTable({
         </div>
       )}
 
-      {/* Facilities Table */}
-      <div className="overflow-x-auto p-0">
+      {/* Desktop Facilities Table (>= lg) */}
+      <div className="hidden lg:block overflow-x-auto p-0">
         <table className="w-full text-left text-sm">
           <thead className="bg-gray-50/80 border-b border-gray-100">
             <tr>
@@ -1245,6 +1245,177 @@ function FacilityDataTable({
             )}
           </tbody>
         </table>
+      </div>
+
+      {/* Mobile Facility Cards (< lg) - Touch-friendly card stack, zero horizontal scroll */}
+      <div className="block lg:hidden divide-y divide-gray-100">
+        {filteredFacilities.length === 0 ? (
+          <div className="p-8 text-center text-gray-400">
+            <Inbox className="mx-auto mb-2 text-gray-300" size={32} />
+            <p className="text-sm font-medium text-gray-500">Belum ada unit fasilitas terdaftar pada filter ini.</p>
+            {statusFilter && (
+              <div className="mt-3">
+                <button
+                  type="button"
+                  onClick={() => onStatusFilterChange(null)}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 text-blue-700 hover:bg-blue-100 rounded-lg text-xs font-bold transition-colors cursor-pointer"
+                >
+                  <X size={13} />
+                  Reset Filter Status ({getStatusLabel(statusFilter)})
+                </button>
+              </div>
+            )}
+          </div>
+        ) : (
+          filteredFacilities.map((facility) => {
+            const isConsumable = facility.tipe_item === "CONSUMABLE";
+            const locationName = typeof facility.location === "object" 
+              ? facility.location?.name 
+              : facility.location;
+            const displayName = facility.nama_item || facility.name || facility.code;
+
+            return (
+              <div key={facility.id} className="p-3.5 hover:bg-gray-50/70 transition-colors space-y-2.5">
+                {/* Header: Code, QR Chip, Consumable Tag & Status Badge */}
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex flex-col">
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <span className="font-black text-gray-900 text-sm">{facility.code}</span>
+                      <span className={cn(
+                        "text-[9px] font-bold px-1.5 py-0.5 rounded",
+                        isConsumable 
+                          ? "bg-amber-100 text-amber-800" 
+                          : "bg-blue-100 text-blue-800"
+                      )}>
+                        {isConsumable ? "Consumable" : "Kondisi"}
+                      </span>
+                    </div>
+                    <span className="font-mono text-[10px] text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded flex items-center gap-1 mt-1 w-fit">
+                      <Tag size={9} className="text-gray-400" />
+                      {facility.qr_code_id || `QR-${facility.code}`}
+                    </span>
+                  </div>
+
+                  <div className="shrink-0">
+                    <MonitoringStatusBadge status={facility.expiry_tier || facility.calculated_status || facility.status} />
+                  </div>
+                </div>
+
+                {/* Body Info: Name, Location, Zone, Specs */}
+                <div className="bg-gray-50/70 rounded-lg p-2.5 border border-gray-100 text-xs space-y-1.5">
+                  <div className="font-bold text-gray-900 text-sm">
+                    {displayName}
+                  </div>
+                  <div className="flex items-center gap-1 text-gray-600 flex-wrap">
+                    <MapPin size={11} className="text-rose-500 shrink-0" />
+                    <span className="font-medium">{locationName || "-"}</span>
+                    {facility.area_zone && (
+                      <span className="px-1.5 py-0.2 rounded text-[9px] font-bold uppercase bg-slate-200 text-slate-700 ml-1">
+                        {facility.area_zone}
+                      </span>
+                    )}
+                  </div>
+                  {formatSpecs(facility) !== "-" && (
+                    <div className="text-[11px] text-gray-500">
+                      <span className="font-semibold text-gray-600">Spesifikasi:</span> {formatSpecs(facility)}
+                    </div>
+                  )}
+
+                  {/* Masa Berlaku / Siklus */}
+                  <div className="pt-1 border-t border-gray-200/60 flex items-center justify-between text-[11px] flex-wrap gap-1">
+                    {isConsumable ? (
+                      <>
+                        <span className="text-gray-600 flex items-center gap-1 font-medium">
+                          <Clock size={11} className="text-gray-400" />
+                          Exp: <strong className="text-gray-900">{formatDate(facility.consumable_cycle?.expired_at)}</strong>
+                        </span>
+                        {facility.days_until_expired !== undefined && facility.days_until_expired !== null && (
+                          <span className={cn(
+                            "px-1.5 py-0.5 rounded text-[10px] font-bold",
+                            facility.days_until_expired < 0 
+                              ? "bg-red-100 text-red-700" 
+                              : facility.days_until_expired <= 30 
+                                ? "bg-orange-100 text-orange-700" 
+                                : facility.days_until_expired <= 150
+                                  ? "bg-amber-100 text-amber-800"
+                                  : facility.days_until_expired <= 365
+                                    ? "bg-yellow-100 text-yellow-800"
+                                    : "bg-emerald-100 text-emerald-800"
+                          )}>
+                            {facility.days_until_expired < 0 
+                              ? `Kadaluarsa ${Math.abs(facility.days_until_expired)} hr lalu` 
+                              : facility.days_until_expired <= 30
+                                ? `H-1 Bln (${facility.days_until_expired} hr)`
+                                : facility.days_until_expired <= 150
+                                  ? `H-5 Bln (${facility.days_until_expired} hr)`
+                                  : facility.days_until_expired <= 365
+                                    ? `H-1 Thn (${facility.days_until_expired} hr)`
+                                    : `Aman (${facility.days_until_expired} hr)`}
+                          </span>
+                        )}
+                      </>
+                    ) : (
+                      <>
+                        <span className="text-gray-600 font-medium">
+                          Siklus: Setiap {facility.condition_schedule?.interval_pemeriksaan_hari || 30} Hari
+                        </span>
+                        <span className="text-gray-500 text-[10px]">
+                          Cek: {formatDate(facility.condition_schedule?.terakhir_diperiksa_at || (facility.condition_schedule as any)?.terakhir_diperiksa || facility.last_inspected_at)}
+                        </span>
+                      </>
+                    )}
+                  </div>
+                </div>
+
+                {/* Touch-Friendly Action Buttons */}
+                <div className="flex items-center gap-1.5 pt-1">
+                  <button
+                    type="button"
+                    onClick={() => onShowSticker(facility)}
+                    title={`Cetak QR ${facility.code}`}
+                    className="flex-1 inline-flex items-center justify-center gap-1 py-2 px-2.5 bg-purple-50 text-purple-700 border border-purple-200 hover:bg-purple-100 rounded-lg text-xs font-bold transition cursor-pointer active:scale-95"
+                  >
+                    <QrCode size={13} />
+                    <span>QR</span>
+                  </button>
+
+                  {onEdit && (
+                    <button
+                      type="button"
+                      onClick={() => onEdit(facility)}
+                      title={`Edit Data ${facility.code}`}
+                      className="flex-1 inline-flex items-center justify-center gap-1 py-2 px-2.5 bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 rounded-lg text-xs font-bold transition cursor-pointer active:scale-95"
+                    >
+                      <Edit3 size={13} />
+                      <span>Edit</span>
+                    </button>
+                  )}
+
+                  <button 
+                    type="button"
+                    onClick={() => onOpenDetail(facility)} 
+                    title="Buka Menu Aksi & Riwayat Monitoring"
+                    className="flex-[2] inline-flex items-center justify-center gap-1 py-2 px-3 bg-slate-800 hover:bg-slate-900 text-white rounded-lg text-xs font-bold transition shadow-xs cursor-pointer active:scale-95"
+                  >
+                    <Eye size={13} />
+                    <span>Kelola & Riwayat</span>
+                  </button>
+
+                  {onDelete && (
+                    <button
+                      type="button"
+                      onClick={() => onDelete(facility)}
+                      title={`Hapus ${facility.code}`}
+                      className="inline-flex items-center justify-center p-2 bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 rounded-lg text-xs font-bold transition cursor-pointer active:scale-95"
+                    >
+                      <Trash2 size={13} />
+                    </button>
+                  )}
+                </div>
+              </div>
+            );
+          })
+        )}
       </div>
     </div>
   );

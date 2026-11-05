@@ -29,7 +29,7 @@ export function Step4JSA({ data, updateData }: { data: any, updateData: any }) {
   };
 
   return (
-    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+    <div id="jsa-section" className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="flex items-start gap-4 mb-6 bg-warning-container/30 p-4 rounded-xl border border-warning-container">
         <div className="p-2 bg-warning-container text-on-warning-container rounded-lg">
           <AlertTriangle size={24} />
@@ -45,7 +45,7 @@ export function Step4JSA({ data, updateData }: { data: any, updateData: any }) {
       </div>
 
       {/* Desktop Table */}
-      <div id="jsa-section" className="hidden lg:block overflow-x-auto rounded-xl border border-gray-200">
+      <div className="hidden lg:block overflow-x-auto rounded-xl border border-gray-200">
         <table className="w-full text-left border-collapse">
           <thead>
             <tr className="bg-gray-50 border-b border-gray-200">
@@ -114,7 +114,7 @@ export function Step4JSA({ data, updateData }: { data: any, updateData: any }) {
             
             <div className="space-y-1.5">
               <label className="text-xs font-semibold text-gray-700">Tahapan Pekerjaan</label>
-              <textarea rows={2} value={j.tahapan} onChange={(e) => updateJsaRow(j.id, 'tahapan', e.target.value)} className="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm focus:ring-1 focus:ring-primary" />
+              <textarea id={`jsa-tahapan-${idx}-mobile`} rows={2} value={j.tahapan} onChange={(e) => updateJsaRow(j.id, 'tahapan', e.target.value)} className="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm focus:ring-1 focus:ring-primary" />
             </div>
             <div className="space-y-1.5">
               <label className="text-xs font-semibold text-gray-700">Mesin / Peralatan</label>

@@ -178,7 +178,7 @@ export default function CreateRequestPage() {
   const focusAndScrollToField = (fieldId: string, errorMsg: string) => {
     setSubmitError(errorMsg);
     setTimeout(() => {
-      const el = document.getElementById(fieldId);
+      const el = document.getElementById(fieldId) || document.getElementById(`${fieldId}-mobile`);
       if (el) {
         el.scrollIntoView({ behavior: "smooth", block: "center" });
         if (typeof (el as HTMLElement).focus === "function") {
@@ -462,8 +462,45 @@ export default function CreateRequestPage() {
             </div>
           )}
           
-          {/* Stepper Bar in its own white pill container */}
-          <div className="bg-white rounded-full border border-gray-200 px-6 py-4 shadow-sm mb-6 flex items-center justify-between">
+          {/* Mobile Stepper Header (< md) */}
+          <div className="block md:hidden bg-white rounded-xl border border-gray-200 p-4 shadow-xs mb-4">
+            <div className="flex items-center justify-between text-xs font-bold mb-2">
+              <span className="text-primary uppercase tracking-wider">
+                Langkah {currentStep} dari {steps.length}
+              </span>
+              <span className="text-gray-900 font-extrabold truncate max-w-[200px]">
+                {steps[currentStep - 1]?.title}
+              </span>
+            </div>
+            {/* Progress bar track */}
+            <div className="w-full bg-gray-100 rounded-full h-2 overflow-hidden">
+              <div 
+                className="bg-primary h-2 rounded-full transition-all duration-300 ease-out"
+                style={{ width: `${(currentStep / steps.length) * 100}%` }}
+              />
+            </div>
+            {/* Quick step indicators */}
+            <div className="flex items-center justify-between mt-2.5 px-0.5">
+              {steps.map((s) => (
+                <div 
+                  key={s.id} 
+                  className={cn(
+                    "flex items-center gap-1 text-[10px] font-semibold",
+                    currentStep === s.id ? "text-primary font-bold" : currentStep > s.id ? "text-emerald-600" : "text-gray-400"
+                  )}
+                >
+                  <span className={cn(
+                    "w-2 h-2 rounded-full",
+                    currentStep === s.id ? "bg-primary" : currentStep > s.id ? "bg-emerald-500" : "bg-gray-200"
+                  )} />
+                  <span className="truncate">{s.id}. {s.title.split(" ")[0]}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Desktop Stepper Bar (>= md) */}
+          <div className="hidden md:flex bg-white rounded-full border border-gray-200 px-6 py-4 shadow-sm mb-6 items-center justify-between">
             {steps.map((step, index) => {
               const isActive = currentStep === step.id;
               const isCompleted = currentStep > step.id;
@@ -480,7 +517,7 @@ export default function CreateRequestPage() {
                       {step.id}
                     </div>
                     <span className={cn(
-                      "hidden md:block text-sm font-medium whitespace-nowrap",
+                      "text-sm font-medium whitespace-nowrap",
                       isActive || isCompleted ? "text-gray-900" : "text-gray-400"
                     )}>
                       {step.title}
@@ -489,7 +526,7 @@ export default function CreateRequestPage() {
                   
                   {/* Connector Line */}
                   {index < steps.length - 1 && (
-                    <div className="hidden md:block flex-1 h-px bg-gray-200 mx-4"></div>
+                    <div className="flex-1 h-px bg-gray-200 mx-4"></div>
                   )}
                 </div>
               );

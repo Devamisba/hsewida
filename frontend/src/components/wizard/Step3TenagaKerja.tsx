@@ -101,7 +101,7 @@ export function Step3TenagaKerja({ data, updateData }: { data: any, updateData: 
   };
 
   return (
-    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+    <div id="workers-section" className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 bg-blue-50/60 p-4 rounded-xl border border-blue-100">
         <div className="flex items-start gap-4">
           <div className="p-2 bg-blue-100 text-blue-600 rounded-lg">
@@ -303,6 +303,7 @@ export function Step3TenagaKerja({ data, updateData }: { data: any, updateData: 
             <div className="space-y-1">
               <label className="text-xs font-medium text-gray-600">Nama Lengkap *</label>
               <input 
+                id={`pekerja-nama-${idx}-mobile`}
                 type="text" 
                 required
                 value={p.nama} 
@@ -313,6 +314,7 @@ export function Step3TenagaKerja({ data, updateData }: { data: any, updateData: 
             <div className="space-y-1">
               <label className="text-xs font-medium text-gray-600">Jabatan *</label>
               <input 
+                id={`pekerja-jabatan-${idx}-mobile`}
                 type="text" 
                 required
                 value={p.jabatan} 

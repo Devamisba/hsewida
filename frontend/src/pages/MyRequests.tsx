@@ -288,7 +288,7 @@ export default function MyRequestsPage() {
           {/* Combined Filter & Search Bar */}
           <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-xs space-y-3">
             {/* Filter Pills */}
-            <div className="flex items-center gap-2 overflow-x-auto pb-1">
+            <div className="flex items-center gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
               {/* Semua Status */}
               <button
                 type="button"

@@ -255,7 +255,8 @@ export default function ReviewRequestsPage() {
           </div>
 
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-            <div className="overflow-x-auto">
+            {/* Desktop Table (>= lg) */}
+            <div className="hidden lg:block overflow-x-auto">
               <table className="w-full text-left text-sm whitespace-nowrap">
                 <thead className="bg-gray-50 border-b border-gray-200">
                   <tr>
@@ -336,6 +337,73 @@ export default function ReviewRequestsPage() {
                   )}
                 </tbody>
               </table>
+            </div>
+
+            {/* Mobile Review Cards (< lg) */}
+            <div className="block lg:hidden divide-y divide-gray-100">
+              {filteredRequests.length > 0 ? (
+                filteredRequests.map((req) => (
+                  <div key={req.id} className="p-4 hover:bg-gray-50/70 transition-colors space-y-3">
+                    <div className="flex items-start justify-between gap-2">
+                      <div>
+                        <div className="font-bold text-gray-900 font-mono text-sm">{req.id}</div>
+                        {req.requestType === 'Perpanjangan' && (
+                          <span className="inline-block px-1.5 py-0.2 rounded text-[10px] font-bold bg-amber-50 text-amber-800 border border-amber-200 mt-1">
+                            Perpanjangan Ke-{req.extensionPhase || 1}
+                          </span>
+                        )}
+                      </div>
+                      <span className={cn("inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold shrink-0", getStatusBadge(req.status))}>
+                        <Clock size={11} /> {formatPermitStatus(req.status)}
+                      </span>
+                    </div>
+
+                    <div className="bg-gray-50/80 rounded-lg p-2.5 border border-gray-100 text-xs space-y-1">
+                      <div className="font-bold text-gray-900 text-sm">{req.jenisPekerjaan}</div>
+                      <div className="text-gray-600 font-medium">
+                        {req.kontraktor} <span className="text-gray-400">({req.pekerja.length} Pekerja)</span>
+                      </div>
+                      <div className="text-gray-500 flex items-center gap-1 pt-0.5">
+                        <span className="font-semibold text-gray-700">Lokasi:</span> {req.lokasi}
+                      </div>
+                      <div className="text-gray-500 flex items-center gap-1">
+                        <span className="font-semibold text-gray-700">Tanggal:</span> {req.mulaiKerja} s/d {req.selesaiKerja}
+                      </div>
+                      {req.requestType === 'Perpanjangan' && req.cumulativeStartDate && (
+                        <div className="text-[10px] font-semibold text-amber-700">
+                          Kumulatif: {req.cumulativeStartDate} - {req.cumulativeEndDate} ({calculateInclusiveDays(req.cumulativeStartDate, req.cumulativeEndDate)} Hari)
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="flex items-center gap-2 pt-1">
+                      {req.status === 'Disetujui' && (
+                        <button
+                          type="button"
+                          onClick={() => setPrintPermit(req)}
+                          title="Cetak Dokumen Permit"
+                          className="p-2.5 text-gray-600 hover:text-blue-600 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors cursor-pointer"
+                        >
+                          <Printer size={16} />
+                        </button>
+                      )}
+                      <button 
+                        type="button"
+                        onClick={() => setSelectedRequest(req)}
+                        className="flex-1 inline-flex items-center justify-center gap-2 py-2.5 px-4 bg-primary text-on-primary rounded-lg text-xs font-bold transition-all shadow-xs cursor-pointer active:scale-98"
+                      >
+                        <Eye size={15} /> Buka & Review
+                      </button>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="p-8 text-center text-gray-500">
+                  <CheckSquare size={36} className="mx-auto mb-2 opacity-20" />
+                  <p className="text-sm font-medium text-gray-800">Semua Bersih!</p>
+                  <p className="text-xs text-gray-500 mt-0.5">Tidak ada ijin kerja yang perlu di-review saat ini.</p>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -640,31 +708,31 @@ export default function ReviewRequestsPage() {
               </div>
             </div>
 
-            {/* Footer Modal - Action Buttons */}
-            <div className="p-4 sm:p-6 border-t border-gray-100 bg-white flex flex-wrap justify-between items-center gap-3 shrink-0">
+            {/* Footer Modal - Action Buttons (Mobile-Optimized) */}
+            <div className="p-3.5 sm:p-5 border-t border-gray-100 bg-white flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-2.5 sm:gap-3 shrink-0">
               <div className="flex items-center gap-2">
                 <button
                   type="button"
                   onClick={() => setPrintPermit(selectedRequest)}
-                  className="px-4 py-2.5 text-sm font-bold text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg flex items-center gap-2 transition-colors cursor-pointer"
+                  className="w-full sm:w-auto px-4 py-2 text-xs sm:text-sm font-bold text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg flex items-center justify-center gap-2 transition-colors cursor-pointer"
                 >
-                  <Printer size={16} /> Cetak Lembar Ijin Kerja
+                  <Printer size={15} /> Cetak Lembar Ijin
                 </button>
               </div>
 
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2 sm:gap-3">
                 <button 
                   onClick={() => setSelectedRequest(null)} 
-                  className="px-5 py-2.5 text-sm font-bold text-gray-700 bg-white border border-gray-200 hover:border-gray-300 rounded-lg transition-colors cursor-pointer"
+                  className="flex-1 sm:flex-none px-4 py-2 text-xs sm:text-sm font-bold text-gray-700 bg-white border border-gray-200 hover:border-gray-300 rounded-lg transition-colors cursor-pointer text-center"
                 >
                   Tutup
                 </button>
                 {selectedRequest.status === 'Disetujui' && (role === 'hse' || role === 'admin' || role === 'pic_vendor') ? (
                   <button 
                     onClick={() => setCloseModal({ isOpen: true, id: selectedRequest.id, rawId: selectedRequest.rawId, notes: '' })}
-                    className="px-5 py-2.5 text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-lg flex items-center gap-2 transition-colors shadow-sm cursor-pointer"
+                    className="flex-1 sm:flex-none px-5 py-2 text-xs sm:text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-lg flex items-center justify-center gap-1.5 transition-colors shadow-sm cursor-pointer"
                   >
-                    <CheckCircle size={18} /> Tutup Permit (Safety Close-Out)
+                    <CheckCircle size={16} /> Tutup Permit (Close-Out)
                   </button>
                 ) : selectedRequest.status !== 'Disetujui' && selectedRequest.status !== 'Selesai' && selectedRequest.status !== 'Ditolak' ? (
                   (() => {
@@ -673,10 +741,10 @@ export default function ReviewRequestsPage() {
 
                     if (!isAuthorized) {
                       return (
-                        <div className="flex items-center gap-2 px-3.5 py-2 bg-amber-50 border border-amber-200 text-amber-900 rounded-xl text-xs font-semibold shadow-2xs">
-                          <Lock size={15} className="text-amber-600 shrink-0" />
-                          <span>
-                            Tahap Terkunci: Wewenang persetujuan pada <strong>{reqInfo?.label || 'pihak lain'}</strong>. Anda tidak dapat menyetujui tahap ini.
+                        <div className="flex items-center gap-2 px-3 py-1.5 bg-amber-50 border border-amber-200 text-amber-900 rounded-lg text-xs font-semibold shadow-2xs">
+                          <Lock size={14} className="text-amber-600 shrink-0" />
+                          <span className="text-[11px]">
+                            Tahap wewenang <strong>{reqInfo?.label || 'pihak lain'}</strong>.
                           </span>
                         </div>
                       );
@@ -686,15 +754,15 @@ export default function ReviewRequestsPage() {
                       <>
                         <button 
                           onClick={() => setRejectModal({ isOpen: true, id: selectedRequest.id, rawId: selectedRequest.rawId })}
-                          className="px-5 py-2.5 text-sm font-bold text-error bg-white border border-error-container hover:bg-error-container/20 rounded-lg flex items-center gap-2 transition-colors cursor-pointer"
+                          className="flex-1 sm:flex-none px-3.5 py-2 text-xs sm:text-sm font-bold text-error bg-white border border-error-container hover:bg-error-container/20 rounded-lg flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
                         >
-                          <XCircle size={18} /> Tolak
+                          <XCircle size={16} /> Tolak
                         </button>
                         <button 
                           onClick={() => handleApprove(selectedRequest.id, selectedRequest.rawId)}
-                          className="px-5 py-2.5 text-sm font-bold text-white bg-success rounded-lg hover:opacity-90 flex items-center gap-2 transition-colors shadow-sm cursor-pointer"
+                          className="flex-1 sm:flex-none px-4 py-2 text-xs sm:text-sm font-bold text-white bg-success rounded-lg hover:opacity-90 flex items-center justify-center gap-1.5 transition-colors shadow-sm cursor-pointer"
                         >
-                          <CheckCircle size={18} /> Setujui Dokumen
+                          <CheckCircle size={16} /> Setujui
                         </button>
                       </>
                     );

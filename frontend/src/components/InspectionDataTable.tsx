@@ -24,6 +24,7 @@ import {
 import { api, SafetyFacility } from "@/services/api";
 import { auth } from "@/lib/auth";
 import { exportInspectionsToExcel } from "@/utils/exportInspectionExcel";
+import { cn } from "@/lib/utils";
 
 interface InspectionDataTableProps {
   onOpenFacilityDetail?: (facility: SafetyFacility) => void;
@@ -453,8 +454,8 @@ export function InspectionDataTable({
 
         {/* Row 2: Zone Filter Pills & Export Excel Button */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pt-2 border-t border-slate-100 text-xs">
-          <div className="flex items-center gap-1.5 flex-wrap">
-            <span className="text-[11px] font-bold text-slate-500 mr-1 flex items-center gap-1">
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden shrink-0 whitespace-nowrap">
+            <span className="text-[11px] font-bold text-slate-500 mr-1 flex items-center gap-1 shrink-0">
               <MapPin size={12} /> Zona:
             </span>
             {zones.map((z) => {
@@ -467,7 +468,7 @@ export function InspectionDataTable({
                     setSelectedZone(z.id);
                     setCurrentPage(1);
                   }}
-                  className={`px-3 py-1 rounded-md font-semibold transition text-xs cursor-pointer ${
+                  className={`px-3 py-1 rounded-md font-semibold transition text-xs cursor-pointer shrink-0 ${
                     isActive
                       ? "bg-slate-900 text-white shadow-2xs"
                       : "bg-slate-50 hover:bg-slate-100 text-slate-600 border border-slate-200"
@@ -496,10 +497,11 @@ export function InspectionDataTable({
       </div>
 
       {/* ======================================================== */}
-      {/* 3. INSPECTIONS TABLE                                     */}
+      {/* 3. INSPECTIONS TABLE & MOBILE CARDS (DUAL VIEW)          */}
       {/* ======================================================== */}
       <div className="bg-white border border-slate-200 rounded-xl shadow-xs overflow-hidden">
-        <div className="overflow-x-auto">
+        {/* DESKTOP TABLE VIEW (>= lg) */}
+        <div className="hidden lg:block overflow-x-auto">
           <table className="w-full text-left border-collapse text-xs">
             <thead>
               <tr className="bg-slate-50 border-b border-slate-200 text-slate-600 uppercase text-[10px] font-bold tracking-wider">
@@ -668,28 +670,41 @@ export function InspectionDataTable({
                         )}
                       </td>
 
-                      {/* 5. Parameter Fisik (5 Parameter) */}
+                      {/* 5. Parameter Fisik (Smart Compact Indicator) */}
                       <td className="py-3 px-4">
-                        {hasInspection && results.length > 0 ? (
-                          <div className="flex flex-wrap gap-1 max-w-[200px]">
-                            {results.map((r: any, rIdx: number) => {
-                              const passed = r.passed !== false && r.jawaban !== "Rusak" && r.jawaban !== "Karat / Rusak";
-                              return (
-                                <span
-                                  key={rIdx}
-                                  className={`text-[9px] font-bold px-1.5 py-0.5 rounded border ${
-                                    passed
-                                      ? "bg-slate-50 text-slate-700 border-slate-200"
-                                      : "bg-red-50 text-red-700 border-red-200"
-                                  }`}
-                                  title={`${r.label || r.code || r.item}: ${r.jawaban || (passed ? "OK" : "NOK")}`}
-                                >
-                                  {r.code || r.label || r.item}: {r.jawaban || (passed ? "OK" : "NOK")}
+                        {hasInspection && results.length > 0 ? (() => {
+                          const totalParams = results.length;
+                          const passedParams = results.filter((r: any) => r.passed !== false && r.jawaban !== "Rusak" && r.jawaban !== "Karat / Rusak").length;
+                          const allPassed = totalParams > 0 && passedParams === totalParams;
+
+                          if (allPassed) {
+                            return (
+                              <div className="flex flex-col gap-0.5" title={results.map((r: any) => `${r.code || r.item}: ${r.jawaban || 'OK'}`).join(' | ')}>
+                                <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-850 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded w-fit">
+                                  <CheckCircle2 size={10} className="text-emerald-600" />
+                                  {passedParams}/{totalParams} Normal
                                 </span>
-                              );
-                            })}
-                          </div>
-                        ) : (
+                                <span className="text-[10px] text-slate-400 font-medium">Fisik & jarum aman</span>
+                              </div>
+                            );
+                          }
+
+                          return (
+                            <div className="flex flex-col gap-1">
+                              <span className="inline-flex items-center gap-1 text-[10px] font-bold text-rose-850 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded w-fit">
+                                <AlertTriangle size={10} className="text-rose-600" />
+                                {totalParams - passedParams} Kendala
+                              </span>
+                              <div className="flex flex-wrap gap-0.5 max-w-[190px]">
+                                {results.filter((r: any) => !(r.passed !== false && r.jawaban !== "Rusak" && r.jawaban !== "Karat / Rusak")).map((r: any, rIdx: number) => (
+                                  <span key={rIdx} className="text-[9px] font-bold text-rose-700 bg-rose-100/70 border border-rose-200 px-1.5 py-0.5 rounded">
+                                    {r.code || r.item}: {r.jawaban}
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
+                          );
+                        })() : (
                           <span className="text-[11px] text-slate-400">-</span>
                         )}
                       </td>
@@ -847,6 +862,231 @@ export function InspectionDataTable({
               )}
             </tbody>
           </table>
+        </div>
+
+        {/* MOBILE CARD VIEW (< lg) */}
+        <div className="block lg:hidden divide-y divide-slate-100">
+          {loading ? (
+            <div className="py-12 text-center text-xs text-slate-400">
+              Memuat data inspeksi fasilitas...
+            </div>
+          ) : items.length === 0 ? (
+            <div className="py-12 text-center text-xs text-slate-500 p-4">
+              Tidak ada fasilitas yang sesuai dengan filter pencarian.
+              {hasActiveFilters && (
+                <div className="mt-2">
+                  <button
+                    type="button"
+                    onClick={handleResetFilters}
+                    className="px-3 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded text-xs font-semibold cursor-pointer"
+                  >
+                    Reset Filter
+                  </button>
+                </div>
+              )}
+            </div>
+          ) : (
+            items.map((row) => {
+              const facility = row.facility;
+              const hasInspection = !!row.has_inspection;
+              const isVerified = row.check_status === "VERIFIED";
+              const isPending = row.check_status === "PENDING";
+              const inspector = row.inspector_name || "-";
+              const pic = row.pic_name || null;
+              const results = Array.isArray(row.checklist_results) ? row.checklist_results : [];
+              const photos = Array.isArray(row.foto_bukti) ? row.foto_bukti : [];
+              const totalParams = results.length;
+              const passedParams = results.filter((r: any) => r.passed !== false && r.jawaban !== "Rusak" && r.jawaban !== "Karat / Rusak").length;
+              const allPassed = totalParams > 0 && passedParams === totalParams;
+
+              return (
+                <div 
+                  key={`mobile-${row.facility_id || row.facility_code}`} 
+                  className={cn(
+                    "p-4 transition-colors flex flex-col gap-3",
+                    !hasInspection ? "bg-slate-50/40" : "bg-white"
+                  )}
+                >
+                  {/* Header: ID, Zone & Status */}
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <span className="font-mono font-bold text-slate-900 bg-slate-100 px-2 py-0.5 rounded text-xs border border-slate-200">
+                        {row.facility_code || "-"}
+                      </span>
+                      {row.area_zone && (
+                        <span className="text-[10px] font-bold text-slate-600 bg-slate-50 border border-slate-200 px-1.5 py-0.5 rounded uppercase">
+                          {row.area_zone}
+                        </span>
+                      )}
+                    </div>
+                    {hasInspection ? (
+                      <div className="flex items-center gap-1">
+                        <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-800 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded">
+                          <CheckCircle2 size={11} className="text-emerald-600" />
+                          Sudah Dicek
+                        </span>
+                      </div>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 text-[11px] font-bold text-slate-600 bg-slate-100 border border-slate-200 px-2 py-0.5 rounded">
+                        <Clock size={11} className="text-slate-400" />
+                        Belum Dicek
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Item Title & Location */}
+                  <div>
+                    <h4 className="text-sm font-bold text-slate-900 leading-snug">
+                      {row.facility_name || facility?.nama_item || "-"}
+                    </h4>
+                    <p className="text-xs text-slate-500 flex items-center gap-1 mt-0.5">
+                      <MapPin size={12} className="text-slate-400 shrink-0" />
+                      <span className="truncate">{row.location_name || "Area Pabrik"}</span>
+                    </p>
+                  </div>
+
+                  {/* Inspection Details Grid if inspected */}
+                  {hasInspection && (
+                    <div className="bg-slate-50/80 border border-slate-200/80 rounded-xl p-3 grid grid-cols-2 gap-2.5 text-xs">
+                      <div>
+                        <span className="text-[10px] text-slate-400 block font-medium">Waktu Cek</span>
+                        <span className="font-bold text-slate-800">{formatDateTime(row.inspection_date)}</span>
+                      </div>
+                      <div>
+                        <span className="text-[10px] text-slate-400 block font-medium">Pemeriksa</span>
+                        <div className="font-bold text-slate-800 flex items-center gap-1">
+                          <User size={12} className="text-slate-400" />
+                          <span className="truncate">{inspector}</span>
+                        </div>
+                      </div>
+                      <div>
+                        <span className="text-[10px] text-slate-400 block font-medium">Kondisi Fisik</span>
+                        {totalParams > 0 ? (
+                          allPassed ? (
+                            <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 mt-0.5">
+                              <CheckCircle2 size={12} className="text-emerald-600" />
+                              {passedParams}/{totalParams} Normal
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 text-[11px] font-bold text-rose-700 mt-0.5">
+                              <AlertTriangle size={12} className="text-rose-600" />
+                              {totalParams - passedParams} Kendala
+                            </span>
+                          )
+                        ) : (
+                          <span className="text-slate-500 font-medium">-</span>
+                        )}
+                      </div>
+                      <div>
+                        <span className="text-[10px] text-slate-400 block font-medium">Verifikasi PIC</span>
+                        {isVerified ? (
+                          <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 mt-0.5">
+                            <ShieldCheck size={12} className="text-emerald-600" />
+                            {pic || "Terverifikasi"}
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-700 mt-0.5">
+                            <Clock size={12} className="text-amber-500" />
+                            Menunggu PIC
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Photo & GPS Proof if available */}
+                  {hasInspection && photos.length > 0 && (
+                    <div className="flex items-center justify-between gap-2 p-2 bg-purple-50/50 border border-purple-100 rounded-xl">
+                      <div className="flex items-center gap-2">
+                        {photos.map((photo: string, pIdx: number) => (
+                          <button
+                            key={pIdx}
+                            type="button"
+                            onClick={() => {
+                              setActivePhoto(photo);
+                              setActivePhotoMeta(row);
+                            }}
+                            className="relative w-12 h-12 rounded-lg border border-purple-200 overflow-hidden shrink-0 shadow-2xs group"
+                          >
+                            <img src={photo} alt="Bukti Realtime" className="w-full h-full object-cover" />
+                            <div className="absolute inset-0 bg-black/20 flex items-center justify-center">
+                              <Camera size={14} className="text-white drop-shadow" />
+                            </div>
+                          </button>
+                        ))}
+                        <div>
+                          <div className="flex items-center gap-1 text-[10px] font-bold text-purple-800">
+                            <Sparkles size={11} />
+                            Foto Realtime Terverifikasi
+                          </div>
+                          <div className="text-[10px] font-mono text-slate-500 flex items-center gap-1 mt-0.5">
+                            <Navigation size={10} className="text-slate-400" />
+                            <span>{row.gps_coordinates || "-7.644263, 112.694194"}</span>
+                          </div>
+                        </div>
+                      </div>
+                      <span className="text-[10px] font-bold text-purple-700 bg-purple-100/70 px-2 py-1 rounded-md shrink-0">
+                        GPS Valid
+                      </span>
+                    </div>
+                  )}
+
+                  {/* Action Buttons */}
+                  <div className="flex items-center gap-2 pt-1 border-t border-slate-100 justify-end flex-wrap">
+                    {!hasInspection && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (onInspectFacility && facility) {
+                            onInspectFacility(facility);
+                          } else if (onOpenFacilityDetail && facility) {
+                            onOpenFacilityDetail(facility);
+                          }
+                        }}
+                        className="flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-bold transition shadow-xs cursor-pointer active:scale-95"
+                      >
+                        <ClipboardList size={13} />
+                        <span>Cek Sekarang</span>
+                      </button>
+                    )}
+
+                    {hasInspection && isPending && canVerify && (
+                      <button
+                        type="button"
+                        onClick={() => handleOpenQuickVerify(row)}
+                        className="flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold transition shadow-xs cursor-pointer active:scale-95"
+                      >
+                        <Check size={13} />
+                        <span>Verifikasi PIC</span>
+                      </button>
+                    )}
+
+                    {facility && onShowSticker && (
+                      <button
+                        type="button"
+                        onClick={() => onShowSticker(facility)}
+                        className="inline-flex items-center justify-center gap-1 px-3 py-2 bg-white border border-purple-200 hover:bg-purple-50 text-purple-700 rounded-lg text-xs font-bold transition shadow-2xs cursor-pointer active:scale-95"
+                      >
+                        <QrCode size={13} />
+                        <span>Cetak QR</span>
+                      </button>
+                    )}
+
+                    {facility && onOpenFacilityDetail && (
+                      <button
+                        type="button"
+                        onClick={() => onOpenFacilityDetail(facility)}
+                        className="inline-flex items-center justify-center gap-1 px-3 py-2 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 rounded-lg text-xs font-semibold transition cursor-pointer active:scale-95"
+                      >
+                        <Eye size={13} className="text-slate-400" />
+                        <span>Detail</span>
+                      </button>
+                    )}
+                  </div>
+                </div>
+              );
+            })
+          )}
         </div>
 
         {/* Table Footer */}

@@ -16,13 +16,13 @@ export function Header({ title = "HSE Portal" }: HeaderProps) {
 
   return (
     <header className="h-16 flex items-center justify-between px-3 sm:px-6 bg-white border-b border-gray-200 select-none z-10 flex-shrink-0">
-      <div className="flex items-center gap-2 sm:gap-3 overflow-hidden">
+      <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1 mr-2">
         {/* Smart Animated Hamburger Button */}
         <HamburgerButton />
-        <h2 className="text-base sm:text-lg font-bold text-gray-900 truncate">{title}</h2>
+        <h2 className="text-sm sm:text-lg font-bold text-gray-900 truncate tracking-tight">{title}</h2>
       </div>
 
-      <div className="flex items-center gap-4 sm:gap-6 flex-shrink-0">
+      <div className="flex items-center gap-2.5 sm:gap-5 flex-shrink-0">
         {/* Notifications */}
         <button className="relative p-2 text-gray-500 hover:bg-surface-variant rounded-full transition-colors cursor-pointer">
           <Bell size={20} />
