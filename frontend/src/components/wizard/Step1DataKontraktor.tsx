@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { format, addDays, isBefore, startOfToday } from "date-fns";
 import { ClipboardList, HardHat, Building2, CalendarClock } from "lucide-react";
 import { cn, calculateInclusiveDays, formatDateDDMMYY } from "@/lib/utils";
+import { DateInputDDMMYY } from "@/components/DateInputDDMMYY";
 import { api } from "@/services/api";
 import { auth } from "@/lib/auth";
 
@@ -192,30 +193,34 @@ export function Step1DataKontraktor({ data, updateData }: { data: any, updateDat
             </div>
 
             <div className="space-y-1.5">
-              <label className="block text-sm font-medium text-gray-700">
-                Mulai Kerja {data.requestType === "Perpanjangan" ? "(Lanjutan)" : `(min. H-${minLeadDays})`} <span className="text-red-500">*</span>
-              </label>
-              <input 
+              <div className="flex items-center justify-between">
+                <label className="block text-sm font-medium text-gray-700">
+                  Mulai Kerja {data.requestType === "Perpanjangan" ? "(Lanjutan)" : `(min. H-${minLeadDays})`} <span className="text-red-500">*</span>
+                </label>
+                <span className="text-[10px] text-blue-600 font-medium">Format: dd/mm/yy</span>
+              </div>
+              <DateInputDDMMYY 
                 id="mulaiKerja"
-                type="date" 
                 min={minStartDate}
                 value={data.mulaiKerja}
                 onChange={handleStartDateChange}
-                className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                placeholder="dd/mm/yy"
               />
             </div>
             <div className="space-y-1.5">
-              <label className="block text-sm font-medium text-gray-700">
-                Selesai Kerja {maxPermitDays > 0 ? `(maks. ${maxPermitDays} hari)` : "(Tanpa Batas Hari)"} <span className="text-red-500">*</span>
-              </label>
-              <input 
+              <div className="flex items-center justify-between">
+                <label className="block text-sm font-medium text-gray-700">
+                  Selesai Kerja {maxPermitDays > 0 ? `(maks. ${maxPermitDays} hari)` : "(Tanpa Batas Hari)"} <span className="text-red-500">*</span>
+                </label>
+                <span className="text-[10px] text-blue-600 font-medium">Format: dd/mm/yy</span>
+              </div>
+              <DateInputDDMMYY 
                 id="selesaiKerja"
-                type="date" 
                 min={minEndDate}
                 max={maxEndDate}
                 value={data.selesaiKerja}
                 onChange={handleEndDateChange}
-                className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                placeholder="dd/mm/yy"
               />
             </div>
 
