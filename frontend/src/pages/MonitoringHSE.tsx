@@ -258,20 +258,21 @@ export default function MonitoringHSEPage() {
         <div className="max-w-7xl mx-auto flex flex-col gap-4">
           
           {/* Top Control Bar: Responsive Header & Primary Actions */}
-          <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4 bg-white px-5 py-4 rounded-xl border border-gray-200 shadow-xs">
-            <div className="min-w-0 flex-1">
+          <div className="flex flex-col 2xl:flex-row justify-between items-start 2xl:items-center gap-4 bg-white px-5 py-4 rounded-xl border border-gray-200 shadow-xs">
+            <div className="shrink-0 w-full 2xl:w-auto">
               <h1 className="text-lg md:text-xl font-bold text-gray-900 tracking-tight">Kesiapan Alat & Fasilitas K3</h1>
               <p className="text-xs text-gray-500 mt-1 leading-relaxed">
                 Pantau kesiapan alat consumable (masa berlaku) & non-consumable (kondisi fisik berkala)
               </p>
             </div>
             
-            <div className="flex items-center gap-2 flex-wrap w-full xl:w-auto justify-start xl:justify-end">
+            <div className="flex items-center gap-2 flex-wrap w-full 2xl:w-auto justify-start 2xl:justify-end">
               {activeTab === "apar" && (
                 <>
                   <button
+                    type="button"
                     onClick={() => setRefillQueueOpen(true)}
-                    className="inline-flex items-center gap-1.5 bg-white hover:bg-amber-50/70 text-slate-700 hover:text-amber-900 border border-slate-200 hover:border-amber-300 px-3 py-2 rounded-xl transition-all text-xs font-semibold shadow-2xs cursor-pointer active:scale-95"
+                    className="inline-flex items-center gap-1.5 bg-white hover:bg-amber-50/70 text-slate-700 hover:text-amber-900 border border-slate-200 hover:border-amber-300 px-3 py-2 rounded-xl transition-all text-xs font-semibold shadow-2xs cursor-pointer active:scale-95 shrink-0"
                     title="Lihat Antrean Refill APAR"
                   >
                     <RefreshCw size={14} className="text-amber-600" />
@@ -281,11 +282,12 @@ export default function MonitoringHSEPage() {
                     </span>
                   </button>
                   <button
+                    type="button"
                     onClick={() => {
                       setSelectedItem(facilities[0] || null);
                       setStickerModalOpen(true);
                     }}
-                    className="inline-flex items-center gap-1.5 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 hover:border-slate-300 px-3 py-2 rounded-xl transition-all text-xs font-semibold shadow-2xs cursor-pointer active:scale-95"
+                    className="inline-flex items-center gap-1.5 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 hover:border-slate-300 px-3 py-2 rounded-xl transition-all text-xs font-semibold shadow-2xs cursor-pointer active:scale-95 shrink-0"
                     title="Cetak Stiker Label QR per Zona"
                   >
                     <Layers size={14} className="text-slate-500" />
@@ -296,7 +298,7 @@ export default function MonitoringHSEPage() {
 
               <Link
                 to="/gis-map"
-                className="inline-flex items-center gap-1.5 bg-white hover:bg-emerald-50/70 text-slate-700 hover:text-emerald-800 border border-slate-200 hover:border-emerald-300 px-3 py-2 rounded-xl transition-all text-xs font-semibold shadow-2xs cursor-pointer active:scale-95"
+                className="inline-flex items-center gap-1.5 bg-white hover:bg-emerald-50/70 text-slate-700 hover:text-emerald-800 border border-slate-200 hover:border-emerald-300 px-3 py-2 rounded-xl transition-all text-xs font-semibold shadow-2xs cursor-pointer active:scale-95 shrink-0"
                 title="Buka Peta GIS & Radius Geofence Pabrik"
               >
                 <MapPin size={14} className="text-emerald-600" />
@@ -304,9 +306,10 @@ export default function MonitoringHSEPage() {
               </Link>
 
               <button
+                type="button"
                 onClick={loadData}
                 disabled={loading}
-                className="inline-flex items-center gap-1.5 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 hover:border-slate-300 px-3 py-2 rounded-xl transition-all text-xs font-semibold shadow-2xs cursor-pointer active:scale-95"
+                className="inline-flex items-center gap-1.5 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 hover:border-slate-300 px-3 py-2 rounded-xl transition-all text-xs font-semibold shadow-2xs cursor-pointer active:scale-95 shrink-0"
                 title="Muat Ulang Data"
               >
                 <RefreshCw size={14} className={cn(loading && "animate-spin text-primary")} />
@@ -314,12 +317,13 @@ export default function MonitoringHSEPage() {
               </button>
 
               <button
+                type="button"
                 onClick={() => setScannerModalOpen(true)}
-                className="inline-flex items-center gap-1.5 bg-slate-900 hover:bg-slate-800 text-white px-3.5 py-2 rounded-xl transition-all text-xs font-bold shadow-xs cursor-pointer active:scale-95"
+                className="inline-flex items-center gap-1.5 bg-slate-900 hover:bg-slate-800 text-white px-3.5 py-2 rounded-xl transition-all text-xs font-bold shadow-xs cursor-pointer active:scale-95 shrink-0"
                 title="Scan QR Code Alat di Lapangan"
               >
                 <QrCode size={15} />
-                <span>Scan QR Lapangan</span>
+                <span>Scan QR</span>
               </button>
 
               {activeTab !== "spi" && activeTab !== "inspeksi" && (
@@ -327,7 +331,7 @@ export default function MonitoringHSEPage() {
                   <button 
                     type="button"
                     onClick={() => setImportModalOpen(true)}
-                    className="inline-flex items-center gap-1.5 bg-emerald-700 hover:bg-emerald-800 text-white px-3.5 py-2 rounded-xl transition-all text-xs font-bold shadow-xs whitespace-nowrap active:scale-[0.98] cursor-pointer"
+                    className="inline-flex items-center gap-1.5 bg-emerald-700 hover:bg-emerald-800 text-white px-3.5 py-2 rounded-xl transition-all text-xs font-bold shadow-xs whitespace-nowrap active:scale-[0.98] cursor-pointer shrink-0"
                     title="Import Data Fasilitas dari File Excel (.xlsx)"
                   >
                     <FileSpreadsheet size={15} />
@@ -337,10 +341,10 @@ export default function MonitoringHSEPage() {
                   <button 
                     type="button"
                     onClick={() => setAddModalOpen(true)}
-                    className="inline-flex items-center gap-1.5 bg-primary hover:bg-primary/90 text-on-primary px-3.5 py-2 rounded-xl transition-all text-xs font-bold shadow-xs whitespace-nowrap active:scale-[0.98] cursor-pointer"
+                    className="inline-flex items-center gap-1.5 bg-primary hover:bg-primary/90 text-on-primary px-3.5 py-2 rounded-xl transition-all text-xs font-bold shadow-xs whitespace-nowrap active:scale-[0.98] cursor-pointer shrink-0"
                   >
                     <Plus size={16} />
-                    <span>Tambah Unit Baru</span>
+                    <span>Tambah Unit</span>
                   </button>
                 </>
               )}
