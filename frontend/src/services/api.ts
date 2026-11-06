@@ -11,13 +11,8 @@ export const API_BASE_URL = (() => {
     if (isDev && isVitePort) {
       return `${window.location.protocol}//${window.location.hostname}:8000/api/v1`;
     }
-    // Production: Otomatis arahkan ke api.hse.widatra.com jika diakses dari hse.widatra.com
+    // Production (calls /api/v1 on same origin, proxied by Nginx to backend)
     if (!isDev) {
-      if (window.location.hostname === 'hse.widatra.com' || window.location.hostname.endsWith('widatra.com')) {
-        if (!window.location.hostname.startsWith('api.')) {
-          return `${window.location.protocol}//api.hse.widatra.com/api/v1`;
-        }
-      }
       return `${window.location.origin}/api/v1`;
     }
   }
