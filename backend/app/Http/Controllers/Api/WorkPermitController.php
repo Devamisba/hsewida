@@ -39,10 +39,13 @@ class WorkPermitController extends Controller
 
     /**
      * Get permits submitted by the current authenticated contractor/vendor.
+     * Rule: Ditolak & Selesai hanya tampil di Ijin Saya selama 12 jam sejak status diubah (updated_at).
+     * Setelah 12 jam, dokumen otomatis hanya tampil di menu Riwayat.
      */
     public function myRequests(Request $request)
     {
         $user = $request->user();
+        $twelveHoursAgo = now()->subHours(12);
 
         $permits = WorkPermit::with([
             'location', 
@@ -51,11 +54,26 @@ class WorkPermitController extends Controller
             'ppes', 
             'workers', 
             'jsas', 
+            'approvals.user:id,name',
             'parentPermit:id,permit_number,start_date,end_date,job_title,request_type,extension_phase',
             'rootPermit:id,permit_number,start_date,end_date,job_title,status',
             'childPermits:id,parent_permit_id,permit_number,status,request_type,extension_phase'
         ])
             ->where('user_id', $user->id)
+            ->where(function ($q) use ($twelveHoursAgo) {
+                // Permit aktif/dalam proses (Draft, Menunggu..., Disetujui)
+                $q->whereNotIn('status', ['Ditolak', 'Selesai'])
+                  // Permit Ditolak: HANYA tampil jika belum lewat 12 jam sejak ditolak
+                  ->orWhere(function ($sub) use ($twelveHoursAgo) {
+                      $sub->where('status', 'Ditolak')
+                          ->where('updated_at', '>=', $twelveHoursAgo);
+                  })
+                  // Permit Selesai: HANYA tampil jika belum lewat 12 jam sejak diselesaikan
+                  ->orWhere(function ($sub) use ($twelveHoursAgo) {
+                      $sub->where('status', 'Selesai')
+                          ->where('updated_at', '>=', $twelveHoursAgo);
+                  });
+            })
             ->orderBy('created_at', 'desc')
             ->orderBy('id', 'desc')
             ->get();

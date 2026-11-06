@@ -110,8 +110,21 @@ function mapApiToRequest(item: any) {
     qrToken: item.qr_code_token,
     approvals: item.approvals || [],
     rejectReason: item.reject_reason || null,
+    updatedAt: item.updated_at || item.updatedAt,
+    createdAt: item.created_at || item.createdAt,
   };
 }
+
+const getRemainingHours = (updatedAt: string, maxHours: number = 12) => {
+  if (!updatedAt) return null;
+  const updateTime = new Date(updatedAt).getTime();
+  if (isNaN(updateTime)) return null;
+  const expireTime = updateTime + maxHours * 60 * 60 * 1000;
+  const diffMs = expireTime - Date.now();
+  if (diffMs <= 0) return 0;
+  const hours = Math.ceil(diffMs / (1000 * 60 * 60));
+  return hours;
+};
 
 const getStatusBadge = (status: string) => {
   switch (status) {
@@ -474,9 +487,19 @@ export default function MyRequestsPage() {
                           )}
                         </td>
                         <td className="px-4 py-3.5 text-center whitespace-nowrap">
-                          <span className={cn("inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold", getStatusBadge(req.status))}>
-                            {formatPermitStatus(req.status)}
-                          </span>
+                          <div className="inline-flex flex-col items-center gap-0.5">
+                            <span className={cn("inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold", getStatusBadge(req.status))}>
+                              {formatPermitStatus(req.status)}
+                            </span>
+                            {(req.status === "Ditolak" || req.status === "Selesai") && req.updatedAt && (
+                              <span className="text-[10px] text-slate-500 font-medium">
+                                {(() => {
+                                  const hours = getRemainingHours(req.updatedAt, 12);
+                                  return hours && hours > 0 ? `Arsip dlm ${hours}j` : "Segera diarsipkan";
+                                })()}
+                              </span>
+                            )}
+                          </div>
                         </td>
                         <td className="px-5 py-3.5 text-right whitespace-nowrap">
                           <div className="flex items-center justify-end gap-1.5">
@@ -561,9 +584,19 @@ export default function MyRequestsPage() {
                       )}
                     </div>
                   </div>
-                  <span className={cn("px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider", getStatusBadge(req.status))}>
-                    {formatPermitStatus(req.status)}
-                  </span>
+                  <div className="flex flex-col items-end gap-0.5">
+                    <span className={cn("px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider", getStatusBadge(req.status))}>
+                      {formatPermitStatus(req.status)}
+                    </span>
+                    {(req.status === "Ditolak" || req.status === "Selesai") && req.updatedAt && (
+                      <span className="text-[9px] text-slate-500 font-medium">
+                        {(() => {
+                          const hours = getRemainingHours(req.updatedAt, 12);
+                          return hours && hours > 0 ? `Arsip dlm ${hours}j` : "Segera diarsipkan";
+                        })()}
+                      </span>
+                    )}
+                  </div>
                 </div>
                 
                 <div>
