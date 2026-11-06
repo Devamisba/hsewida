@@ -134,11 +134,6 @@ class WorkPermitController extends Controller
         $user = $request->user();
         $roleCode = strtolower($user->role ? $user->role->code : '');
 
-        // Untuk role Pemohon / Kontraktor, menu riwayat khusus menampilkan izin kerja milik mereka yang sudah Complete/Selesai
-        if (in_array($roleCode, ['pemohon', 'kontraktor', 'vendor', 'contractor'])) {
-            $query->where('user_id', $user->id);
-        }
-
         $query = WorkPermit::with([
             'location', 
             'vendor', 
@@ -152,16 +147,25 @@ class WorkPermitController extends Controller
             'childPermits:id,parent_permit_id,permit_number,status,request_type,extension_phase'
         ]);
 
-        // Poin 7: Menu riwayat HANYA menampilkan ijin kerja yang sudah Selesai atau Habis Kontrak (atau Ditolak)
         $today = now()->format('Y-m-d');
-        $query->where(function($q) use ($today) {
-            $q->where('status', 'Selesai')
-              ->orWhere('status', 'Ditolak')
-              ->orWhere(function($sub) use ($today) {
-                  $sub->where('status', 'Disetujui')
-                      ->where('end_date', '<', $today);
-              });
-        });
+
+        // Untuk role Pemohon / Kontraktor / Vendor luar:
+        // Riwayat HANYA menampilkan izin kerja milik akun mereka sendiri dengan status Selesai atau Ditolak.
+        if (in_array($roleCode, ['pemohon', 'kontraktor', 'vendor', 'contractor'])) {
+            $query->where('user_id', $user->id)
+                  ->whereIn('status', ['Selesai', 'Ditolak']);
+        } else {
+            // Untuk Admin / HSE / Reviewer Internal:
+            // Menampilkan Selesai, Ditolak, atau Disetujui yang habis masa berlakunya (end_date < today)
+            $query->where(function($q) use ($today) {
+                $q->where('status', 'Selesai')
+                  ->orWhere('status', 'Ditolak')
+                  ->orWhere(function($sub) use ($today) {
+                      $sub->where('status', 'Disetujui')
+                          ->where('end_date', '<', $today);
+                  });
+            });
+        }
 
         // Filter tab tambahan jika disediakan
         if ($request->has('status') && !empty($request->status) && $request->status !== 'ALL') {

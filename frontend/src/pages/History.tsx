@@ -229,10 +229,10 @@ export default function HistoryPage() {
     fetchHistory();
   }, []);
 
-  // Hitung izin yang akan berakhir dalam 3 hari
+  // Hitung izin yang akan berakhir dalam 3 hari (hanya untuk role internal; untuk vendor di menu Ijin Saya)
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  const expiringItems = requests.filter((req) => {
+  const expiringItems = isVendorRole ? [] : requests.filter((req) => {
     if (req.status !== "Disetujui") return false;
     const end = new Date(req.selesaiKerja);
     end.setHours(0, 0, 0, 0);
@@ -247,20 +247,35 @@ export default function HistoryPage() {
   const [customEndDate, setCustomEndDate] = useState<string>("");
   const [searchQuery, setSearchQuery] = useState<string>("");
 
+  // Pastikan vendor luar tidak berada pada filter status Disetujui
+  useEffect(() => {
+    if (isVendorRole && statusFilter === "Disetujui") {
+      setStatusFilter("ALL");
+    }
+  }, [isVendorRole, statusFilter]);
+
   // Counter badge dinamis untuk baris Status
   const statusCounts = useMemo(() => {
+    const list = isVendorRole
+      ? requests.filter((r) => r.status === "Selesai" || r.status === "Ditolak")
+      : requests;
     return {
-      all: requests.length,
+      all: list.length,
       disetujui: requests.filter((r) => r.status === "Disetujui").length,
       selesai: requests.filter((r) => r.status === "Selesai").length,
       pending: requests.filter((r) => r.status && r.status.startsWith("Menunggu")).length,
       ditolak: requests.filter((r) => r.status === "Ditolak").length,
     };
-  }, [requests]);
+  }, [requests, isVendorRole]);
 
   // Logika Filter Data
   const filteredRequests = useMemo(() => {
     return requests.filter((req) => {
+      // Khusus vendor luar: riwayat hanya menampilkan yang Selesai atau Ditolak
+      if (isVendorRole && req.status !== "Selesai" && req.status !== "Ditolak") {
+        return false;
+      }
+
       // 1. Filter Banner Segera Berakhir jika aktif
       if (showExpiringOnly) {
         if (req.status !== "Disetujui") return false;
@@ -634,26 +649,28 @@ export default function HistoryPage() {
                   </span>
                 </button>
 
-                {/* Disetujui */}
-                <button
-                  type="button"
-                  onClick={() => setStatusFilter("Disetujui")}
-                  className={cn(
-                    "inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer",
-                    statusFilter === "Disetujui"
-                      ? "bg-[#162f65] text-white shadow-xs"
-                      : "bg-white text-slate-700 border border-slate-200 hover:bg-slate-50"
-                  )}
-                >
-                  <ShieldCheck size={13} className={statusFilter === "Disetujui" ? "text-white" : "text-emerald-600"} />
-                  <span>Disetujui</span>
-                  <span className={cn(
-                    "px-1.5 py-0.2 rounded-full text-[10px] font-mono font-bold",
-                    statusFilter === "Disetujui" ? "bg-white/20 text-white" : "bg-slate-100 text-slate-600"
-                  )}>
-                    {statusCounts.disetujui}
-                  </span>
-                </button>
+                {/* Disetujui - Hanya untuk internal reviewer/admin, disembunyikan untuk vendor */}
+                {!isVendorRole && (
+                  <button
+                    type="button"
+                    onClick={() => setStatusFilter("Disetujui")}
+                    className={cn(
+                      "inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer",
+                      statusFilter === "Disetujui"
+                        ? "bg-[#162f65] text-white shadow-xs"
+                        : "bg-white text-slate-700 border border-slate-200 hover:bg-slate-50"
+                    )}
+                  >
+                    <ShieldCheck size={13} className={statusFilter === "Disetujui" ? "text-white" : "text-emerald-600"} />
+                    <span>Disetujui</span>
+                    <span className={cn(
+                      "px-1.5 py-0.2 rounded-full text-[10px] font-mono font-bold",
+                      statusFilter === "Disetujui" ? "bg-white/20 text-white" : "bg-slate-100 text-slate-600"
+                    )}>
+                      {statusCounts.disetujui}
+                    </span>
+                  </button>
+                )}
 
                 {/* Selesai */}
                 <button
