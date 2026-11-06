@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { api } from "@/services/api";
+import { downloadFacilityExcelTemplate } from "@/utils/excelTemplate";
 
 interface ImportFacilityModalProps {
   isOpen: boolean;
@@ -73,164 +74,18 @@ export function ImportFacilityModal({ isOpen, onClose, onSuccess }: ImportFacili
     onClose();
   };
 
-  // 1. Generate & Download Template Universal .xlsx
-  const handleDownloadTemplate = () => {
-    const headers = [
-      "Kode Fasilitas *",
-      "Kategori * (apar / hydrant / p3k / emergency_door / safety_mirror / assembly_point)",
-      "Nama Item / Deskripsi",
-      "Tipe Item (CONSUMABLE / KONDISI)",
-      "Lokasi Gedung / Ruangan",
-      "Zona Area (UMUM / FACTORY 1 / FACTORY 2 & WORKSHOP / WARE HOUSE)",
-      "Tanggal Expired / Refill (YYYY-MM-DD)",
-      "Jenis Media (cth: POWDER / CO2 / AIR)",
-      "Kapasitas / Berat (cth: 6 KG / 3 KG)",
-      "Merk Alat",
-      "Interval Inspeksi Hari (cth: 30)"
-    ];
-
-    const sampleData = [
-      [
-        "APAR-001",
-        "apar",
-        "APAR Powder 6kg Ruang Server",
-        "CONSUMABLE",
-        "Gedung Kantor Lt 2",
-        "UMUM",
-        "2027-11-15",
-        "POWDER",
-        "6 KG",
-        "YAMATO",
-        "30"
-      ],
-      [
-        "APAR-002",
-        "apar",
-        "APAR CO2 5kg Panel Listrik Utama",
-        "CONSUMABLE",
-        "Gardu Listrik Factory 1",
-        "FACTORY 1",
-        "2027-08-20",
-        "CO2",
-        "5 KG",
-        "CHUBB",
-        "30"
-      ],
-      [
-        "HYD-01",
-        "hydrant",
-        "Hydrant Pillar Depan Pos 1",
-        "KONDISI",
-        "Halaman Depan Pos Satpam",
-        "UMUM",
-        "",
-        "AIR TEKANAN TINGGI",
-        "",
-        "APPON",
-        "30"
-      ],
-      [
-        "P3K-01",
-        "p3k",
-        "Kotak P3K Tipe A Ruang Produksi",
-        "CONSUMABLE",
-        "Area Produksi Sterile",
-        "FACTORY 1",
-        "2027-05-10",
-        "OBAT STANDAR TIPE A",
-        "1 KOTAK",
-        "ONEMED",
-        "30"
-      ],
-      [
-        "EMG-01",
-        "emergency_door",
-        "Pintu Darurat Koridor Barat",
-        "KONDISI",
-        "Koridor Pabrik 2",
-        "FACTORY 2 & WORKSHOP",
-        "",
-        "",
-        "",
-        "BOSTINCO",
-        "30"
-      ],
-      [
-        "MIR-01",
-        "safety_mirror",
-        "Cermin Tikungan Loading Dock",
-        "KONDISI",
-        "Loading Dock Gudang Bahan Baku",
-        "WARE HOUSE",
-        "",
-        "CONVEX ACRYLIC 80CM",
-        "",
-        "KRISBOW",
-        "30"
-      ],
-      [
-        "AP-01",
-        "assembly_point",
-        "Titik Kumpul Lapangan Parkir",
-        "KONDISI",
-        "Lapangan Parkir Karyawan Depan",
-        "UMUM",
-        "",
-        "RAMBU SIGNAGE HIJAU",
-        "",
-        "STANDAR K3",
-        "30"
-      ]
-    ];
-
-    const ws = XLSX.utils.aoa_to_sheet([headers, ...sampleData]);
-
-    // Set column widths for readability
-    ws["!cols"] = [
-      { wch: 18 }, // Kode
-      { wch: 30 }, // Kategori
-      { wch: 35 }, // Nama Item
-      { wch: 22 }, // Tipe Item
-      { wch: 30 }, // Lokasi
-      { wch: 30 }, // Zona Area
-      { wch: 24 }, // Expired
-      { wch: 22 }, // Media
-      { wch: 20 }, // Kapasitas
-      { wch: 18 }, // Merk
-      { wch: 18 }, // Interval
-    ];
-
-    // Sheet 2: Petunjuk Pengisian
-    const petunjuk = [
-      ["PANDUAN LENGKAP PENGISIAN IMPORT FASILITAS K3 PT WIDATRA BHAKTI"],
-      [""],
-      ["1. Kolom Wajib (*): Kode Fasilitas dan Kategori."],
-      ["2. Pilihan Kategori yang Valid:"],
-      ["   - apar : Alat Pemadam Api Ringan (Otomatis tipe CONSUMABLE)"],
-      ["   - hydrant : Hydrant Pillar / Box (Otomatis tipe KONDISI)"],
-      ["   - p3k : Kotak Obat P3K (Otomatis tipe CONSUMABLE)"],
-      ["   - emergency_door : Pintu Darurat Kebakaran (Otomatis tipe KONDISI)"],
-      ["   - safety_mirror : Cermin Cembung Tikungan (Otomatis tipe KONDISI)"],
-      ["   - assembly_point : Titik Kumpul Evakuasi (Otomatis tipe KONDISI)"],
-      [""],
-      ["3. Pilihan Zona Area yang Valid:"],
-      ["   - UMUM : Area Kantor, Pos Security, Lapangan, Parkir"],
-      ["   - FACTORY 1 : Ruang Produksi Gedung 1"],
-      ["   - FACTORY 2 & WORKSHOP : Ruang Mesin, Workshop Teknik, Gedung 2"],
-      ["   - WARE HOUSE : Gudang Bahan Baku & Gudang Jadi"],
-      [""],
-      ["4. Format Tanggal Expired: YYYY-MM-DD (Contoh: 2027-12-31)."],
-      ["5. Kode yang sudah ada di database akan diperbarui datanya secara otomatis (updateOrCreate)."],
-      ["6. Sistem otomatis men-generate QR Code fisik unik untuk setiap alat baru."]
-    ];
-    const wsPanduan = XLSX.utils.aoa_to_sheet(petunjuk);
-    wsPanduan["!cols"] = [{ wch: 90 }];
-
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "DATA_FASILITAS_K3");
-    XLSX.utils.book_append_sheet(wb, wsPanduan, "PETUNJUK_PENGISIAN");
-
-    XLSX.writeFile(wb, "Template_Monitoring_Fasilitas_K3_Widatra.xlsx");
+  // 1. Generate & Download Template Universal .xlsx dengan Desain Profesional
+  const handleDownloadTemplate = async () => {
+    try {
+      setLoading(true);
+      setErrorMessage(null);
+      await downloadFacilityExcelTemplate();
+    } catch (err: any) {
+      console.error("Gagal men-generate template Excel:", err);
+      setErrorMessage(err.message || "Gagal mengunduh template Excel fasilitas K3");
+    } finally {
+      setLoading(false);
+    }
   };
 
   // 2. Parse Excel File
@@ -247,11 +102,40 @@ export function ImportFacilityModal({ isOpen, onClose, onSuccess }: ImportFacili
       const rows: any[][] = XLSX.utils.sheet_to_json(ws, { header: 1 });
 
       if (rows.length < 2) {
-        throw new Error("File Excel kosong atau tidak memiliki baris data (minimal 1 baris header + 1 baris data).");
+        throw new Error("File Excel kosong atau tidak memiliki baris data.");
       }
 
-      // Find header row and map column indexes
-      const headerRow = rows[0].map((h: any) => String(h || "").trim().toLowerCase());
+      // Deteksi dinamis posisi baris header (mencakup baris 0 s/d 9)
+      // Mendukung file template ber-banner corporate (header di baris 4) maupun tabel polos (baris 0/1)
+      let headerRowIdx = -1;
+      let headerRow: string[] = [];
+
+      for (let r = 0; r < Math.min(10, rows.length); r++) {
+        const candidate = (rows[r] || []).map((h: any) => String(h || "").trim().toLowerCase());
+        const hasCode = candidate.some((h: string) => ["kode", "code", "no unit", "no_unit"].some(alias => h.includes(alias)));
+        const hasCatOrName = candidate.some((h: string) => ["kategori", "category", "nama", "name", "deskripsi"].some(alias => h.includes(alias)));
+        if (hasCode && hasCatOrName) {
+          headerRowIdx = r;
+          headerRow = candidate;
+          break;
+        }
+      }
+
+      // Fallback: cari baris yang minimal mengandung kolom kode
+      if (headerRowIdx === -1) {
+        for (let r = 0; r < Math.min(10, rows.length); r++) {
+          const candidate = (rows[r] || []).map((h: any) => String(h || "").trim().toLowerCase());
+          if (candidate.some((h: string) => ["kode", "code", "no unit", "no_unit"].some(alias => h.includes(alias)))) {
+            headerRowIdx = r;
+            headerRow = candidate;
+            break;
+          }
+        }
+      }
+
+      if (headerRowIdx === -1) {
+        throw new Error("Kolom 'Kode Fasilitas' tidak ditemukan pada baris header file Excel.");
+      }
       
       const findColIdx = (aliases: string[]) => {
         return headerRow.findIndex((h: string) => aliases.some(alias => h.includes(alias)));
@@ -269,13 +153,9 @@ export function ImportFacilityModal({ isOpen, onClose, onSuccess }: ImportFacili
       const merkIdx = findColIdx(["merk", "brand"]);
       const intIdx = findColIdx(["interval", "siklus", "jadwal"]);
 
-      if (codeIdx === -1) {
-        throw new Error("Kolom 'Kode Fasilitas' tidak ditemukan pada baris pertama file Excel.");
-      }
-
       const parsed: ParsedFacilityRow[] = [];
 
-      for (let i = 1; i < rows.length; i++) {
+      for (let i = headerRowIdx + 1; i < rows.length; i++) {
         const row = rows[i];
         if (!row || row.length === 0 || row.every(c => c === null || c === undefined || String(c).trim() === "")) {
           continue; // skip blank rows
