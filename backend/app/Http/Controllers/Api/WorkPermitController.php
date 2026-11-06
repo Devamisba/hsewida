@@ -134,12 +134,9 @@ class WorkPermitController extends Controller
         $user = $request->user();
         $roleCode = strtolower($user->role ? $user->role->code : '');
 
-        // Poin 8: Menu riwayat di role Pemohon/Kontraktor tidak ada
+        // Untuk role Pemohon / Kontraktor, menu riwayat khusus menampilkan izin kerja milik mereka yang sudah Complete/Selesai
         if (in_array($roleCode, ['pemohon', 'kontraktor', 'vendor', 'contractor'])) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Role Pemohon/Kontraktor tidak memiliki akses ke menu Riwayat. Seluruh perizinan Anda terpusat di menu Ijin Saya.',
-            ], 403);
+            $query->where('user_id', $user->id);
         }
 
         $query = WorkPermit::with([

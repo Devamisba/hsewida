@@ -96,7 +96,7 @@ export const NAVIGATION_CONFIG: NavItem[] = [
         name: "Riwayat",
         href: "/history",
         icon: Clock,
-        roles: ["admin", "hse", "ga_dept_head", "ga_div_head", "pic_vendor"],
+        roles: ["admin", "hse", "ga_dept_head", "ga_div_head", "pic_vendor", "kontraktor", "contractor", "pemohon", "vendor"],
       },
     ],
   },

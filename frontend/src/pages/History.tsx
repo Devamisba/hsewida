@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { useLocation, useNavigate, Navigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { Header } from "@/components/Header";
 import { 
   Eye, 
@@ -163,10 +163,7 @@ export default function HistoryPage() {
   const userRole = auth.getRole();
   const isVendorRole = ["pemohon", "vendor", "kontraktor", "contractor"].includes((userRole || "").toLowerCase().trim());
 
-  // Redirect vendor users to combined 'Ijin Saya' page
-  if (isVendorRole) {
-    return <Navigate to="/my-requests" replace />;
-  }
+  // Vendor role now has access to History for viewing completed/expired permits
 
   const filterExpiringSoon = (location.state as any)?.filterExpiringSoon === true;
 
