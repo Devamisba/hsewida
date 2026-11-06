@@ -25,7 +25,9 @@ import {
   Trash2,
   FileSpreadsheet,
   CalendarCheck,
-  CheckCircle2
+  CheckCircle2,
+  ChevronLeft,
+  ChevronRight
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer } from "recharts";
@@ -848,6 +850,8 @@ function FacilityDataTable({
   const [searchTerm, setSearchTerm] = useState("");
   const [typeFilter, setTypeFilter] = useState<"ALL" | "CONSUMABLE" | "KONDISI">("ALL");
   const [monthCheckFilter, setMonthCheckFilter] = useState<"ALL" | "CHECKED" | "UNCHECKED">("ALL");
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const ITEMS_PER_PAGE = 15;
 
   // Real-time Monthly Tracker metrics for active category
   const now = new Date();
@@ -966,6 +970,32 @@ function FacilityDataTable({
       (f.calculated_status && f.calculated_status.toLowerCase().includes(term))
     );
   });
+
+  // Reset pagination to page 1 whenever any filter or category changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, typeFilter, statusFilter, zoneFilter, monthCheckFilter, category]);
+
+  // Pagination calculation (15 data per page as requested)
+  const totalPages = Math.max(1, Math.ceil(filteredFacilities.length / ITEMS_PER_PAGE));
+  const safeCurrentPage = Math.min(Math.max(1, currentPage), totalPages);
+  const startIndex = (safeCurrentPage - 1) * ITEMS_PER_PAGE;
+  const endIndex = Math.min(startIndex + ITEMS_PER_PAGE, filteredFacilities.length);
+  const paginatedFacilities = filteredFacilities.slice(startIndex, endIndex);
+
+  const getPageNumbers = () => {
+    if (totalPages <= 7) {
+      return Array.from({ length: totalPages }, (_, i) => i + 1);
+    }
+    if (safeCurrentPage <= 4) {
+      return [1, 2, 3, 4, 5, "...", totalPages];
+    }
+    if (safeCurrentPage >= totalPages - 3) {
+      return [1, "...", totalPages - 4, totalPages - 3, totalPages - 2, totalPages - 1, totalPages];
+    }
+    return [1, "...", safeCurrentPage - 1, safeCurrentPage, safeCurrentPage + 1, "...", totalPages];
+  };
+  const pageNumbers = getPageNumbers();
 
   const formatSpecs = (f: SafetyFacility) => {
     if (!f.specifications) return "-";
@@ -1236,7 +1266,7 @@ function FacilityDataTable({
                 </td>
               </tr>
             ) : (
-              filteredFacilities.map((facility) => {
+              paginatedFacilities.map((facility) => {
                 const isConsumable = facility.tipe_item === "CONSUMABLE";
                 const locationName = typeof facility.location === "object" 
                   ? facility.location?.name 
@@ -1426,7 +1456,7 @@ function FacilityDataTable({
             )}
           </div>
         ) : (
-          filteredFacilities.map((facility) => {
+          paginatedFacilities.map((facility) => {
             const isConsumable = facility.tipe_item === "CONSUMABLE";
             const locationName = typeof facility.location === "object" 
               ? facility.location?.name 
@@ -1592,6 +1622,80 @@ function FacilityDataTable({
           })
         )}
       </div>
+
+      {/* Pagination Bar (15 data per halaman, gaya tombol [<] [1] [2] [3] [>]) */}
+      {filteredFacilities.length > 0 && (
+        <div className="px-4 py-3 bg-white border-t border-gray-200/90 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-600">
+          <div className="font-medium text-slate-500 text-center sm:text-left">
+            Menampilkan <span className="font-bold text-slate-800">{filteredFacilities.length === 0 ? 0 : startIndex + 1}</span> - <span className="font-bold text-slate-800">{endIndex}</span> dari <span className="font-bold text-slate-800">{filteredFacilities.length}</span> fasilitas
+          </div>
+
+          <div className="flex items-center gap-1.5 select-none">
+            {/* Prev Button */}
+            <button
+              type="button"
+              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+              disabled={safeCurrentPage <= 1}
+              aria-label="Halaman Sebelumnya"
+              className={cn(
+                "w-8 h-8 sm:w-9 sm:h-9 rounded-lg flex items-center justify-center border transition-all cursor-pointer",
+                safeCurrentPage <= 1
+                  ? "bg-gray-50 text-slate-300 border-gray-200 cursor-not-allowed"
+                  : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50 hover:border-slate-300 shadow-2xs active:scale-95"
+              )}
+            >
+              <ChevronLeft size={16} />
+            </button>
+
+            {/* Page Numbers */}
+            {pageNumbers.map((p, idx) => {
+              if (p === "...") {
+                return (
+                  <span
+                    key={`ellipsis-${idx}`}
+                    className="w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center text-slate-400 font-bold text-xs"
+                  >
+                    ...
+                  </span>
+                );
+              }
+              const pageNum = Number(p);
+              const isActive = pageNum === safeCurrentPage;
+              return (
+                <button
+                  key={pageNum}
+                  type="button"
+                  onClick={() => setCurrentPage(pageNum)}
+                  className={cn(
+                    "w-8 h-8 sm:w-9 sm:h-9 rounded-lg flex items-center justify-center font-bold text-xs sm:text-sm transition-all cursor-pointer",
+                    isActive
+                      ? "bg-[#1e3a8a] text-white border border-[#1e3a8a] shadow-xs"
+                      : "bg-white text-slate-700 border border-slate-200 hover:bg-slate-50 hover:border-slate-300 shadow-2xs active:scale-95"
+                  )}
+                >
+                  {pageNum}
+                </button>
+              );
+            })}
+
+            {/* Next Button */}
+            <button
+              type="button"
+              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+              disabled={safeCurrentPage >= totalPages}
+              aria-label="Halaman Berikutnya"
+              className={cn(
+                "w-8 h-8 sm:w-9 sm:h-9 rounded-lg flex items-center justify-center border transition-all cursor-pointer",
+                safeCurrentPage >= totalPages
+                  ? "bg-gray-50 text-slate-300 border-gray-200 cursor-not-allowed"
+                  : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50 hover:border-slate-300 shadow-2xs active:scale-95"
+              )}
+            >
+              <ChevronRight size={16} />
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
