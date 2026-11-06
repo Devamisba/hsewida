@@ -34,6 +34,7 @@ import { ApprovalWorkflowStepper } from "@/components/ApprovalWorkflowStepper";
 import { InspectionDataTable } from "@/components/InspectionDataTable";
 import { ProjectPhaseTimeline } from "@/components/ProjectPhaseTimeline";
 import { exportWorkPermitsToExcel } from "@/utils/exportPermitExcel";
+import { K3Loader } from "@/components/K3Loader";
 
 function mapApiToHistory(item: any) {
   const parent = item.parent_permit || item.parentPermit || null;
@@ -775,7 +776,13 @@ export default function HistoryPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
-                  {displayedRequests.length > 0 ? (
+                  {loading ? (
+                    <tr>
+                      <td colSpan={6} className="py-16 text-center">
+                        <K3Loader size="md" text="Memuat riwayat ijin kerja..." />
+                      </td>
+                    </tr>
+                  ) : displayedRequests.length > 0 ? (
                     displayedRequests.map((req) => (
                       <tr key={req.id} className="hover:bg-gray-50/50 transition-colors">
                         <td className="px-5 py-4 text-sm font-bold text-gray-900 whitespace-nowrap">
@@ -892,7 +899,11 @@ export default function HistoryPage() {
 
           {/* Mobile Card Layout */}
           <div className="sm:hidden space-y-4">
-            {displayedRequests.length > 0 ? (
+            {loading ? (
+              <div className="py-14 bg-white rounded-xl border border-gray-200 flex justify-center shadow-xs">
+                <K3Loader size="md" text="Memuat riwayat ijin kerja..." />
+              </div>
+            ) : displayedRequests.length > 0 ? (
               displayedRequests.map((req) => (
                 <div key={req.id} className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm relative space-y-4">
                   <div className="flex justify-between items-start">

@@ -9,6 +9,7 @@ import { CheckCircle, AlertCircle, CalendarPlus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useNavigate, useLocation } from "react-router-dom";
 import { format, addDays } from "date-fns";
+import { K3Loader } from "@/components/K3Loader";
 
 // Helper to create blank worker row
 const createEmptyWorker = (idx: number) => ({
@@ -580,6 +581,16 @@ export default function CreateRequestPage() {
 
         </div>
       </main>
+
+      {/* Full Screen K3 Loading Animation saat Submit Permit */}
+      {isSubmitting && (
+        <K3Loader
+          fullScreen
+          size="lg"
+          showSlogan
+          text="Mengirim & Memproses Pengajuan Ijin Kerja..."
+        />
+      )}
     </div>
   );
 }

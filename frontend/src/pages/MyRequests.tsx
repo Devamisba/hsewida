@@ -25,6 +25,7 @@ import { api } from "@/services/api";
 import { PrintPermitModal } from "@/components/PrintPermitModal";
 import { ApprovalWorkflowStepper } from "@/components/ApprovalWorkflowStepper";
 import { ProjectPhaseTimeline } from "@/components/ProjectPhaseTimeline";
+import { K3Loader } from "@/components/K3Loader";
 
 function mapApiToRequest(item: any) {
   const parent = item.parent_permit || item.parentPermit || null;
@@ -451,7 +452,13 @@ export default function MyRequestsPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
-                  {filteredRequests.length > 0 ? (
+                  {loading ? (
+                    <tr>
+                      <td colSpan={6} className="py-16 text-center">
+                        <K3Loader size="md" text="Memuat ijin kerja..." />
+                      </td>
+                    </tr>
+                  ) : filteredRequests.length > 0 ? (
                     filteredRequests.map((req) => (
                       <tr key={req.id} className="hover:bg-gray-50/70 transition-colors">
                         <td className="px-5 py-3.5 whitespace-nowrap">
@@ -562,7 +569,11 @@ export default function MyRequestsPage() {
 
           {/* Mobile Card Layout */}
           <div className="sm:hidden space-y-4">
-            {filteredRequests.length > 0 ? (
+            {loading ? (
+              <div className="py-14 bg-white rounded-xl border border-gray-200 flex justify-center shadow-xs">
+                <K3Loader size="md" text="Memuat ijin kerja..." />
+              </div>
+            ) : filteredRequests.length > 0 ? (
               filteredRequests.map((req) => (
                 <div key={req.id} className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm relative space-y-4">
                 <div className="flex justify-between items-start">

@@ -1,14 +1,101 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="id">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/png" href="/widatra-logo.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>HSE | PT WIDATRA BHAKTI</title>
-    <script type="module" crossorigin src="/assets/index-DA-qhbXv.js"></script>
-    <link rel="stylesheet" crossorigin href="/assets/index-BqbOH9h3.css">
+    <style>
+      #initial-k3-splash {
+        position: fixed;
+        inset: 0;
+        z-index: 99999;
+        background-color: #f8fafc;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        user-select: none;
+      }
+      .k3-splash-gear {
+        animation: k3-splash-spin 7s linear infinite;
+        transform-origin: 100px 100px;
+      }
+      .k3-splash-cross {
+        animation: k3-splash-pulse 2.2s ease-in-out infinite;
+        transform-origin: 100px 100px;
+      }
+      @keyframes k3-splash-spin {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+      }
+      @keyframes k3-splash-pulse {
+        0%, 100% { transform: scale(1); opacity: 1; }
+        50% { transform: scale(1.08); opacity: 0.92; }
+      }
+      .k3-splash-slogan {
+        margin-top: 18px;
+        color: #1b6b38;
+        font-weight: 800;
+        font-size: 13px;
+        letter-spacing: 0.5px;
+        text-align: center;
+        text-transform: uppercase;
+        line-height: 1.35;
+      }
+      .k3-splash-sub {
+        margin-top: 8px;
+        color: #64748b;
+        font-size: 12px;
+        font-weight: 500;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+      }
+      .k3-splash-dots::after {
+        content: '.';
+        animation: k3-dots-anim 1.5s steps(4, end) infinite;
+      }
+      @keyframes k3-dots-anim {
+        0%, 20% { content: ''; }
+        40% { content: '.'; }
+        60% { content: '..'; }
+        80%, 100% { content: '...'; }
+      }
+    </style>
+    <script type="module" crossorigin src="/assets/index-CwtHuLYI.js"></script>
+    <link rel="stylesheet" crossorigin href="/assets/index-Ax5EWaK-.css">
   </head>
   <body>
-    <div id="root"></div>
+    <!-- Initial K3 Splash Screen -->
+    <div id="initial-k3-splash">
+      <svg width="120" height="120" viewBox="0 0 200 200" fill="none">
+        <!-- Roda Gigi Luar 11 Gerigi Berputar -->
+        <g class="k3-splash-gear">
+          <path
+            d="M 90.89 36.65 L 90.97 12.46 A 88 88 0 0 1 109.03 12.46 L 109.11 36.65 A 64 64 0 0 1 126.59 41.78 L 139.73 21.48 A 88 88 0 0 1 154.92 31.24 L 141.91 51.63 A 64 64 0 0 1 153.84 65.40 L 175.87 55.42 A 88 88 0 0 1 183.38 71.85 L 161.41 81.97 A 64 64 0 0 1 164.00 100.00 L 187.93 103.52 A 88 88 0 0 1 185.36 121.40 L 161.41 118.03 A 64 64 0 0 1 153.84 134.60 L 172.07 150.50 A 88 88 0 0 1 160.24 164.15 L 141.91 148.37 A 64 64 0 0 1 126.59 158.22 L 133.33 181.44 A 88 88 0 0 1 116.00 186.53 L 109.11 163.35 A 64 64 0 0 1 90.89 163.35 L 84.00 186.53 A 88 88 0 0 1 66.67 181.44 L 73.41 158.22 A 64 64 0 0 1 58.09 148.37 L 39.76 164.15 A 88 88 0 0 1 27.93 150.50 L 46.16 134.60 A 64 64 0 0 1 38.59 118.03 L 14.64 121.40 A 88 88 0 0 1 12.07 103.52 L 36.00 100.00 A 64 64 0 0 1 38.59 81.97 L 16.62 71.85 A 88 88 0 0 1 24.13 55.42 L 46.16 65.40 A 64 64 0 0 1 58.09 51.63 L 45.08 31.24 A 88 88 0 0 1 60.27 21.48 L 73.41 41.78 A 64 64 0 0 1 90.89 36.65 Z M 100 57 A 43 43 0 1 0 100 143 A 43 43 0 1 0 100 57 Z"
+            fill="#1b6b38"
+            fill-rule="evenodd"
+          />
+        </g>
+        <!-- Lingkaran Putih Tengah -->
+        <circle cx="100" cy="100" r="42" fill="#ffffff" />
+        <!-- Palang Hijau (+) Berdenyut -->
+        <g class="k3-splash-cross">
+          <rect x="91.5" y="69" width="17" height="62" rx="1.5" fill="#1b6b38" />
+          <rect x="69" y="91.5" width="62" height="17" rx="1.5" fill="#1b6b38" />
+        </g>
+      </svg>
+      <div class="k3-splash-slogan">
+        Utamakan Keselamatan<br>dan Kesehatan Kerja
+      </div>
+      <div class="k3-splash-sub">
+        <span>Memuat Sistem HSE PT Widatra Bhakti</span>
+        <span class="k3-splash-dots"></span>
+      </div>
+    </div>
+
+    <div id="root"></div>
   </body>
 </html>

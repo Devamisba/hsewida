@@ -7,6 +7,7 @@ import { auth } from "@/lib/auth";
 import { PrintPermitModal } from "@/components/PrintPermitModal";
 import { ApprovalWorkflowStepper } from "@/components/ApprovalWorkflowStepper";
 import { ProjectPhaseTimeline } from "@/components/ProjectPhaseTimeline";
+import { K3Loader } from "@/components/K3Loader";
 
 function mapApiToReview(item: any) {
   const parent = item.parent_permit || item.parentPermit || null;
@@ -269,7 +270,13 @@ export default function ReviewRequestsPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
-                  {filteredRequests.length > 0 ? (
+                  {loading ? (
+                    <tr>
+                      <td colSpan={5} className="px-6 py-16 text-center">
+                        <K3Loader size="md" text="Memuat antrean review ijin kerja..." />
+                      </td>
+                    </tr>
+                  ) : filteredRequests.length > 0 ? (
                     filteredRequests.map((req) => (
                       <tr key={req.id} className="hover:bg-gray-50/70 transition-colors group">
                         <td className="px-5 py-3.5">
@@ -343,7 +350,11 @@ export default function ReviewRequestsPage() {
 
             {/* Mobile Review Cards (< lg) */}
             <div className="block lg:hidden divide-y divide-gray-100">
-              {filteredRequests.length > 0 ? (
+              {loading ? (
+                <div className="p-12 text-center flex justify-center">
+                  <K3Loader size="md" text="Memuat antrean review ijin kerja..." />
+                </div>
+              ) : filteredRequests.length > 0 ? (
                 filteredRequests.map((req) => (
                   <div key={req.id} className="p-4 hover:bg-gray-50/70 transition-colors space-y-3">
                     <div className="flex items-start justify-between gap-2">

@@ -77,3 +77,53 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* ==========================================================================
+   K3 Safety Animations (Logo Roda Gigi & Palang K3 Nasional)
+   ========================================================================== */
+@keyframes k3-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes k3-pulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.08);
+    opacity: 0.92;
+  }
+}
+
+@keyframes k3-shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.animate-k3-gear {
+  animation: k3-spin 7s linear infinite;
+  transform-origin: 100px 100px;
+}
+
+.animate-k3-cross {
+  animation: k3-pulse 2.2s ease-in-out infinite;
+  transform-origin: 100px 100px;
+}
+
+.animate-k3-shimmer {
+  background: linear-gradient(90deg, #1b6b38 0%, #22c55e 50%, #1b6b38 100%);
+  background-size: 200% 100%;
+  animation: k3-shimmer 3.5s ease-in-out infinite;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}

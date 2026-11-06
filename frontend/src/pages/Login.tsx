@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Eye, EyeOff, AlertCircle, Sparkles, X } from "lucide-react";
 import { api } from "@/services/api";
 import { auth } from "@/lib/auth";
+import { K3Loader } from "@/components/K3Loader";
 
 const DEMO_ACCOUNTS = [
   { role: "admin", label: "Admin", nik: "SA12345" },
@@ -250,6 +251,16 @@ export default function LoginPage() {
               ))}
             </div>
           </div>
+        )}
+
+        {/* Full Screen K3 Loading Animation saat Login */}
+        {loading && (
+          <K3Loader
+            fullScreen
+            size="lg"
+            showSlogan
+            text="Mengautentikasi Akun HSE..."
+          />
         )}
       </div>
     </div>

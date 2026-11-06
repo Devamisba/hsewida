@@ -1,6 +1,7 @@
 import { BrowserRouter as Router, Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import { Sidebar } from '@/components/Sidebar';
 import { SidebarProvider } from '@/context/SidebarContext';
+import { LoadingProvider } from '@/context/LoadingContext';
 import { auth } from '@/lib/auth';
 import LoginPage from '@/pages/Login';
 import DashboardPage from '@/pages/Dashboard';
@@ -44,27 +45,29 @@ function RootDashboard() {
 
 export default function App() {
   return (
-    <Router>
-      <Routes>
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/verify-permit/:token" element={<PublicQrVerifyPage />} />
-        <Route path="/scan/apar/:code" element={<AparScanPage />} />
-        
-        <Route path="/" element={<ProtectedRoute />}>
-          <Route index element={<Navigate to="/dashboard" replace />} />
-          <Route path="dashboard" element={<RootDashboard />} />
-          <Route path="create-request" element={<CreateRequestPage />} />
-          <Route path="my-requests" element={<MyRequestsPage />} />
-          <Route path="history" element={<HistoryPage />} />
-          <Route path="review" element={<ReviewRequestsPage />} />
-          <Route path="monitoring" element={<MonitoringHSEPage />} />
-          <Route path="inspeksi" element={<InspectionPage />} />
-          <Route path="monitoring/inspeksi" element={<InspectionPage />} />
-          <Route path="gis-map" element={<GisGeofencePage />} />
-          <Route path="master-data" element={<MasterDataPage />} />
-          <Route path="profile" element={<ProfilePage />} />
-        </Route>
-      </Routes>
-    </Router>
+    <LoadingProvider>
+      <Router>
+        <Routes>
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/verify-permit/:token" element={<PublicQrVerifyPage />} />
+          <Route path="/scan/apar/:code" element={<AparScanPage />} />
+          
+          <Route path="/" element={<ProtectedRoute />}>
+            <Route index element={<Navigate to="/dashboard" replace />} />
+            <Route path="dashboard" element={<RootDashboard />} />
+            <Route path="create-request" element={<CreateRequestPage />} />
+            <Route path="my-requests" element={<MyRequestsPage />} />
+            <Route path="history" element={<HistoryPage />} />
+            <Route path="review" element={<ReviewRequestsPage />} />
+            <Route path="monitoring" element={<MonitoringHSEPage />} />
+            <Route path="inspeksi" element={<InspectionPage />} />
+            <Route path="monitoring/inspeksi" element={<InspectionPage />} />
+            <Route path="gis-map" element={<GisGeofencePage />} />
+            <Route path="master-data" element={<MasterDataPage />} />
+            <Route path="profile" element={<ProfilePage />} />
+          </Route>
+        </Routes>
+      </Router>
+    </LoadingProvider>
   );
 }
