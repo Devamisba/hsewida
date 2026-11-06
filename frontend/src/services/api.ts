@@ -335,12 +335,14 @@ export const api = {
   },
 
   // 10. Monitoring & K3
-  getFacilities: async (category?: string, tipe_item?: string, search?: string, area_zone?: string) => {
+  getFacilities: async (category?: string, tipe_item?: string, search?: string, area_zone?: string, month?: string, check_month_status?: string) => {
     const params = new URLSearchParams();
     if (category) params.append('category', category);
     if (tipe_item) params.append('tipe_item', tipe_item);
     if (search) params.append('search', search);
     if (area_zone) params.append('area_zone', area_zone);
+    if (month) params.append('month', month);
+    if (check_month_status) params.append('check_month_status', check_month_status);
     const qs = params.toString();
     return apiRequest(`/monitoring/facilities${qs ? '?' + qs : ''}`);
   },
@@ -360,6 +362,7 @@ export const api = {
     sort_by?: string;
     page?: number;
     per_page?: number;
+    month?: string;
   }) => {
     const q = new URLSearchParams();
     if (params) {
@@ -430,6 +433,13 @@ export const api = {
     return apiRequest('/monitoring/facilities', {
       method: 'POST',
       body: JSON.stringify(payload),
+    });
+  },
+
+  importFacilities: async (facilities: any[]) => {
+    return apiRequest('/monitoring/import-facilities', {
+      method: 'POST',
+      body: JSON.stringify({ facilities }),
     });
   },
 
@@ -534,6 +544,7 @@ export interface SafetyFacility {
   days_until_expired?: number | null;
   expiry_tier?: string;
   is_overdue?: boolean;
+  is_checked_this_month?: boolean;
   last_inspected_at?: string;
   consumable_cycle?: ConsumableCycle;
   condition_schedule?: ConditionSchedule;
@@ -546,6 +557,8 @@ export interface AlertsSummary {
     total: number;
     aman: number;
     h_1tahun?: number;
+    h_6bulan?: number;
+    h_3bulan?: number;
     h_5bulan?: number;
     h_1bulan?: number;
     h30: number;

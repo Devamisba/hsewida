@@ -145,7 +145,12 @@ class SafetyFacility extends Model
     }
 
     /**
-     * 5-Tier Expiry Horizon for Consumables (Aman >1th, H-1 Thn, H-5 Bln, H-1 Bln, Kadaluarsa).
+     * 5-Tier Expiry Horizon for Consumables:
+     * - AMAN: > 365 Hari (> 1 Tahun)
+     * - H_1TAHUN: 181 - 365 Hari (6 - 12 Bulan)
+     * - H_6BULAN: 91 - 180 Hari (3 - 6 Bulan)
+     * - H_3BULAN: 0 - 90 Hari (< 3 Bulan)
+     * - KADALUARSA: < 0 Hari
      */
     public function getExpiryTierAttribute(): ?string
     {
@@ -153,8 +158,8 @@ class SafetyFacility extends Model
             $days = $this->days_until_expired;
             if ($days === null) return 'AMAN';
             if ($days < 0) return 'KADALUARSA';
-            if ($days <= 30) return 'H_1BULAN';
-            if ($days <= 150) return 'H_5BULAN';
+            if ($days <= 90) return 'H_3BULAN';
+            if ($days <= 180) return 'H_6BULAN';
             if ($days <= 365) return 'H_1TAHUN';
             return 'AMAN';
         }

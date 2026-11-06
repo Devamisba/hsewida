@@ -70,6 +70,7 @@ export function InspectionDataTable({
   // Filters
   const [facilityCategory, setFacilityCategory] = useState<string>("apar");
   const [checkStatusFilter, setCheckStatusFilter] = useState<string>("ALL");
+  const [selectedMonth, setSelectedMonth] = useState<string>(new Date().toISOString().slice(0, 7));
   const [sortBy, setSortBy] = useState<string>(defaultSortBy);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedZone, setSelectedZone] = useState("ALL");
@@ -116,6 +117,7 @@ export function InspectionDataTable({
         sort_by: sortBy,
         page: currentPage,
         per_page: perPage,
+        month: selectedMonth,
       });
 
       if (res.success && res.data) {
@@ -133,7 +135,7 @@ export function InspectionDataTable({
     } finally {
       setLoading(false);
     }
-  }, [facilityCategory, selectedZone, checkStatusFilter, resultFilter, dateRangeFilter, searchTerm, sortBy, currentPage, perPage]);
+  }, [facilityCategory, selectedZone, checkStatusFilter, resultFilter, dateRangeFilter, searchTerm, sortBy, currentPage, perPage, selectedMonth]);
 
   useEffect(() => {
     fetchInspections();
@@ -286,27 +288,27 @@ export function InspectionDataTable({
           <p className="text-[11px] text-slate-500 mt-1">Total armada fasilitas terdaftar</p>
         </div>
 
-        {/* Card 2: Sudah Dicek */}
+        {/* Card 2: Sudah Dicek Bulan Ini */}
         <div className="p-3.5 bg-white border border-emerald-200 rounded-xl shadow-xs">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-emerald-800">Sudah Dicek</span>
+            <span className="text-xs font-semibold text-emerald-800">Sudah Dicek Bulan Ini</span>
             <div className="w-7 h-7 rounded-lg bg-emerald-50 text-emerald-700 flex items-center justify-center">
               <ShieldCheck size={15} />
             </div>
           </div>
           <div className="mt-1 flex items-baseline gap-1.5">
             <span className="text-2xl font-black text-emerald-700">{summary.checked || 0}</span>
-            <span className="text-xs text-emerald-600">Unit</span>
+            <span className="text-xs text-emerald-600">Unit ({summary.percentage_this_month || 0}%)</span>
           </div>
           <p className="text-[11px] text-emerald-600 mt-1">
             {summary.verified || 0} Terverifikasi, {summary.pending_verification || 0} Menunggu PIC
           </p>
         </div>
 
-        {/* Card 3: Belum Dicek (Pending Audit) */}
+        {/* Card 3: Belum Dicek Bulan Ini */}
         <div className={`p-3.5 bg-white rounded-xl shadow-xs border ${summary.unchecked > 0 ? "border-amber-300 ring-1 ring-amber-200" : "border-slate-200"}`}>
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-amber-800">Belum Dicek</span>
+            <span className="text-xs font-semibold text-amber-800">Belum Dicek Bulan Ini</span>
             <div className="w-7 h-7 rounded-lg bg-amber-50 text-amber-700 flex items-center justify-center">
               <Clock size={15} />
             </div>
@@ -316,7 +318,7 @@ export function InspectionDataTable({
             <span className="text-xs text-amber-600">Unit</span>
           </div>
           <p className="text-[11px] text-amber-600 mt-1">
-            {summary.unchecked > 0 ? "Perlu segera diinspeksi di lapangan" : "Semua unit telah diperiksa"}
+            {summary.days_left_in_month ? `${summary.days_left_in_month} hari tersisa di siklus ini` : (summary.unchecked > 0 ? "Perlu segera diinspeksi di lapangan" : "Semua unit telah diperiksa")}
           </p>
         </div>
 
@@ -481,7 +483,23 @@ export function InspectionDataTable({
             })}
           </div>
 
-          <div className="flex items-center gap-2 shrink-0 self-end sm:self-auto">
+          <div className="flex items-center gap-2 shrink-0 self-end sm:self-auto flex-wrap">
+            <div className="flex items-center gap-1.5 bg-slate-100 px-2.5 py-1 rounded-lg border border-slate-200">
+              <span className="text-[10px] font-bold text-slate-500 uppercase">Siklus Bulan:</span>
+              <input
+                type="month"
+                value={selectedMonth}
+                onChange={(e) => {
+                  if (e.target.value) {
+                    setSelectedMonth(e.target.value);
+                    setCurrentPage(1);
+                  }
+                }}
+                className="text-xs font-bold text-slate-800 bg-transparent focus:outline-none cursor-pointer"
+                title="Pilih Bulan untuk Pelacakan Status Inspeksi"
+              />
+            </div>
+
             <button
               type="button"
               onClick={handleExportExcel}

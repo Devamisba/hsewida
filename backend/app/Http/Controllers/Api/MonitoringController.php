@@ -14,6 +14,8 @@ use App\Models\InspectionCapa;
 use App\Models\WorkPermit;
 use App\Models\Location;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 class MonitoringController extends Controller
 {
@@ -60,6 +62,32 @@ class MonitoringController extends Controller
 
         $facilities = $query->orderBy('code')->get();
 
+        // Monthly tracking info
+        $selectedMonth = $request->input('month', now()->format('Y-m'));
+        try {
+            $parsedDate = Carbon::createFromFormat('Y-m', $selectedMonth);
+            $targetYear = $parsedDate->year;
+            $targetMonth = $parsedDate->month;
+        } catch (\Exception $e) {
+            $targetYear = (int) now()->year;
+            $targetMonth = (int) now()->month;
+            $selectedMonth = now()->format('Y-m');
+        }
+
+        $inspectedIds = FacilityInspection::where(function($q) use ($targetYear, $targetMonth) {
+            $q->whereYear('inspection_date', $targetYear)->whereMonth('inspection_date', $targetMonth)
+              ->orWhere(function($sq) use ($targetYear, $targetMonth) {
+                  $sq->whereNull('inspection_date')
+                     ->whereYear('created_at', $targetYear)
+                     ->whereMonth('created_at', $targetMonth);
+              });
+        })->pluck('facility_id')->unique()->toArray();
+        $inspectedSet = array_flip($inspectedIds);
+
+        foreach ($facilities as $facility) {
+            $facility->is_checked_this_month = isset($inspectedSet[$facility->id]);
+        }
+
         // Optional post-filter by calculated_status
         if ($request->filled('status_filter')) {
             $statusFilter = strtoupper($request->status_filter);
@@ -68,9 +96,33 @@ class MonitoringController extends Controller
             })->values();
         }
 
+        // Optional post-filter by monthly check status (CHECKED or UNCHECKED)
+        if ($request->filled('check_month_status')) {
+            $cms = strtoupper($request->check_month_status);
+            if ($cms === 'CHECKED' || $cms === 'CHECKED_MONTH') {
+                $facilities = $facilities->filter(fn($f) => isset($inspectedSet[$f->id]))->values();
+            } elseif ($cms === 'UNCHECKED' || $cms === 'UNCHECKED_MONTH') {
+                $facilities = $facilities->filter(fn($f) => !isset($inspectedSet[$f->id]))->values();
+            }
+        }
+
+        $totalInList = $facilities->count();
+        $checkedInList = $facilities->filter(fn($f) => isset($inspectedSet[$f->id]))->count();
+        $uncheckedInList = max(0, $totalInList - $checkedInList);
+
         return response()->json([
             'success' => true,
             'data' => $facilities,
+            'monthly_tracker' => [
+                'selected_month' => $selectedMonth,
+                'target_year' => $targetYear,
+                'target_month' => $targetMonth,
+                'days_left' => max(0, (int) now()->endOfMonth()->diffInDays(now())),
+                'total' => $totalInList,
+                'checked' => $checkedInList,
+                'unchecked' => $uncheckedInList,
+                'percentage' => $totalInList > 0 ? round(($checkedInList / $totalInList) * 100, 1) : 0,
+            ],
         ]);
     }
 
@@ -164,6 +216,29 @@ class MonitoringController extends Controller
         $search = trim($request->input('search', ''));
         $sortBy = $request->input('sort_by', 'code_asc'); // code_asc, unchecked_first, checked_first, latest
 
+        // Selected month handling for monthly schedule & real-time tracker
+        $selectedMonth = $request->input('month', now()->format('Y-m'));
+        try {
+            $parsedDate = Carbon::createFromFormat('Y-m', $selectedMonth);
+            $targetYear = $parsedDate->year;
+            $targetMonth = $parsedDate->month;
+        } catch (\Exception $e) {
+            $targetYear = (int) now()->year;
+            $targetMonth = (int) now()->month;
+            $selectedMonth = now()->format('Y-m');
+        }
+
+        $inspectionsThisMonthQuery = FacilityInspection::where(function($q) use ($targetYear, $targetMonth) {
+            $q->whereYear('inspection_date', $targetYear)->whereMonth('inspection_date', $targetMonth)
+              ->orWhere(function($sq) use ($targetYear, $targetMonth) {
+                  $sq->whereNull('inspection_date')
+                     ->whereYear('created_at', $targetYear)
+                     ->whereMonth('created_at', $targetMonth);
+              });
+        });
+        $checkedFacilityIdsThisMonth = (clone $inspectionsThisMonthQuery)->pluck('facility_id')->unique()->toArray();
+        $checkedFacilitySet = array_flip($checkedFacilityIdsThisMonth);
+
         $query = SafetyFacility::with([
             'location',
             'consumableCycle',
@@ -214,11 +289,11 @@ class MonitoringController extends Controller
             });
         }
 
-        // 5. Filter Check Status (UNCHECKED vs CHECKED)
-        if ($checkStatus === 'UNCHECKED') {
-            $query->doesntHave('latestInspection');
-        } elseif ($checkStatus === 'CHECKED') {
-            $query->has('latestInspection');
+        // 5. Filter Check Status (UNCHECKED vs CHECKED in selected month or overall)
+        if ($checkStatus === 'UNCHECKED' || $checkStatus === 'UNCHECKED_MONTH') {
+            $query->whereNotIn('safety_facilities.id', $checkedFacilityIdsThisMonth);
+        } elseif ($checkStatus === 'CHECKED' || $checkStatus === 'CHECKED_MONTH') {
+            $query->whereIn('safety_facilities.id', $checkedFacilityIdsThisMonth);
         } elseif ($checkStatus === 'PENDING') {
             $query->whereHas('latestInspection', function ($q) {
                 $q->where(function ($sq) {
@@ -274,6 +349,10 @@ class MonitoringController extends Controller
         $totalFacilities = (clone $baseQuery)->count();
         $checkedFacilities = (clone $baseQuery)->has('latestInspection')->count();
         $uncheckedFacilities = max(0, $totalFacilities - $checkedFacilities);
+
+        // Real-time monthly tracker counts
+        $checkedThisMonth = (clone $baseQuery)->whereIn('id', $checkedFacilityIdsThisMonth)->count();
+        $uncheckedThisMonth = max(0, $totalFacilities - $checkedThisMonth);
 
         $verifiedCount = (clone $baseQuery)->whereHas('latestInspection', function ($q) {
             $q->where('verification_status', 'VERIFIED')
@@ -354,7 +433,7 @@ class MonitoringController extends Controller
         }
 
         // Transform into uniform inspection view items
-        $items = $facilities->map(function ($fac) {
+        $items = $facilities->map(function ($fac) use ($checkedFacilitySet) {
             $latest = $fac->latestInspection;
             $hasInspection = !is_null($latest);
 
@@ -417,6 +496,7 @@ class MonitoringController extends Controller
                 'gps_coordinates' => $gpsCoordinates,
                 'gps_accuracy' => $gpsAccuracy,
                 'pic_plant_geofence_valid' => $picPlantValid,
+                'is_checked_this_month' => isset($checkedFacilitySet[$fac->id]),
                 'facility' => $fac,
             ];
         });
@@ -435,8 +515,15 @@ class MonitoringController extends Controller
                 'summary' => [
                     'total' => $totalFacilities,
                     'total_facilities' => $totalFacilities,
-                    'checked' => $checkedFacilities,
-                    'unchecked' => $uncheckedFacilities,
+                    'checked' => $checkedThisMonth,
+                    'unchecked' => $uncheckedThisMonth,
+                    'checked_this_month' => $checkedThisMonth,
+                    'unchecked_this_month' => $uncheckedThisMonth,
+                    'percentage_this_month' => $totalFacilities > 0 ? round(($checkedThisMonth / $totalFacilities) * 100, 1) : 0,
+                    'selected_month' => $selectedMonth,
+                    'days_left_in_month' => max(0, (int) now()->endOfMonth()->diffInDays(now())),
+                    'all_time_checked' => $checkedFacilities,
+                    'all_time_unchecked' => $uncheckedFacilities,
                     'verified' => $verifiedCount,
                     'pending_verification' => $pendingCount,
                     'findings' => $findingsCount,
@@ -520,6 +607,200 @@ class MonitoringController extends Controller
             'message' => 'Fasilitas K3 berhasil didaftarkan.',
             'data' => $facility->load(['location', 'consumableCycle', 'conditionSchedule']),
         ], 201);
+    }
+
+    /**
+     * Import multiple safety facilities from an Excel / JSON batch.
+     * Supports all categories: APAR, Hydrant, P3K, Emergency Door, Safety Mirror, Assembly Point.
+     */
+    public function importFacilities(Request $request)
+    {
+        $request->validate([
+            'facilities' => 'required|array|min:1',
+            'facilities.*.code' => 'required|string|max:50',
+            'facilities.*.category' => 'required|string',
+        ]);
+
+        $facilitiesData = $request->input('facilities');
+        $importedCount = 0;
+        $updatedCount = 0;
+        $errors = [];
+
+        foreach ($facilitiesData as $index => $row) {
+            $rowNum = $index + 1;
+            try {
+                $code = strtoupper(trim($row['code'] ?? ''));
+                if (!$code) {
+                    $errors[] = "Baris {$rowNum}: Kode fasilitas tidak boleh kosong.";
+                    continue;
+                }
+
+                $rawCategory = strtolower(trim($row['category'] ?? 'apar'));
+                $categoryMap = [
+                    'apar' => 'apar',
+                    'hydrant' => 'hydrant',
+                    'emergency_door' => 'emergency_door',
+                    'pintu_darurat' => 'emergency_door',
+                    'pintu emergency' => 'emergency_door',
+                    'pintu' => 'emergency_door',
+                    'emergency' => 'emergency_door',
+                    'p3k' => 'p3k',
+                    'first_aid' => 'p3k',
+                    'safety_mirror' => 'safety_mirror',
+                    'safety mirror' => 'safety_mirror',
+                    'cermin' => 'safety_mirror',
+                    'mirror' => 'safety_mirror',
+                    'assembly_point' => 'assembly_point',
+                    'assembly point' => 'assembly_point',
+                    'titik_kumpul' => 'assembly_point',
+                    'titik kumpul' => 'assembly_point',
+                    'assembly' => 'assembly_point',
+                ];
+                $category = $categoryMap[$rawCategory] ?? 'apar';
+
+                // Determine tipe_item (CONSUMABLE for apar & p3k, KONDISI for others)
+                $tipeItem = strtoupper(trim($row['tipe_item'] ?? ''));
+                if (!in_array($tipeItem, ['CONSUMABLE', 'KONDISI'])) {
+                    $tipeItem = in_array($category, ['apar', 'p3k']) ? 'CONSUMABLE' : 'KONDISI';
+                }
+
+                // Resolve Location
+                $locationId = null;
+                $locationName = trim($row['location_name'] ?? ($row['lokasi'] ?? ($row['location'] ?? 'Area Pabrik PT Widatra')));
+                if ($locationName) {
+                    $loc = Location::firstOrCreate(['name' => $locationName]);
+                    $locationId = $loc->id;
+                }
+
+                // Area Zone
+                $rawZone = strtoupper(trim($row['area_zone'] ?? ($row['zone'] ?? 'UMUM')));
+                $validZones = ['UMUM', 'FACTORY 1', 'FACTORY 2 & WORKSHOP', 'WARE HOUSE'];
+                $areaZone = in_array($rawZone, $validZones) ? $rawZone : 'UMUM';
+
+                // Name / Nama Item
+                $namaItem = trim($row['nama_item'] ?? ($row['name'] ?? ''));
+                if (!$namaItem) {
+                    $categoryLabels = [
+                        'apar' => 'APAR',
+                        'hydrant' => 'Hydrant',
+                        'emergency_door' => 'Pintu Emergency',
+                        'p3k' => 'Kotak P3K',
+                        'safety_mirror' => 'Safety Mirror',
+                        'assembly_point' => 'Assembly Point',
+                    ];
+                    $lbl = $categoryLabels[$category] ?? strtoupper($category);
+                    $namaItem = "{$lbl} - {$code}";
+                }
+
+                // QR Code ID
+                $cleanCode = preg_replace('/[^A-Za-z0-9]/', '', $code);
+                $qrCodeId = 'QR-' . $cleanCode;
+
+                // Specifications
+                $specifications = [];
+                if (!empty($row['specifications']) && is_array($row['specifications'])) {
+                    $specifications = $row['specifications'];
+                } else {
+                    if (!empty($row['media_tipe'])) $specifications['media_tipe'] = trim($row['media_tipe']);
+                    if (!empty($row['kapasitas_berat'])) $specifications['kapasitas_berat'] = trim($row['kapasitas_berat']);
+                    if (!empty($row['tekanan_standar'])) $specifications['tekanan_standar'] = trim($row['tekanan_standar']);
+                    if (!empty($row['merk'])) $specifications['merk'] = trim($row['merk']);
+                    if (!empty($row['no_seri'])) $specifications['no_seri'] = trim($row['no_seri']);
+                }
+
+                // Check existing
+                $existing = SafetyFacility::where('code', $code)->first();
+                if ($existing) {
+                    $existing->update([
+                        'nama_item' => $namaItem,
+                        'category' => $category,
+                        'tipe_item' => $tipeItem,
+                        'location_id' => $locationId ?: $existing->location_id,
+                        'area_zone' => $areaZone,
+                        'specifications' => array_merge($existing->specifications ?? [], $specifications),
+                        'latitude' => !empty($row['latitude']) ? (float)$row['latitude'] : $existing->latitude,
+                        'longitude' => !empty($row['longitude']) ? (float)$row['longitude'] : $existing->longitude,
+                        'status_aktif' => true,
+                    ]);
+                    $facility = $existing;
+                    $updatedCount++;
+                } else {
+                    // Check qr_code_id collision
+                    if (SafetyFacility::where('qr_code_id', $qrCodeId)->exists()) {
+                        $qrCodeId .= '-' . strtoupper(substr(md5(uniqid()), 0, 4));
+                    }
+
+                    $facility = SafetyFacility::create([
+                        'code' => $code,
+                        'nama_item' => $namaItem,
+                        'category' => $category,
+                        'tipe_item' => $tipeItem,
+                        'qr_code_id' => $qrCodeId,
+                        'tanggal_daftar' => now()->toDateString(),
+                        'location_id' => $locationId,
+                        'area_zone' => $areaZone,
+                        'latitude' => !empty($row['latitude']) ? (float)$row['latitude'] : null,
+                        'longitude' => !empty($row['longitude']) ? (float)$row['longitude'] : null,
+                        'specifications' => !empty($specifications) ? $specifications : null,
+                        'status' => 'Good',
+                        'status_aktif' => true,
+                    ]);
+                    $importedCount++;
+                }
+
+                // Branching Consumable vs Kondisi
+                if ($tipeItem === 'CONSUMABLE') {
+                    $expiredAt = null;
+                    if (!empty($row['expired_at'])) {
+                        try {
+                            $expiredAt = Carbon::parse($row['expired_at'])->toDateString();
+                        } catch (\Exception $e) {
+                            $expiredAt = now()->addYear()->toDateString();
+                        }
+                    } else {
+                        $expiredAt = now()->addYear()->toDateString();
+                    }
+
+                    $thresholdWarning = !empty($row['threshold_warning_hari']) ? (int)$row['threshold_warning_hari'] : 90;
+
+                    FacilityConsumableCycle::updateOrCreate(
+                        ['facility_id' => $facility->id],
+                        [
+                            'expired_at' => $expiredAt,
+                            'threshold_warning_hari' => $thresholdWarning,
+                            'last_refilled_at' => !empty($row['last_refilled_at']) ? Carbon::parse($row['last_refilled_at'])->toDateString() : now()->toDateString(),
+                            'media_tipe' => $specifications['media_tipe'] ?? 'POWDER',
+                            'kapasitas_berat' => $specifications['kapasitas_berat'] ?? '6 KG',
+                        ]
+                    );
+                } else {
+                    $interval = !empty($row['interval_pemeriksaan_hari']) ? (int)$row['interval_pemeriksaan_hari'] : 30;
+                    FacilityConditionSchedule::updateOrCreate(
+                        ['facility_id' => $facility->id],
+                        [
+                            'interval_pemeriksaan_hari' => $interval,
+                            'terakhir_diperiksa' => !empty($row['terakhir_diperiksa']) ? Carbon::parse($row['terakhir_diperiksa'])->toDateString() : now()->toDateString(),
+                            'status_kondisi_terakhir' => 'BAIK',
+                        ]
+                    );
+                }
+
+            } catch (\Exception $e) {
+                $errors[] = "Baris {$rowNum} (Kode: " . ($row['code'] ?? 'Unknown') . "): " . $e->getMessage();
+            }
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => "Proses import selesai. Berhasil ditambahkan: {$importedCount}, diperbarui: {$updatedCount}" . (count($errors) > 0 ? ", gagal: " . count($errors) : ""),
+            'data' => [
+                'imported_count' => $importedCount,
+                'updated_count' => $updatedCount,
+                'total_processed' => $importedCount + $updatedCount,
+                'error_count' => count($errors),
+                'errors' => $errors,
+            ],
+        ]);
     }
 
     /**
@@ -915,9 +1196,11 @@ class MonitoringController extends Controller
         $consumable = [
             'total' => 0,
             'aman' => 0,          // > 365 hari (> 1 Tahun)
-            'h_1tahun' => 0,      // 151 - 365 hari (5-12 Bulan)
-            'h_5bulan' => 0,      // 31 - 150 hari (1-5 Bulan)
-            'h_1bulan' => 0,      // 0 - 30 hari (< 30 Hari)
+            'h_1tahun' => 0,      // 181 - 365 hari (6-12 Bulan)
+            'h_6bulan' => 0,      // 91 - 180 hari (3-6 Bulan)
+            'h_3bulan' => 0,      // 0 - 90 hari (< 3 Bulan)
+            'h_5bulan' => 0,      // backward-compat alias for h_6bulan
+            'h_1bulan' => 0,      // backward-compat alias for h_3bulan
             'h30' => 0,           // alias for backwards compatibility
             'kadaluarsa' => 0,    // < 0 hari
         ];
@@ -941,11 +1224,13 @@ class MonitoringController extends Controller
                     $consumable['aman']++;
                 } elseif ($days < 0) {
                     $consumable['kadaluarsa']++;
-                } elseif ($days <= 30) {
-                    $consumable['h_1bulan']++;
-                    $consumable['h30']++;
-                } elseif ($days <= 150) {
-                    $consumable['h_5bulan']++;
+                } elseif ($days <= 90) {
+                    $consumable['h_3bulan']++;
+                    $consumable['h_1bulan']++; // backward-compat
+                    $consumable['h30']++;      // backward-compat
+                } elseif ($days <= 180) {
+                    $consumable['h_6bulan']++;
+                    $consumable['h_5bulan']++; // backward-compat
                 } elseif ($days <= 365) {
                     $consumable['h_1tahun']++;
                 } else {

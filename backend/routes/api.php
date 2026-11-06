@@ -92,6 +92,7 @@ Route::prefix('v1')->group(function () {
         // 7. Monitoring & Inspeksi K3
         Route::get('/monitoring/facilities', [MonitoringController::class, 'getFacilities']);
         Route::post('/monitoring/facilities', [MonitoringController::class, 'storeFacility']);
+        Route::post('/monitoring/import-facilities', [MonitoringController::class, 'importFacilities']);
         Route::put('/monitoring/facilities/{id}', [MonitoringController::class, 'updateFacility']);
         Route::delete('/monitoring/facilities/{id}', [MonitoringController::class, 'deleteFacility']);
         Route::get('/monitoring/facilities/by-qr/{qrCodeId}', [MonitoringController::class, 'getFacilityByQrId']);

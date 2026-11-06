@@ -22,7 +22,10 @@ import {
   X,
   Layers,
   Edit3,
-  Trash2
+  Trash2,
+  FileSpreadsheet,
+  CalendarCheck,
+  CheckCircle2
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer } from "recharts";
@@ -34,6 +37,7 @@ import { RecordRefillModal } from "@/components/RecordRefillModal";
 import { QrScanFieldModal } from "@/components/QrScanFieldModal";
 import { RefillQueueModal } from "@/components/RefillQueueModal";
 import { FacilityDetailActionModal } from "@/components/FacilityDetailActionModal";
+import { ImportFacilityModal } from "@/components/ImportFacilityModal";
 import { syncGeofenceFromSettingsMap } from "@/utils/facilityCoordinates";
 import { api, SafetyFacility, AlertsSummary } from "@/services/api";
 
@@ -70,6 +74,7 @@ export default function MonitoringHSEPage() {
   const [stickerModalOpen, setStickerModalOpen] = useState(false);
   const [refillModalOpen, setRefillModalOpen] = useState(false);
   const [scannerModalOpen, setScannerModalOpen] = useState(false);
+  const [importModalOpen, setImportModalOpen] = useState(false);
   const [refillQueueOpen, setRefillQueueOpen] = useState(false);
   const [detailModalOpen, setDetailModalOpen] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
@@ -318,13 +323,26 @@ export default function MonitoringHSEPage() {
               </button>
 
               {activeTab !== "spi" && activeTab !== "inspeksi" && (
-                <button 
-                  onClick={() => setAddModalOpen(true)}
-                  className="inline-flex items-center gap-1.5 bg-primary hover:bg-primary/90 text-on-primary px-3.5 py-2 rounded-xl transition-all text-xs font-bold shadow-xs whitespace-nowrap active:scale-[0.98] cursor-pointer"
-                >
-                  <Plus size={16} />
-                  <span>Tambah Unit Baru</span>
-                </button>
+                <>
+                  <button 
+                    type="button"
+                    onClick={() => setImportModalOpen(true)}
+                    className="inline-flex items-center gap-1.5 bg-emerald-700 hover:bg-emerald-800 text-white px-3.5 py-2 rounded-xl transition-all text-xs font-bold shadow-xs whitespace-nowrap active:scale-[0.98] cursor-pointer"
+                    title="Import Data Fasilitas dari File Excel (.xlsx)"
+                  >
+                    <FileSpreadsheet size={15} />
+                    <span>Import Excel</span>
+                  </button>
+
+                  <button 
+                    type="button"
+                    onClick={() => setAddModalOpen(true)}
+                    className="inline-flex items-center gap-1.5 bg-primary hover:bg-primary/90 text-on-primary px-3.5 py-2 rounded-xl transition-all text-xs font-bold shadow-xs whitespace-nowrap active:scale-[0.98] cursor-pointer"
+                  >
+                    <Plus size={16} />
+                    <span>Tambah Unit Baru</span>
+                  </button>
+                </>
               )}
             </div>
           </div>
@@ -374,7 +392,7 @@ export default function MonitoringHSEPage() {
                   <button
                     type="button"
                     onClick={() => handleToggleStatusFilter("H_1TAHUN", "CONSUMABLE")}
-                    title="Klik untuk memfilter alat dalam horizon H-1 Tahun (5-12 Bulan)"
+                    title="Klik untuk memfilter alat dalam horizon H-1 Tahun (6-12 Bulan)"
                     className={cn(
                       "p-1.5 sm:p-2.5 lg:p-3 rounded-xl border text-center transition-all cursor-pointer select-none flex flex-col justify-between",
                       statusFilter === "H_1TAHUN"
@@ -387,49 +405,51 @@ export default function MonitoringHSEPage() {
                       <span className="truncate">H-1 Thn</span>
                     </div>
                     <p className="text-base sm:text-xl lg:text-2xl font-black text-yellow-800 my-0.5">{alertsSummary.consumable?.h_1tahun || 0}</p>
-                    <span className="text-[9px] sm:text-[10px] lg:text-[11px] text-yellow-700 font-semibold whitespace-nowrap block">5-12 Bln</span>
+                    <span className="text-[9px] sm:text-[10px] lg:text-[11px] text-yellow-700 font-semibold whitespace-nowrap block">6-12 Bln</span>
                   </button>
 
-                  {/* 3. H-5 Bulan */}
+                  {/* 3. H-6 Bulan */}
                   <button
                     type="button"
-                    onClick={() => handleToggleStatusFilter("H_5BULAN", "CONSUMABLE")}
-                    title="Klik untuk memfilter alat dalam horizon H-5 Bulan (1-5 Bulan)"
+                    onClick={() => handleToggleStatusFilter("H_6BULAN", "CONSUMABLE")}
+                    title="Klik untuk memfilter alat dalam horizon H-6 Bulan (3-6 Bulan)"
                     className={cn(
                       "p-1.5 sm:p-2.5 lg:p-3 rounded-xl border text-center transition-all cursor-pointer select-none flex flex-col justify-between",
-                      statusFilter === "H_5BULAN"
+                      statusFilter === "H_6BULAN" || statusFilter === "H_5BULAN"
                         ? "bg-amber-100 border-amber-500 ring-2 ring-amber-500/50 shadow-xs"
                         : "bg-amber-50/70 border-amber-100 hover:bg-amber-100/60 hover:border-amber-300"
                     )}
                   >
                     <div className="flex items-center justify-center gap-1 text-[10px] sm:text-[11px] lg:text-xs text-amber-800 font-bold mb-0.5 whitespace-nowrap">
                       <span className="w-1.5 h-1.5 rounded-full bg-amber-500 inline-block" />
-                      <span className="truncate">H-5 Bln</span>
+                      <span className="truncate">H-6 Bln</span>
                     </div>
-                    <p className="text-base sm:text-xl lg:text-2xl font-black text-amber-800 my-0.5">{alertsSummary.consumable?.h_5bulan || 0}</p>
-                    <span className="text-[9px] sm:text-[10px] lg:text-[11px] text-amber-700 font-semibold whitespace-nowrap block">1-5 Bln</span>
+                    <p className="text-base sm:text-xl lg:text-2xl font-black text-amber-800 my-0.5">
+                      {alertsSummary.consumable?.h_6bulan ?? alertsSummary.consumable?.h_5bulan ?? 0}
+                    </p>
+                    <span className="text-[9px] sm:text-[10px] lg:text-[11px] text-amber-700 font-semibold whitespace-nowrap block">3-6 Bln</span>
                   </button>
 
-                  {/* 4. H-1 Bulan */}
+                  {/* 4. H-3 Bulan */}
                   <button
                     type="button"
-                    onClick={() => handleToggleStatusFilter("MENDEKATI_KADALUARSA", "CONSUMABLE")}
-                    title="Klik untuk memfilter alat mendekati batas kadaluarsa (H-1 Bulan / <30 Hari)"
+                    onClick={() => handleToggleStatusFilter("H_3BULAN", "CONSUMABLE")}
+                    title="Klik untuk memfilter alat dalam horizon H-3 Bulan (< 3 Bulan)"
                     className={cn(
                       "p-1.5 sm:p-2.5 lg:p-3 rounded-xl border text-center transition-all cursor-pointer select-none flex flex-col justify-between",
-                      statusFilter === "MENDEKATI_KADALUARSA" || statusFilter === "H_1BULAN"
+                      statusFilter === "H_3BULAN" || statusFilter === "MENDEKATI_KADALUARSA" || statusFilter === "H_1BULAN"
                         ? "bg-orange-100 border-orange-500 ring-2 ring-orange-500/50 shadow-xs"
                         : "bg-orange-50/70 border-orange-100 hover:bg-orange-100/60 hover:border-orange-300"
                     )}
                   >
                     <div className="flex items-center justify-center gap-1 text-[10px] sm:text-[11px] lg:text-xs text-orange-800 font-bold mb-0.5 whitespace-nowrap">
                       <span className="w-1.5 h-1.5 rounded-full bg-orange-500 inline-block" />
-                      <span className="truncate">H-1 Bln</span>
+                      <span className="truncate">H-3 Bln</span>
                     </div>
                     <p className="text-base sm:text-xl lg:text-2xl font-black text-orange-800 my-0.5">
-                      {alertsSummary.consumable?.h_1bulan ?? alertsSummary.consumable?.h30 ?? 0}
+                      {alertsSummary.consumable?.h_3bulan ?? alertsSummary.consumable?.h_1bulan ?? alertsSummary.consumable?.h30 ?? 0}
                     </p>
-                    <span className="text-[9px] sm:text-[10px] lg:text-[11px] text-orange-700 font-semibold whitespace-nowrap block">&lt; 30 Hari</span>
+                    <span className="text-[9px] sm:text-[10px] lg:text-[11px] text-orange-700 font-semibold whitespace-nowrap block">&lt; 3 Bln</span>
                   </button>
 
                   {/* 5. Kadaluarsa */}
@@ -658,6 +678,13 @@ export default function MonitoringHSEPage() {
         onSuccess={loadData}
       />
 
+      {/* 2.1 Modal Import Excel Universal Fasilitas K3 */}
+      <ImportFacilityModal
+        isOpen={importModalOpen}
+        onClose={() => setImportModalOpen(false)}
+        onSuccess={loadData}
+      />
+
       {/* 3. Modal Cetak QR Sticker Fisik (§2.3) */}
       <FacilityQrStickerModal
         isOpen={stickerModalOpen}
@@ -816,6 +843,19 @@ function FacilityDataTable({
 }: FacilityDataTableProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [typeFilter, setTypeFilter] = useState<"ALL" | "CONSUMABLE" | "KONDISI">("ALL");
+  const [monthCheckFilter, setMonthCheckFilter] = useState<"ALL" | "CHECKED" | "UNCHECKED">("ALL");
+
+  // Real-time Monthly Tracker metrics for active category
+  const now = new Date();
+  const monthNames = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
+  const currentMonthLabel = `${monthNames[now.getMonth()]} ${now.getFullYear()}`;
+  const daysInCurrentMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+  const daysLeftInMonth = Math.max(0, daysInCurrentMonth - now.getDate());
+
+  const totalUnits = facilities.length;
+  const checkedThisMonth = useMemo(() => facilities.filter(f => Boolean(f.is_checked_this_month)).length, [facilities]);
+  const uncheckedThisMonth = Math.max(0, totalUnits - checkedThisMonth);
+  const monthlyProgress = totalUnits > 0 ? Math.round((checkedThisMonth / totalUnits) * 100) : 0;
 
   // Zone Breakdown for APAR
   const zoneCounts = useMemo(() => {
@@ -834,10 +874,12 @@ function FacilityDataTable({
   const getStatusLabel = (status: string) => {
     switch (status) {
       case "AMAN": return "Aman (> 1 Tahun)";
-      case "H_1TAHUN": return "H-1 Tahun (5-12 Bulan)";
-      case "H_5BULAN": return "H-5 Bulan (1-5 Bulan)";
+      case "H_1TAHUN": return "H-1 Tahun (6-12 Bulan)";
+      case "H_6BULAN":
+      case "H_5BULAN": return "H-6 Bulan (3-6 Bulan)";
+      case "H_3BULAN":
       case "MENDEKATI_KADALUARSA":
-      case "H_1BULAN": return "H-1 Bulan (< 30 Hari)";
+      case "H_1BULAN": return "H-3 Bulan (< 3 Bulan)";
       case "KADALUARSA": return "Kadaluarsa";
       case "BAIK": return "Kondisi Baik";
       case "PERLU_PERHATIAN": return "Perhatian";
@@ -848,6 +890,10 @@ function FacilityDataTable({
   };
 
   const filteredFacilities = facilities.filter((f) => {
+    // Real-time Monthly Check status filter
+    if (monthCheckFilter === "CHECKED" && !f.is_checked_this_month) return false;
+    if (monthCheckFilter === "UNCHECKED" && f.is_checked_this_month) return false;
+
     // Type filter
     if (typeFilter !== "ALL" && f.tipe_item !== typeFilter) {
       return false;
@@ -875,15 +921,15 @@ function FacilityDataTable({
       } else if (statusFilter === "H_1TAHUN") {
         if (f.tipe_item !== "CONSUMABLE") return false;
         const days = f.days_until_expired;
-        if (days === null || days === undefined || days <= 150 || days > 365) return false;
-      } else if (statusFilter === "H_5BULAN") {
+        if (days === null || days === undefined || days <= 180 || days > 365) return false;
+      } else if (statusFilter === "H_6BULAN" || statusFilter === "H_5BULAN") {
         if (f.tipe_item !== "CONSUMABLE") return false;
         const days = f.days_until_expired;
-        if (days === null || days === undefined || days <= 30 || days > 150) return false;
-      } else if (statusFilter === "MENDEKATI_KADALUARSA" || statusFilter === "H_1BULAN") {
+        if (days === null || days === undefined || days <= 90 || days > 180) return false;
+      } else if (statusFilter === "H_3BULAN" || statusFilter === "MENDEKATI_KADALUARSA" || statusFilter === "H_1BULAN") {
         if (f.tipe_item !== "CONSUMABLE") return false;
         const days = f.days_until_expired;
-        if (days === null || days === undefined || days < 0 || days > 30) return false;
+        if (days === null || days === undefined || days < 0 || days > 90) return false;
       } else if (statusFilter === "KADALUARSA") {
         if (f.tipe_item !== "CONSUMABLE") return false;
         const days = f.days_until_expired;
@@ -944,6 +990,97 @@ function FacilityDataTable({
 
   return (
     <div className="flex flex-col h-full">
+      {/* 1. Real-Time Monthly Inspection Tracker Widget (Universal: APAR, Hydrant, P3K, Door, Mirror, Assembly) */}
+      <div className="p-4 bg-linear-to-r from-slate-900 via-slate-800 to-emerald-950 text-white border-b border-slate-700">
+        <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 rounded-xl bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 shrink-0">
+              <CalendarCheck size={22} />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h4 className="text-sm font-bold text-white tracking-tight">
+                  Jadwal & Tracker Inspeksi Bulanan (Real-Time)
+                </h4>
+                <span className="px-2 py-0.5 rounded-md text-[10px] font-extrabold bg-emerald-500 text-slate-950 uppercase">
+                  {currentMonthLabel}
+                </span>
+              </div>
+              <p className="text-xs text-slate-300 mt-0.5">
+                Pelacakan real-time kepatuhan inspeksi fisik: fasilitas mana yang sudah dicek vs belum dicek bulan ini
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 w-full lg:w-auto justify-between lg:justify-end">
+            <span className="text-[11px] font-semibold text-slate-300 flex items-center gap-1.5 bg-white/10 px-3 py-1.5 rounded-lg border border-white/15">
+              <Clock size={13} className="text-amber-400" />
+              <span>{daysLeftInMonth} Hari Tersisa di Bulan Ini</span>
+            </span>
+          </div>
+        </div>
+
+        {/* Progress bar & Quick 1-Click Filters */}
+        <div className="mt-3.5 pt-3 border-t border-slate-700/80 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+          {/* Visual Progress */}
+          <div className="w-full sm:w-80">
+            <div className="flex justify-between items-center text-[11px] mb-1 font-semibold">
+              <span className="text-slate-300">Progres Kepatuhan:</span>
+              <span className="text-emerald-300 font-bold">{checkedThisMonth} / {totalUnits} Unit ({monthlyProgress}%)</span>
+            </div>
+            <div className="w-full bg-slate-700 h-2.5 rounded-full overflow-hidden p-0.5">
+              <div 
+                className="bg-linear-to-r from-emerald-500 to-teal-400 h-full rounded-full transition-all duration-500 shadow-xs"
+                style={{ width: `${Math.min(100, monthlyProgress)}%` }}
+              />
+            </div>
+          </div>
+
+          {/* Quick Real-Time Filter Buttons */}
+          <div className="flex items-center gap-1.5 flex-wrap w-full sm:w-auto">
+            <span className="text-[11px] text-slate-400 font-semibold mr-1">Filter Real-Time:</span>
+            <button
+              type="button"
+              onClick={() => setMonthCheckFilter("ALL")}
+              className={cn(
+                "px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer active:scale-95",
+                monthCheckFilter === "ALL"
+                  ? "bg-white text-slate-900 shadow-sm"
+                  : "bg-slate-800 text-slate-300 hover:bg-slate-700 border border-slate-700"
+              )}
+            >
+              Semua Unit ({totalUnits})
+            </button>
+            <button
+              type="button"
+              onClick={() => setMonthCheckFilter("CHECKED")}
+              className={cn(
+                "px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1 active:scale-95",
+                monthCheckFilter === "CHECKED"
+                  ? "bg-emerald-500 text-slate-950 shadow-sm"
+                  : "bg-emerald-950/80 text-emerald-300 hover:bg-emerald-900 border border-emerald-700/50"
+              )}
+            >
+              <CheckCircle2 size={12} />
+              <span>Sudah Dicek ({checkedThisMonth})</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setMonthCheckFilter("UNCHECKED")}
+              className={cn(
+                "px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1 active:scale-95",
+                monthCheckFilter === "UNCHECKED"
+                  ? "bg-amber-500 text-slate-950 shadow-sm"
+                  : "bg-amber-950/80 text-amber-300 hover:bg-amber-900 border border-amber-700/50"
+              )}
+            >
+              <Clock size={12} />
+              <span>Belum Dicek ({uncheckedThisMonth})</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
       {/* Search and Filters Bar */}
       <div className="p-4 border-b border-gray-100 flex flex-col md:flex-row justify-between items-stretch md:items-center gap-3 bg-gray-50/50">
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 flex-1">
@@ -1069,6 +1206,7 @@ function FacilityDataTable({
               <th className="px-4 py-3 font-bold text-gray-700 text-xs uppercase tracking-wider">Nama Item & Lokasi</th>
               <th className="px-4 py-3 font-bold text-gray-700 text-xs uppercase tracking-wider">Spesifikasi</th>
               <th className="px-4 py-3 font-bold text-gray-700 text-xs uppercase tracking-wider">Siklus / Masa Berlaku</th>
+              <th className="px-4 py-3 font-bold text-gray-700 text-xs uppercase tracking-wider">Inspeksi Bulan Ini</th>
               <th className="px-4 py-3 font-bold text-gray-700 text-xs uppercase tracking-wider">Status K3</th>
               <th className="px-4 py-3 font-bold text-gray-700 text-xs uppercase tracking-wider text-right">Aksi</th>
             </tr>
@@ -1076,7 +1214,7 @@ function FacilityDataTable({
           <tbody className="divide-y divide-gray-100">
             {filteredFacilities.length === 0 ? (
               <tr>
-                <td colSpan={6} className="px-6 py-16 text-center text-gray-400">
+                <td colSpan={7} className="px-6 py-16 text-center text-gray-400">
                   <Inbox className="mx-auto mb-2 text-gray-300" size={32} />
                   <p className="text-sm font-medium text-gray-500">Belum ada unit fasilitas terdaftar pada filter ini.</p>
                   {statusFilter && (
@@ -1159,9 +1297,9 @@ function FacilityDataTable({
                               "text-[11px] font-medium mt-0.5",
                               facility.days_until_expired < 0 
                                 ? "text-red-600 font-bold" 
-                                : facility.days_until_expired <= 30 
+                                : facility.days_until_expired <= 90 
                                   ? "text-orange-600 font-bold" 
-                                  : facility.days_until_expired <= 150
+                                  : facility.days_until_expired <= 180
                                     ? "text-amber-700 font-semibold"
                                     : facility.days_until_expired <= 365
                                       ? "text-yellow-700 font-semibold"
@@ -1169,10 +1307,10 @@ function FacilityDataTable({
                             )}>
                               {facility.days_until_expired < 0 
                                 ? `Kadaluarsa ${Math.abs(facility.days_until_expired)} hari lalu` 
-                                : facility.days_until_expired <= 30
-                                  ? `H-1 Bln (${facility.days_until_expired} hari lagi)`
-                                  : facility.days_until_expired <= 150
-                                    ? `H-5 Bln (${facility.days_until_expired} hari lagi)`
+                                : facility.days_until_expired <= 90
+                                  ? `H-3 Bln (${facility.days_until_expired} hari lagi)`
+                                  : facility.days_until_expired <= 180
+                                    ? `H-6 Bln (${facility.days_until_expired} hari lagi)`
                                     : facility.days_until_expired <= 365
                                       ? `H-1 Thn (${facility.days_until_expired} hari lagi)`
                                       : `Aman (${facility.days_until_expired} hari lagi)`}
@@ -1188,6 +1326,21 @@ function FacilityDataTable({
                             Cek terakhir: {formatDate(facility.condition_schedule?.terakhir_diperiksa_at || (facility.condition_schedule as any)?.terakhir_diperiksa || facility.last_inspected_at)}
                           </span>
                         </div>
+                      )}
+                    </td>
+
+                    {/* Inspeksi Bulan Ini */}
+                    <td className="px-4 py-3 whitespace-nowrap">
+                      {facility.is_checked_this_month ? (
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                          <CheckCircle2 size={12} className="text-emerald-600" />
+                          <span>Sudah Dicek</span>
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-50 text-amber-800 border border-amber-200 animate-pulse">
+                          <Clock size={12} className="text-amber-600" />
+                          <span>Belum Dicek</span>
+                        </span>
                       )}
                     </td>
 
@@ -1336,9 +1489,9 @@ function FacilityDataTable({
                             "px-1.5 py-0.5 rounded text-[10px] font-bold",
                             facility.days_until_expired < 0 
                               ? "bg-red-100 text-red-700" 
-                              : facility.days_until_expired <= 30 
+                              : facility.days_until_expired <= 90 
                                 ? "bg-orange-100 text-orange-700" 
-                                : facility.days_until_expired <= 150
+                                : facility.days_until_expired <= 180
                                   ? "bg-amber-100 text-amber-800"
                                   : facility.days_until_expired <= 365
                                     ? "bg-yellow-100 text-yellow-800"
@@ -1346,10 +1499,10 @@ function FacilityDataTable({
                           )}>
                             {facility.days_until_expired < 0 
                               ? `Kadaluarsa ${Math.abs(facility.days_until_expired)} hr lalu` 
-                              : facility.days_until_expired <= 30
-                                ? `H-1 Bln (${facility.days_until_expired} hr)`
-                                : facility.days_until_expired <= 150
-                                  ? `H-5 Bln (${facility.days_until_expired} hr)`
+                              : facility.days_until_expired <= 90
+                                ? `H-3 Bln (${facility.days_until_expired} hr)`
+                                : facility.days_until_expired <= 180
+                                  ? `H-6 Bln (${facility.days_until_expired} hr)`
                                   : facility.days_until_expired <= 365
                                     ? `H-1 Thn (${facility.days_until_expired} hr)`
                                     : `Aman (${facility.days_until_expired} hr)`}
@@ -1365,6 +1518,22 @@ function FacilityDataTable({
                           Cek: {formatDate(facility.condition_schedule?.terakhir_diperiksa_at || (facility.condition_schedule as any)?.terakhir_diperiksa || facility.last_inspected_at)}
                         </span>
                       </>
+                    )}
+                  </div>
+
+                  {/* Status Inspeksi Bulan Ini */}
+                  <div className="pt-1 border-t border-gray-200/60 flex items-center justify-between text-[11px]">
+                    <span className="text-gray-500 font-medium">Inspeksi Bulan Ini:</span>
+                    {facility.is_checked_this_month ? (
+                      <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                        <CheckCircle2 size={11} className="text-emerald-600" />
+                        <span>Sudah Dicek</span>
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 text-[10px] font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200 animate-pulse">
+                        <Clock size={11} className="text-amber-500" />
+                        <span>Belum Dicek</span>
+                      </span>
                     )}
                   </div>
                 </div>
@@ -1496,19 +1665,19 @@ export function MonitoringStatusBadge({ status }: { status: string }) {
       </span>
     );
   }
-  if (s === "H_5BULAN" || s === "H-5 BULAN") {
+  if (s === "H_6BULAN" || s === "H-6 BULAN" || s === "H_5BULAN" || s === "H-5 BULAN") {
     return (
       <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-50 text-amber-800 border border-amber-200">
         <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
-        H-5 BULAN
+        H-6 BULAN
       </span>
     );
   }
-  if (s === "MENDEKATI_KADALUARSA" || s === "H-30" || s === "H_1BULAN" || s === "H-1 BULAN" || s === "WARNING" || s === "NEEDS ATTENTION") {
+  if (s === "H_3BULAN" || s === "H-3 BULAN" || s === "MENDEKATI_KADALUARSA" || s === "H-30" || s === "H_1BULAN" || s === "H-1 BULAN" || s === "WARNING" || s === "NEEDS ATTENTION") {
     return (
       <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-orange-50 text-orange-800 border border-orange-200">
         <span className="w-1.5 h-1.5 rounded-full bg-orange-500" />
-        H-1 BULAN
+        H-3 BULAN
       </span>
     );
   }
