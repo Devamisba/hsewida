@@ -112,8 +112,8 @@ export default function MonitoringHSEPage() {
     }
   };
 
-  const loadData = useCallback(async () => {
-    setLoading(true);
+  const loadData = useCallback(async (silent = false) => {
+    if (!silent) setLoading(true);
     try {
       api.getAlertsSummary()
         .then(res => {
@@ -157,7 +157,7 @@ export default function MonitoringHSEPage() {
       console.error("Failed to load monitoring data:", err);
       setFacilities([]);
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   }, [activeTab]);
 
@@ -309,7 +309,7 @@ export default function MonitoringHSEPage() {
 
               <button
                 type="button"
-                onClick={loadData}
+                onClick={() => loadData()}
                 disabled={loading}
                 className="inline-flex items-center gap-1.5 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 hover:border-slate-300 px-3 py-2 rounded-xl transition-all text-xs font-semibold shadow-2xs cursor-pointer active:scale-95 shrink-0"
                 title="Muat Ulang Data"
@@ -635,7 +635,7 @@ export default function MonitoringHSEPage() {
 
           {/* Tab Contents: Facilities Table or SPI Monitoring */}
           <div id="facilities-table-section" className="flex-1 flex flex-col bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden min-h-[420px]">
-            {loading ? (
+            {loading && facilities.length === 0 ? (
               <div className="flex-1 flex flex-col items-center justify-center py-24 text-gray-400">
                 <Loader2 className="w-8 h-8 animate-spin text-primary mb-3" />
                 <p className="text-sm font-medium">Memuat data fasilitas K3...</p>
@@ -673,7 +673,7 @@ export default function MonitoringHSEPage() {
         onClose={() => setModalOpen(false)} 
         item={selectedItem} 
         type={modalType} 
-        onSuccess={loadData}
+        onSuccess={() => loadData(true)}
       />
 
       {/* 2. Modal Tambah Fasilitas Baru */}
@@ -681,14 +681,14 @@ export default function MonitoringHSEPage() {
         isOpen={addModalOpen}
         onClose={() => setAddModalOpen(false)}
         activeTab={activeTab}
-        onSuccess={loadData}
+        onSuccess={() => loadData()}
       />
 
       {/* 2.1 Modal Import Excel Universal Fasilitas K3 */}
       <ImportFacilityModal
         isOpen={importModalOpen}
         onClose={() => setImportModalOpen(false)}
-        onSuccess={loadData}
+        onSuccess={() => loadData()}
       />
 
       {/* 3. Modal Cetak QR Sticker Fisik (§2.3) */}
@@ -704,7 +704,7 @@ export default function MonitoringHSEPage() {
         isOpen={refillModalOpen}
         onClose={() => setRefillModalOpen(false)}
         facility={selectedItem}
-        onSuccess={loadData}
+        onSuccess={() => loadData(true)}
       />
 
       {/* 5. Modal Scan QR Lapangan */}
@@ -729,7 +729,7 @@ export default function MonitoringHSEPage() {
         onInspect={(f) => handleInspect(f, getCategoryTitle(f.category))}
         onShowSticker={handleShowSticker}
         onRefill={handleRefill}
-        onFacilityUpdated={loadData}
+        onFacilityUpdated={() => loadData(true)}
         onEdit={(f) => {
           setDetailModalOpen(false);
           handleOpenEdit(f);
@@ -749,8 +749,11 @@ export default function MonitoringHSEPage() {
         }}
         facility={facilityToEdit}
         onSuccess={(updated) => {
-          if (updated) setFacilityToEdit(updated);
-          loadData();
+          if (updated) {
+            setFacilityToEdit(updated);
+            setFacilities((prev) => prev.map((f) => (f.id === updated.id ? { ...f, ...updated } : f)));
+          }
+          loadData(true);
         }}
         onDeleteRequest={(f) => {
           setEditModalOpen(false);
