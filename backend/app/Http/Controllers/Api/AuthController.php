@@ -47,6 +47,7 @@ class AuthController extends Controller
                     'nik' => $user->nik,
                     'name' => $user->name,
                     'email' => $user->email,
+                    'avatar' => $user->avatar,
                     'company_name' => $user->company_name,
                     'department' => $user->department,
                     'phone_number' => $user->phone_number,
@@ -88,6 +89,7 @@ class AuthController extends Controller
                 'nik' => $user->nik,
                 'name' => $user->name,
                 'email' => $user->email,
+                'avatar' => $user->avatar,
                 'company_name' => $user->company_name,
                 'department' => $user->department,
                 'phone_number' => $user->phone_number,
@@ -112,7 +114,17 @@ class AuthController extends Controller
             'name' => 'sometimes|string|max:255',
             'phone_number' => 'sometimes|nullable|string|max:30',
             'password' => 'sometimes|nullable|string|min:6',
+            'avatar' => 'sometimes|nullable|string',
         ]);
+
+        if ($request->hasFile('avatar')) {
+            $file = $request->file('avatar');
+            $fileName = 'avatar_' . $user->id . '_' . time() . '.' . $file->getClientOriginalExtension();
+            $path = $file->storeAs('avatars', $fileName, 'public');
+            $validated['avatar'] = '/storage/' . $path;
+        } elseif ($request->has('avatar')) {
+            $validated['avatar'] = $request->input('avatar');
+        }
 
         if (!empty($validated['password'])) {
             $validated['password'] = Hash::make($validated['password']);
@@ -121,11 +133,27 @@ class AuthController extends Controller
         }
 
         $user->update($validated);
+        $freshUser = $user->fresh(['role.permissions']);
 
         return response()->json([
             'success' => true,
             'message' => 'Profil berhasil diperbarui.',
-            'data' => $user->fresh(['role.permissions']),
+            'data' => [
+                'id' => $freshUser->id,
+                'nik' => $freshUser->nik,
+                'name' => $freshUser->name,
+                'email' => $freshUser->email,
+                'avatar' => $freshUser->avatar,
+                'company_name' => $freshUser->company_name,
+                'department' => $freshUser->department,
+                'phone_number' => $freshUser->phone_number,
+                'role' => $freshUser->role ? [
+                    'id' => $freshUser->role->id,
+                    'code' => $freshUser->role->code,
+                    'name' => $freshUser->role->name,
+                ] : null,
+                'permissions' => $freshUser->role ? $freshUser->role->permissions->pluck('code') : [],
+            ],
         ]);
     }
 }

@@ -34,16 +34,25 @@ export const auth = {
     sessionStorage.setItem(TOKEN_KEY, token);
     sessionStorage.setItem(ROLE_KEY, roleCode);
     sessionStorage.setItem(USER_KEY, JSON.stringify(user));
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('auth:user-updated', { detail: user }));
+    }
   },
 
   setUser(user: any) {
     sessionStorage.setItem(USER_KEY, JSON.stringify(user));
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('auth:user-updated', { detail: user }));
+    }
   },
 
   clearSession() {
     sessionStorage.removeItem(TOKEN_KEY);
     sessionStorage.removeItem(ROLE_KEY);
     sessionStorage.removeItem(USER_KEY);
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('auth:user-updated', { detail: null }));
+    }
   },
 
   isAuthenticated(): boolean {

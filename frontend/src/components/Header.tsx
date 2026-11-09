@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import { Bell, HardHat } from "lucide-react";
 import { Link } from "react-router-dom";
 import { auth } from "@/lib/auth";
@@ -9,8 +10,23 @@ interface HeaderProps {
 }
 
 export function Header({ title = "HSE Portal" }: HeaderProps) {
-  const user = auth.getUser();
-  const role = auth.getRole();
+  const [user, setUser] = useState<any>(() => auth.getUser());
+  const [role, setRole] = useState<string | null>(() => auth.getRole());
+  const [imgError, setImgError] = useState(false);
+
+  useEffect(() => {
+    const handleUserUpdate = (e: any) => {
+      setUser(e.detail || auth.getUser());
+      setRole(auth.getRole());
+      setImgError(false);
+    };
+
+    window.addEventListener("auth:user-updated", handleUserUpdate);
+    return () => {
+      window.removeEventListener("auth:user-updated", handleUserUpdate);
+    };
+  }, []);
+
   const displayName = user?.name || 'Pengguna';
   const displayRole = user?.role?.name || user?.company_name || role || 'User';
 
@@ -41,9 +57,18 @@ export function Header({ title = "HSE Portal" }: HeaderProps) {
               {displayRole}
             </p>
           </div>
-          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary text-on-primary font-bold shadow-sm">
-            <HardHat size={20} />
-          </div>
+          {user?.avatar && !imgError ? (
+            <img 
+              src={user.avatar} 
+              alt={displayName} 
+              onError={() => setImgError(true)}
+              className="h-10 w-10 rounded-full object-cover shadow-sm border border-gray-200 ring-2 ring-primary/20"
+            />
+          ) : (
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary text-on-primary font-bold shadow-sm">
+              <HardHat size={20} />
+            </div>
+          )}
         </Link>
       </div>
     </header>
