@@ -83,45 +83,46 @@ export default function LoginPage() {
   return (
     <div className="h-screen w-screen flex bg-white font-sans antialiased overflow-hidden select-none">
       {/* Sisi Kiri: Form Login */}
-      <div className="w-full md:w-1/2 h-full bg-white flex flex-col justify-between px-6 sm:px-12 md:px-10 lg:px-16 xl:px-24 py-6 sm:py-8 overflow-y-auto">
-        <div className="hidden sm:block h-2" />
+      <div className="w-full md:w-1/2 h-full bg-white flex flex-col justify-between items-center md:items-end px-6 sm:px-10 md:px-10 lg:px-14 xl:px-20 py-5 sm:py-6 overflow-hidden">
+        {/* Spacer Atas */}
+        <div className="h-1" />
 
         {/* Center Container Form */}
-        <div className="w-full max-w-[340px] mx-auto md:mx-0 my-auto py-4">
-          {/* Logo PT Widatra Bhakti (Stacked Logo seperti Foto Target) */}
-          <div className="mb-6">
+        <div className="w-full max-w-[340px]">
+          {/* Logo PT Widatra Bhakti (Stacked Logo) */}
+          <div className="mb-4 sm:mb-5">
             <img
               src="/logo.png"
               alt="Widatra"
-              className="h-12 sm:h-14 w-auto object-contain"
+              className="h-11 sm:h-12 w-auto object-contain"
             />
           </div>
 
           {/* Heading */}
-          <div className="mb-6">
-            <h1 className="text-[28px] sm:text-[32px] font-bold text-[#111827] leading-[1.15] tracking-tight">
+          <div className="mb-4 sm:mb-5">
+            <h1 className="text-[26px] sm:text-[30px] font-bold text-[#111827] leading-[1.15] tracking-tight">
               Hallo
               <br />
               Welcome Back
             </h1>
-            <p className="mt-1.5 text-[13px] text-[#94a3b8] font-normal">
+            <p className="mt-1 text-[12px] sm:text-[13px] text-[#94a3b8] font-normal">
               Hey, welcome back to your special place
             </p>
           </div>
 
           {/* Error Message */}
           {errorMsg && (
-            <div className="mb-4 p-2.5 bg-red-50 border border-red-200 rounded-xl flex items-start gap-2 text-red-700 text-xs">
-              <AlertCircle size={15} className="shrink-0 mt-0.5" />
+            <div className="mb-3 p-2 bg-red-50 border border-red-200 rounded-xl flex items-start gap-2 text-red-700 text-xs">
+              <AlertCircle size={14} className="shrink-0 mt-0.5" />
               <div className="flex-1">{errorMsg}</div>
             </div>
           )}
 
           {/* Form */}
-          <form onSubmit={handleFormSubmit} className="space-y-3.5">
+          <form onSubmit={handleFormSubmit} className="space-y-3">
             {/* Field NIK */}
             <div>
-              <label className="block text-[11px] font-bold text-[#4b5563] uppercase tracking-wider mb-1.5">
+              <label className="block text-[11px] font-bold text-[#4b5563] uppercase tracking-wider mb-1">
                 NIK
               </label>
               <input
@@ -130,13 +131,13 @@ export default function LoginPage() {
                 value={identifier}
                 onChange={(e) => setIdentifier(e.target.value)}
                 placeholder="SA12345"
-                className="w-full h-[42px] px-3.5 bg-[#edf2f9] border border-transparent rounded-xl text-[13px] text-[#1e293b] placeholder:text-[#94a3b8] focus:outline-none focus:bg-white focus:border-[#2563eb] transition-all"
+                className="w-full h-[38px] sm:h-[40px] px-3.5 bg-[#edf2f9] border border-transparent rounded-xl text-[13px] text-[#1e293b] placeholder:text-[#94a3b8] focus:outline-none focus:bg-white focus:border-[#2563eb] transition-all"
               />
             </div>
 
             {/* Field Password */}
             <div>
-              <label className="block text-[11px] font-bold text-[#4b5563] uppercase tracking-wider mb-1.5">
+              <label className="block text-[11px] font-bold text-[#4b5563] uppercase tracking-wider mb-1">
                 PASSWORD
               </label>
               <div className="relative">
@@ -146,7 +147,7 @@ export default function LoginPage() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="w-full h-[42px] pl-3.5 pr-10 bg-[#edf2f9] border border-transparent rounded-xl text-[13px] text-[#1e293b] placeholder:text-[#94a3b8] focus:outline-none focus:bg-white focus:border-[#2563eb] transition-all"
+                  className="w-full h-[38px] sm:h-[40px] pl-3.5 pr-10 bg-[#edf2f9] border border-transparent rounded-xl text-[13px] text-[#1e293b] placeholder:text-[#94a3b8] focus:outline-none focus:bg-white focus:border-[#2563eb] transition-all"
                 />
                 <button
                   type="button"
@@ -166,7 +167,7 @@ export default function LoginPage() {
                 onClick={() =>
                   alert("Silakan hubungi IT Department / Administrator untuk reset password.")
                 }
-                className="text-[11px] text-[#2563eb] hover:underline font-medium cursor-pointer"
+                className="text-[11px] text-[#2563eb] hover:underline font-semibold cursor-pointer"
               >
                 Forgot Password?
               </button>
@@ -190,11 +191,11 @@ export default function LoginPage() {
             </div>
 
             {/* Sign In Button */}
-            <div className="pt-1">
+            <div className="pt-0.5">
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full h-[42px] bg-[#1d68f0] hover:bg-[#185dd9] active:bg-[#124eb8] text-white text-[13px] font-semibold rounded-xl shadow-sm transition-all duration-150 cursor-pointer disabled:opacity-60 flex items-center justify-center"
+                className="w-full h-[38px] sm:h-[40px] bg-[#1d68f0] hover:bg-[#185dd9] active:bg-[#124eb8] text-white text-[13px] font-semibold rounded-xl shadow-sm transition-all duration-150 cursor-pointer disabled:opacity-60 flex items-center justify-center"
               >
                 {loading ? (
                   <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
@@ -205,7 +206,7 @@ export default function LoginPage() {
             </div>
 
             {/* Footer Note */}
-            <div className="pt-2 text-center text-[12px] text-[#64748b]">
+            <div className="pt-1.5 text-center text-[12px] text-[#64748b]">
               Don't have an account?{" "}
               <button
                 type="button"
@@ -221,13 +222,13 @@ export default function LoginPage() {
         </div>
 
         {/* Footer Copyright */}
-        <div className="pt-4 pb-2 text-center text-[11px] text-[#9ca3af]">
+        <div className="w-full max-w-[340px] pt-3 pb-1 text-center text-[11px] text-[#9ca3af]">
           © 2026 PT Widatra Bhakti. All rights reserved.
         </div>
       </div>
 
       {/* Sisi Kanan: Inset Card Foto Showcase Gedung / Fasilitas K3 */}
-      <div className="hidden md:flex md:w-1/2 h-full p-4 md:p-6 lg:p-8 xl:p-10 items-center justify-center bg-white">
+      <div className="hidden md:flex md:w-1/2 h-full p-4 md:p-6 lg:p-8 xl:p-10 items-center justify-center bg-white overflow-hidden">
         <div className="w-full h-full rounded-[28px] overflow-hidden shadow-sm relative border border-slate-100 bg-slate-50">
           <img
             src={resolveImageUrl(loginBgImage)}
@@ -240,7 +241,7 @@ export default function LoginPage() {
         </div>
       </div>
 
-      {/* Floating Demo Picker (Bantuan Uji Coba Cepat tanpa Mengganggu Layout) */}
+      {/* Floating Demo Picker (Bantuan Uji Coba Cepat) */}
       <div className="fixed bottom-3 left-3 z-50">
         {!showDemoModal ? (
           <button
