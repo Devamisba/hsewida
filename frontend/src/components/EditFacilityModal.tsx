@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { 
   X, 
   Save, 
@@ -33,6 +33,8 @@ export function EditFacilityModal({
   const [error, setError] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
   const [hasSaved, setHasSaved] = useState(false);
+  const prevFacilityIdRef = useRef<number | string | null>(null);
+  const prevIsOpenRef = useRef<boolean>(false);
 
   // Form Fields
   const [code, setCode] = useState("");
@@ -74,41 +76,57 @@ export function EditFacilityModal({
 
   useEffect(() => {
     if (isOpen && facility) {
-      setError("");
-      setSuccessMsg("");
-      setHasSaved(false);
-      setCode(facility.code || "");
-      setName(facility.nama_item || facility.name || "");
-      setCategory(facility.category || "apar");
-      setLocationName(facility.location?.name || "");
-      setAreaZone(facility.area_zone || "UMUM");
-      setTipeItem((facility.tipe_item as any) || "CONSUMABLE");
-      setStatusAktif(facility.status_aktif !== false);
+      const isNewOpen = !prevIsOpenRef.current && isOpen;
+      const isDifferentFacility = prevFacilityIdRef.current !== facility.id;
 
-      const lat = facility.latitude ?? facility.specifications?.latitude;
-      const lng = facility.longitude ?? facility.specifications?.longitude;
-      setLatitude(lat !== undefined && lat !== null ? String(lat) : "");
-      setLongitude(lng !== undefined && lng !== null ? String(lng) : "");
+      if (isNewOpen || isDifferentFacility) {
+        setError("");
+        setSuccessMsg("");
+        setHasSaved(false);
+        setCode(facility.code || "");
+        setName(facility.nama_item || facility.name || "");
+        setCategory(facility.category || "apar");
+        setLocationName(facility.location?.name || "");
+        setAreaZone(facility.area_zone || "UMUM");
+        setTipeItem((facility.tipe_item as any) || "CONSUMABLE");
+        setStatusAktif(facility.status_aktif !== false);
 
-      // Consumable
-      const cycle = facility.consumable_cycle || (facility as any).consumableCycle;
-      if (cycle?.expired_at) {
-        setExpiredAt(cycle.expired_at.slice(0, 10));
-      } else {
-        const d = new Date();
-        d.setFullYear(d.getFullYear() + 1);
-        setExpiredAt(d.toISOString().slice(0, 10));
+        const lat = facility.latitude ?? facility.specifications?.latitude;
+        const lng = facility.longitude ?? facility.specifications?.longitude;
+        setLatitude(lat !== undefined && lat !== null ? String(lat) : "");
+        setLongitude(lng !== undefined && lng !== null ? String(lng) : "");
+
+        // Consumable
+        const cycle = facility.consumable_cycle || (facility as any).consumableCycle;
+        if (cycle?.expired_at) {
+          setExpiredAt(cycle.expired_at.slice(0, 10));
+        } else {
+          const d = new Date();
+          d.setFullYear(d.getFullYear() + 1);
+          setExpiredAt(d.toISOString().slice(0, 10));
+        }
+        setThresholdWarning(cycle?.threshold_warning_hari || 30);
+
+        // Specs
+        const specs = facility.specifications || {};
+        setMediaPemadam(specs.media_pemadam || specs.type || "Dry Chemical Powder");
+        setKapasitasKg(String(specs.kapasitas_kg || specs.capacity?.replace(/[^0-9.]/g, "") || "6"));
+
+        // Condition
+        const sched = facility.condition_schedule || (facility as any).conditionSchedule;
+        setIntervalHari(sched?.interval_pemeriksaan_hari || 30);
       }
-      setThresholdWarning(cycle?.threshold_warning_hari || 30);
 
-      // Specs
-      const specs = facility.specifications || {};
-      setMediaPemadam(specs.media_pemadam || specs.type || "Dry Chemical Powder");
-      setKapasitasKg(String(specs.kapasitas_kg || specs.capacity?.replace(/[^0-9.]/g, "") || "6"));
-
-      // Condition
-      const sched = facility.condition_schedule || (facility as any).conditionSchedule;
-      setIntervalHari(sched?.interval_pemeriksaan_hari || 30);
+      prevIsOpenRef.current = isOpen;
+      prevFacilityIdRef.current = facility.id;
+    } else {
+      prevIsOpenRef.current = isOpen;
+      if (!isOpen) {
+        prevFacilityIdRef.current = null;
+        setError("");
+        setSuccessMsg("");
+        setHasSaved(false);
+      }
     }
   }, [isOpen, facility]);
 
@@ -201,11 +219,7 @@ export function EditFacilityModal({
         setSuccessMsg("Perubahan data fasilitas berhasil disimpan!");
         setHasSaved(true);
         onSuccess?.(res.data);
-        setTimeout(() => setSuccessMsg(""), 4000);
-
-
-
-
+        // keep successMsg visible
       } else {
         setError(res?.message || "Gagal memperbarui data fasilitas.");
       }
@@ -232,6 +246,12 @@ export function EditFacilityModal({
                 <span className="font-mono text-xs font-bold text-primary bg-primary/10 px-2 py-0.5 rounded">
                   {facility.code}
                 </span>
+                {hasSaved && (
+                  <span className="text-[11px] font-bold text-emerald-700 bg-emerald-100 border border-emerald-200 px-2 py-0.5 rounded-full flex items-center gap-1 animate-in fade-in">
+                    <CheckCircle2 size={12} className="text-emerald-600" />
+                    Tersimpan
+                  </span>
+                )}
               </div>
               <p className="text-xs text-gray-500 mt-0.5">Ubah spesifikasi, masa berlaku, lokasi, dan koordinat GPS aset</p>
             </div>
@@ -254,9 +274,19 @@ export function EditFacilityModal({
         )}
 
         {successMsg && (
-          <div className="mx-5 mt-4 p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl flex items-center gap-2 text-xs font-semibold">
-            <CheckCircle2 size={16} className="shrink-0 text-emerald-600" />
-            <span>{successMsg}</span>
+          <div className="mx-5 mt-4 p-3.5 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl flex items-center justify-between gap-2 text-xs font-semibold shadow-xs animate-in fade-in slide-in-from-top-1">
+            <div className="flex items-center gap-2.5">
+              <CheckCircle2 size={18} className="shrink-0 text-emerald-600" />
+              <span>{successMsg}</span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setSuccessMsg("")}
+              className="text-emerald-600 hover:text-emerald-900 p-1 rounded-md hover:bg-emerald-100 transition cursor-pointer"
+              title="Tutup pesan"
+            >
+              <X size={14} />
+            </button>
           </div>
         )}
 
@@ -569,10 +599,21 @@ export function EditFacilityModal({
             ) : <div />}
 
             <div className="flex items-center gap-2">
+              {hasSaved && (
+                <span className="text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-1.5 rounded-xl flex items-center gap-1.5 animate-in fade-in">
+                  <CheckCircle2 size={13} className="text-emerald-600" />
+                  Tersimpan
+                </span>
+              )}
               <button
                 type="button"
                 onClick={onClose}
-                className="px-4 py-2 border border-slate-200 hover:bg-slate-50 text-slate-700 rounded-xl text-xs font-bold transition cursor-pointer"
+                className={cn(
+                  "px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer",
+                  hasSaved
+                    ? "bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-300"
+                    : "border border-slate-200 hover:bg-slate-50 text-slate-700"
+                )}
               >
                 {hasSaved ? "Tutup" : "Batal"}
               </button>
