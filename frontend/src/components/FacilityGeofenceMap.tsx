@@ -167,7 +167,7 @@ export function FacilityGeofenceMap({
   const [accuracy, setAccuracy] = useState<number | null>(null);
   const [gpsError, setGpsError] = useState<string | null>(null);
   const [gpsSearching, setGpsSearching] = useState<boolean>(true);
-  const [activeFilterCategory, setActiveFilterCategory] = useState<string>("ALL");
+  const [activeFilterCategory, setActiveFilterCategory] = useState<string>("apar");
   const [isLegendOpen, setIsLegendOpen] = useState<boolean>(false);
 
   // Focus on selected checkpoint if provided
@@ -175,6 +175,9 @@ export function FacilityGeofenceMap({
     if (!selectedCheckpointId || !mapInstanceRef.current || !checkpoints.length) return;
     const target = checkpoints.find((c) => String(c.id) === String(selectedCheckpointId));
     if (target) {
+      if (target.category) {
+        setActiveFilterCategory(target.category.toLowerCase());
+      }
       mapInstanceRef.current.flyTo([target.latitude, target.longitude], 19, { animate: true });
     }
   }, [selectedCheckpointId, checkpoints]);
@@ -564,7 +567,7 @@ export function FacilityGeofenceMap({
         {/* Category Filter Pills (Over map) */}
         <div className="pointer-events-auto bg-white/95 backdrop-blur-md p-1 rounded-xl shadow-md border border-slate-200 text-xs flex items-center gap-1 flex-wrap">
           {[
-            { id: "ALL", label: `Semua (${checkpoints.length})` },
+
             { id: "apar", label: "APAR" },
             { id: "hydrant", label: "Hydrant" },
             { id: "emergency_door", label: "Pintu Evakuasi" },
