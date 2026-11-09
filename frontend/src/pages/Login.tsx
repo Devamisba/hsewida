@@ -97,13 +97,18 @@ export default function LoginPage() {
       {/* Sisi Kiri: Form Login */}
       <div className="w-full md:w-[45%] lg:w-[42%] xl:w-[40%] h-full flex flex-col justify-between p-6 sm:p-8 lg:p-10 xl:p-12 bg-white shadow-sm md:shadow-none z-10 overflow-y-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
         <div className="w-full max-w-[360px] mx-auto flex flex-col justify-between h-full py-1">
-          {/* Logo PT Widatra Bhakti (Gambar 2 - 100% Transparan Sesuai Gambar 4) */}
+          {/* Logo & Nama Perusahaan PT Widatra Bhakti */}
           <div className="pt-1 pb-2 min-h-[52px] flex items-center">
-            <img
-              src="/logo-widatra.png"
-              alt="Widatra"
-              className="h-11 sm:h-12 w-auto object-contain select-none"
-            />
+            <div className="flex items-center gap-2.5 sm:gap-3 select-none">
+              <img
+                src="/logo-widatra.png"
+                alt="PT Widatra Bhakti"
+                className="h-10 sm:h-11 w-auto object-contain object-left shrink-0"
+              />
+              <span className="font-extrabold text-[15px] sm:text-[16px] text-[#22247b] tracking-tight leading-none uppercase">
+                PT WIDATRA BHAKTI
+              </span>
+            </div>
           </div>
 
           {/* Form Area */}
