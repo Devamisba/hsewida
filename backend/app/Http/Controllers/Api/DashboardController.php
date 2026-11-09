@@ -8,6 +8,8 @@ use Carbon\Carbon;
 use App\Models\WorkPermit;
 use App\Models\PermitWorker;
 use App\Models\Vendor;
+use App\Models\SafetyFacility;
+use App\Models\FacilityInspection;
 
 class DashboardController extends Controller
 {
@@ -153,6 +155,44 @@ class DashboardController extends Controller
             ['name' => 'Umum', 'value' => 15, 'color' => '#10b981'],
         ];
 
+        // 2. Monitoring & Inspeksi K3 Metrics
+        $currentMonthStart = Carbon::now()->startOfMonth();
+        $currentMonthEnd = Carbon::now()->endOfMonth();
+
+        $totalFacilities = SafetyFacility::where('status_aktif', true)->count();
+        $aparCount = SafetyFacility::where('status_aktif', true)->where('kategori', 'apar')->count();
+        $hydrantCount = SafetyFacility::where('status_aktif', true)->where('kategori', 'hydrant')->count();
+        $p3kCount = SafetyFacility::where('status_aktif', true)->where('kategori', 'kotak_p3k')->count();
+        $otherFacilitiesCount = max(0, $totalFacilities - ($aparCount + $hydrantCount + $p3kCount));
+
+        // Inspeksi Bulan Ini
+        $checkedThisMonth = SafetyFacility::where('status_aktif', true)
+            ->whereHas('inspections', function($q) use ($currentMonthStart, $currentMonthEnd) {
+                $q->whereBetween('inspection_date', [$currentMonthStart, $currentMonthEnd]);
+            })->count();
+        $uncheckedThisMonth = max(0, $totalFacilities - $checkedThisMonth);
+        $inspectionPercentage = $totalFacilities > 0 ? round(($checkedThisMonth / $totalFacilities) * 100, 1) : 0;
+        $daysLeftInMonth = max(0, (int) Carbon::now()->endOfMonth()->diffInDays(Carbon::now()));
+
+        // Expiry & Refill Alerts
+        $expiredCount = SafetyFacility::where('status_aktif', true)
+            ->where('tipe_item', 'CONSUMABLE')
+            ->whereHas('consumableCycle', function($q) use ($today) {
+                $q->where('tgl_kadaluarsa', '<', $today);
+            })->count();
+
+        $refillQueueCount = SafetyFacility::where('status_aktif', true)
+            ->where('kategori', 'apar')
+            ->whereHas('consumableCycle', function($q) use ($today) {
+                $q->where('tgl_kadaluarsa', '<', $today)
+                  ->orWhere('kondisi_tekanan', 'HABIS')
+                  ->orWhere('kondisi_tekanan', 'KURANG');
+            })->count();
+
+        $findingsCount = FacilityInspection::where('hasil_evaluasi', 'TEMUAN')
+            ->orWhere('status_verifikasi_k3', 'REJECTED')
+            ->count();
+
         return response()->json([
             'success' => true,
             'data' => [
@@ -162,7 +202,7 @@ class DashboardController extends Controller
                     'kontraktor' => $p->vendor ? $p->vendor->company_name : $p->pic_name,
                     'jenis' => $p->job_title,
                     'lokasi' => $p->location ? $p->location->name : '-',
-                    'mulai' => $p->start_date->format('Y-m-d'),
+                    'mulai' => $p->start_date ? $p->start_date->format('Y-m-d') : '-',
                     'risiko' => $p->risk_level,
                 ]),
                 'activeTotal' => $activeTotal,
@@ -175,6 +215,22 @@ class DashboardController extends Controller
                 ]),
                 'activeVendorsCount' => max($activeVendorsCount, 4),
                 'pieData' => $pieData,
+
+                // Monitoring & Inspeksi K3 Summary
+                'monitoring' => [
+                    'totalFacilities' => $totalFacilities,
+                    'aparCount' => $aparCount,
+                    'hydrantCount' => $hydrantCount,
+                    'p3kCount' => $p3kCount,
+                    'otherCount' => $otherFacilitiesCount,
+                    'checkedThisMonth' => $checkedThisMonth,
+                    'uncheckedThisMonth' => $uncheckedThisMonth,
+                    'inspectionPercentage' => $inspectionPercentage,
+                    'daysLeftInMonth' => $daysLeftInMonth,
+                    'expiredCount' => $expiredCount,
+                    'refillQueueCount' => $refillQueueCount,
+                    'findingsCount' => $findingsCount,
+                ],
             ],
         ]);
     }
