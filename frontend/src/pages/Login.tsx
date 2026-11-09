@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Eye, EyeOff, AlertCircle, Sparkles, X } from "lucide-react";
+import { Eye, EyeOff, Sparkles, X } from "lucide-react";
 import { api } from "@/services/api";
 import { auth } from "@/lib/auth";
 import { K3Loader } from "@/components/K3Loader";
@@ -32,6 +32,13 @@ export default function LoginPage() {
       return;
     }
 
+    // Check remembered NIK
+    const remembered = localStorage.getItem("hse_remembered_nik");
+    if (remembered) {
+      setIdentifier(remembered);
+      setRememberMe(true);
+    }
+
     // Fetch dynamic login background image from Master Data
     api.getSettings()
       .then((res) => {
@@ -51,6 +58,11 @@ export default function LoginPage() {
     try {
       const res = await api.login(loginIdentifier, loginPass);
       if (res.success && res.data) {
+        if (rememberMe) {
+          localStorage.setItem("hse_remembered_nik", loginIdentifier.trim());
+        } else {
+          localStorage.removeItem("hse_remembered_nik");
+        }
         auth.setSession(res.data.token, res.data.user);
         window.location.href = "/dashboard";
       } else {
@@ -81,159 +93,185 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="h-screen w-screen flex bg-white font-sans antialiased overflow-hidden select-none">
+    <div className="h-screen w-full bg-[#f8fafc] lg:bg-white flex flex-col lg:flex-row overflow-hidden selection:bg-blue-100 selection:text-blue-900 select-none">
       {/* Sisi Kiri: Form Login */}
-      <div className="w-full md:w-1/2 h-full bg-white flex flex-col justify-between items-center md:items-end px-6 sm:px-10 md:px-10 lg:px-14 xl:px-20 py-5 sm:py-6 overflow-hidden">
-        {/* Spacer Atas */}
-        <div className="h-1" />
-
-        {/* Center Container Form */}
-        <div className="w-full max-w-[340px]">
-          {/* Logo PT Widatra Bhakti (Di tengah & diperbesar) */}
-          <div className="mb-5 sm:mb-6 w-full flex justify-center">
+      <div className="w-full lg:w-[45%] xl:w-[42%] 2xl:w-[40%] h-full flex flex-col justify-between p-6 sm:p-8 lg:p-10 xl:p-12 bg-white shadow-sm lg:shadow-none z-10 overflow-y-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+        <div className="w-full max-w-[360px] mx-auto flex flex-col justify-between h-full py-1">
+          {/* Logo PT Widatra Bhakti (Aligned to left, clean matching OVMS) */}
+          <div className="pt-1 pb-2 flex items-center min-h-[52px]">
             <img
               src="/logo.png"
-              alt="Widatra"
-              className="h-16 sm:h-20 w-auto object-contain"
+              alt="PT WIDATRA BHAKTI"
+              className="h-10 sm:h-11 w-auto object-contain object-left select-none"
             />
           </div>
 
-          {/* Heading */}
-          <div className="mb-4 sm:mb-5">
-            <h1 className="text-[26px] sm:text-[30px] font-bold text-[#111827] leading-[1.15] tracking-tight">
-              Hallo
-              <br />
-              Welcome Back
-            </h1>
-            <p className="mt-1 text-[12px] sm:text-[13px] text-[#94a3b8] font-normal">
-              Hey, welcome back to your special place
-            </p>
-          </div>
-
-          {/* Error Message */}
-          {errorMsg && (
-            <div className="mb-3 p-2 bg-red-50 border border-red-200 rounded-xl flex items-start gap-2 text-red-700 text-xs">
-              <AlertCircle size={14} className="shrink-0 mt-0.5" />
-              <div className="flex-1">{errorMsg}</div>
-            </div>
-          )}
-
-          {/* Form */}
-          <form onSubmit={handleFormSubmit} className="space-y-3">
-            {/* Field NIK */}
-            <div>
-              <label className="block text-[11px] font-bold text-[#4b5563] uppercase tracking-wider mb-1">
-                NIK
-              </label>
-              <input
-                type="text"
-                required
-                value={identifier}
-                onChange={(e) => setIdentifier(e.target.value)}
-                placeholder="SA12345"
-                className="w-full h-[38px] sm:h-[40px] px-3.5 bg-[#edf2f9] border border-transparent rounded-xl text-[13px] text-[#1e293b] placeholder:text-[#94a3b8] focus:outline-none focus:bg-white focus:border-[#2563eb] transition-all"
-              />
+          {/* Form Area */}
+          <div className="my-auto py-2 sm:py-3">
+            <div className="mb-4 sm:mb-5">
+              <h2 className="text-xl sm:text-2xl font-bold text-slate-800 tracking-tight leading-tight">
+                Hallo
+              </h2>
+              <h1 className="text-2xl sm:text-3xl lg:text-[32px] font-extrabold text-slate-900 tracking-tight leading-none mt-1">
+                Welcome Back
+              </h1>
+              <p className="text-xs text-slate-400 mt-1.5 font-normal">
+                Hey, welcome back to your special place
+              </p>
             </div>
 
-            {/* Field Password */}
-            <div>
-              <label className="block text-[11px] font-bold text-[#4b5563] uppercase tracking-wider mb-1">
-                PASSWORD
-              </label>
-              <div className="relative">
-                <input
-                  type={showPassword ? "text" : "password"}
-                  required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
-                  className="w-full h-[38px] sm:h-[40px] pl-3.5 pr-10 bg-[#edf2f9] border border-transparent rounded-xl text-[13px] text-[#1e293b] placeholder:text-[#94a3b8] focus:outline-none focus:bg-white focus:border-[#2563eb] transition-all"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-[#94a3b8] hover:text-[#64748b] transition-colors focus:outline-none cursor-pointer"
-                  tabIndex={-1}
+            <form className="space-y-3" onSubmit={handleFormSubmit}>
+              <div>
+                <label
+                  htmlFor="nik-input"
+                  className="block text-[11px] font-semibold text-slate-600 mb-1 uppercase tracking-wider"
                 >
-                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                  NIK
+                </label>
+                <input
+                  id="nik-input"
+                  type="text"
+                  placeholder="SA12345"
+                  value={identifier}
+                  onChange={(e) => setIdentifier(e.target.value)}
+                  disabled={loading}
+                  required
+                  className="w-full h-[38px] px-3 text-xs sm:text-sm rounded-lg border border-slate-200 bg-[#edf2f9] text-slate-800 placeholder:text-slate-400 focus:outline-none focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all disabled:bg-slate-50 disabled:opacity-60"
+                />
+              </div>
+
+              <div>
+                <label
+                  htmlFor="password-input"
+                  className="block text-[11px] font-semibold text-slate-600 mb-1 uppercase tracking-wider"
+                >
+                  Password
+                </label>
+                <div className="relative">
+                  <input
+                    id="password-input"
+                    type={showPassword ? "text" : "password"}
+                    placeholder="••••••••"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    disabled={loading}
+                    required
+                    className="w-full h-[38px] pl-3 pr-9 text-xs sm:text-sm rounded-lg border border-slate-200 bg-[#edf2f9] text-slate-800 placeholder:text-slate-400 focus:outline-none focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all disabled:bg-slate-50 disabled:opacity-60"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    tabIndex={-1}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 focus:outline-none transition-colors p-1"
+                    aria-label={showPassword ? "Sembunyikan password" : "Lihat password"}
+                  >
+                    {showPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                  </button>
+                </div>
+
+                <div className="flex justify-end mt-1">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      alert("Silakan hubungi IT Department / Administrator untuk reset password.")
+                    }
+                    className="text-[11px] text-blue-600 hover:text-blue-700 font-medium hover:underline focus:outline-none cursor-pointer"
+                  >
+                    Forgot Password?
+                  </button>
+                </div>
+              </div>
+
+              {errorMsg && (
+                <div className="p-2.5 bg-red-50 border border-red-200 rounded-lg text-xs text-red-600 flex items-start gap-2">
+                  <span className="font-semibold shrink-0">Peringatan:</span>
+                  <span>{errorMsg}</span>
+                </div>
+              )}
+
+              <div className="flex items-center gap-2 pt-0.5">
+                <input
+                  id="remember-me"
+                  type="checkbox"
+                  checked={rememberMe}
+                  onChange={(e) => setRememberMe(e.target.checked)}
+                  disabled={loading}
+                  className="w-3.5 h-3.5 rounded border-slate-300 text-blue-600 focus:ring-blue-500 focus:ring-offset-0 cursor-pointer"
+                />
+                <label
+                  htmlFor="remember-me"
+                  className="text-[11px] text-slate-500 cursor-pointer select-none"
+                >
+                  Remember me
+                </label>
+              </div>
+
+              <div className="pt-1">
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full h-[38px] rounded-lg bg-blue-600 hover:bg-blue-700 active:bg-blue-800 disabled:bg-blue-400 text-white font-semibold text-xs sm:text-sm shadow-sm transition-all duration-150 flex items-center justify-center gap-2 cursor-pointer disabled:cursor-not-allowed"
+                >
+                  {loading ? (
+                    <>
+                      <svg
+                        className="animate-spin h-3.5 w-3.5 text-white"
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                      >
+                        <circle
+                          className="opacity-25"
+                          cx="12"
+                          cy="12"
+                          r="10"
+                          stroke="currentColor"
+                          strokeWidth="4"
+                        />
+                        <path
+                          className="opacity-75"
+                          fill="currentColor"
+                          d="M4 12a8 8 0 018-8v8H4z"
+                        />
+                      </svg>
+                      <span>Signing In...</span>
+                    </>
+                  ) : (
+                    "Sign In"
+                  )}
                 </button>
               </div>
-            </div>
 
-            {/* Forgot Password Link */}
-            <div className="flex justify-end pt-0.5">
-              <button
-                type="button"
-                onClick={() =>
-                  alert("Silakan hubungi IT Department / Administrator untuk reset password.")
-                }
-                className="text-[11px] text-[#2563eb] hover:underline font-semibold cursor-pointer"
-              >
-                Forgot Password?
-              </button>
-            </div>
+              <div className="mt-3 text-center text-[11px] text-slate-500">
+                Don't have an account?{" "}
+                <button
+                  type="button"
+                  onClick={() =>
+                    alert("Silakan hubungi IT Department untuk pendaftaran akun sistem.")
+                  }
+                  className="text-blue-600 hover:text-blue-700 font-semibold hover:underline cursor-pointer"
+                >
+                  Report to IT Department
+                </button>
+              </div>
+            </form>
+          </div>
 
-            {/* Remember me Checkbox */}
-            <div className="flex items-center pt-0.5 pb-0.5">
-              <input
-                id="remember-me"
-                type="checkbox"
-                checked={rememberMe}
-                onChange={(e) => setRememberMe(e.target.checked)}
-                className="h-4 w-4 rounded-[4px] border-[#cbd5e1] text-[#2563eb] focus:ring-0 cursor-pointer"
-              />
-              <label
-                htmlFor="remember-me"
-                className="ml-2 text-[12px] text-[#64748b] cursor-pointer select-none"
-              >
-                Remember me
-              </label>
-            </div>
-
-            {/* Sign In Button */}
-            <div className="pt-0.5">
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full h-[38px] sm:h-[40px] bg-[#1d68f0] hover:bg-[#185dd9] active:bg-[#124eb8] text-white text-[13px] font-semibold rounded-xl shadow-sm transition-all duration-150 cursor-pointer disabled:opacity-60 flex items-center justify-center"
-              >
-                {loading ? (
-                  <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                ) : (
-                  "Sign In"
-                )}
-              </button>
-            </div>
-
-            {/* Footer Note */}
-            <div className="pt-1.5 text-center text-[12px] text-[#64748b]">
-              Don't have an account?{" "}
-              <button
-                type="button"
-                onClick={() =>
-                  alert("Silakan hubungi IT Department untuk pendaftaran akun sistem.")
-                }
-                className="text-[#1d68f0] hover:underline font-semibold cursor-pointer"
-              >
-                Report to IT Department
-              </button>
-            </div>
-          </form>
-        </div>
-
-        {/* Footer Copyright */}
-        <div className="w-full max-w-[340px] pt-3 pb-1 text-center text-[11px] text-[#9ca3af]">
-          © 2026 PT Widatra Bhakti. All rights reserved.
+          {/* Footer Copyright */}
+          <div className="text-center text-[10px] text-slate-400 pt-2 pb-1">
+            © 2026 PT Widatra Bhakti. All rights reserved.
+          </div>
         </div>
       </div>
 
       {/* Sisi Kanan: Inset Card Foto Showcase Gedung / Fasilitas K3 */}
-      <div className="hidden md:flex md:w-1/2 h-full p-4 md:p-6 lg:p-8 xl:p-10 items-center justify-center bg-white overflow-hidden">
-        <div className="w-full h-full rounded-[28px] overflow-hidden shadow-sm relative border border-slate-100 bg-slate-50">
+      <div className="hidden lg:flex lg:w-[55%] xl:w-[58%] 2xl:w-[60%] h-full p-3 sm:p-4 lg:p-5 bg-[#f8fafc] items-center justify-center">
+        <div className="relative w-full h-full rounded-2xl xl:rounded-3xl overflow-hidden shadow-sm border border-slate-200/80 bg-slate-100">
           <img
             src={resolveImageUrl(loginBgImage)}
-            alt="PT Widatra Bhakti"
-            className="w-full h-full object-cover object-center select-none"
+            alt="PT Widatra Bhakti Plant & Head Office"
+            className="w-full h-full object-cover object-center"
+            loading="eager"
             onError={(e) => {
               (e.target as HTMLImageElement).src = "/widatra-building.jpg";
             }}
