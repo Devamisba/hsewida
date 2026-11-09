@@ -38,6 +38,9 @@ export default function DashboardHSEPage() {
       aparCount: 0,
       hydrantCount: 0,
       p3kCount: 0,
+      emergencyDoorCount: 0,
+      safetyMirrorCount: 0,
+      assemblyPointCount: 0,
       otherCount: 0,
       checkedThisMonth: 0,
       uncheckedThisMonth: 0,
@@ -57,26 +60,30 @@ export default function DashboardHSEPage() {
         const res = await api.getHseDashboard();
         let data = res.success && res.data ? res.data : {};
 
-        // Fallback jika API belum mengembalikan monitoring object
-        if (!data.monitoring) {
+        // Fallback / Pengayaan jika monitoring object kosong
+        if (!data.monitoring || data.monitoring.totalFacilities === 0) {
           try {
             const inspRes = await api.getAllInspections();
             if (inspRes.success && inspRes.data) {
               const s = inspRes.data.summary || {};
               const cat = inspRes.data.category_counts || {};
               data.monitoring = {
-                totalFacilities: s.total_facilities || s.total || 0,
-                aparCount: cat.apar || 0,
-                hydrantCount: cat.hydrant || 0,
-                p3kCount: cat.kotak_p3k || 0,
-                otherCount: (cat.pintu_darurat || 0) + (cat.cermin_keselamatan || 0) + (cat.titik_kumpul || 0),
-                checkedThisMonth: s.checked_this_month || s.checked || 0,
-                uncheckedThisMonth: s.unchecked_this_month || s.unchecked || 0,
-                inspectionPercentage: s.percentage_this_month || 0,
-                daysLeftInMonth: s.days_left_in_month || 0,
-                expiredCount: 0,
-                refillQueueCount: 0,
-                findingsCount: s.findings || 0,
+                ...data.monitoring,
+                totalFacilities: s.total_facilities || s.total || data.monitoring?.totalFacilities || 0,
+                aparCount: cat.apar || data.monitoring?.aparCount || 0,
+                hydrantCount: cat.hydrant || data.monitoring?.hydrantCount || 0,
+                p3kCount: cat.p3k || cat.kotak_p3k || data.monitoring?.p3kCount || 0,
+                emergencyDoorCount: cat.emergency_door || data.monitoring?.emergencyDoorCount || 0,
+                safetyMirrorCount: cat.safety_mirror || data.monitoring?.safetyMirrorCount || 0,
+                assemblyPointCount: cat.assembly_point || data.monitoring?.assemblyPointCount || 0,
+                otherCount: (cat.emergency_door || 0) + (cat.safety_mirror || 0) + (cat.assembly_point || 0),
+                checkedThisMonth: s.checked_this_month ?? s.checked ?? data.monitoring?.checkedThisMonth ?? 0,
+                uncheckedThisMonth: s.unchecked_this_month ?? s.unchecked ?? data.monitoring?.uncheckedThisMonth ?? 0,
+                inspectionPercentage: s.percentage_this_month ?? data.monitoring?.inspectionPercentage ?? 0,
+                daysLeftInMonth: s.days_left_in_month ?? data.monitoring?.daysLeftInMonth ?? 0,
+                expiredCount: data.monitoring?.expiredCount || 0,
+                refillQueueCount: data.monitoring?.refillQueueCount || 0,
+                findingsCount: s.findings || data.monitoring?.findingsCount || 0,
               };
             }
           } catch {

@@ -155,43 +155,83 @@ class DashboardController extends Controller
             ['name' => 'Umum', 'value' => 15, 'color' => '#10b981'],
         ];
 
-        // 2. Monitoring & Inspeksi K3 Metrics
-        $currentMonthStart = Carbon::now()->startOfMonth();
-        $currentMonthEnd = Carbon::now()->endOfMonth();
+        // 2. Monitoring & Inspeksi K3 Metrics (Safely encapsulated)
+        $monitoringData = [
+            'totalFacilities' => 0,
+            'aparCount' => 0,
+            'hydrantCount' => 0,
+            'p3kCount' => 0,
+            'emergencyDoorCount' => 0,
+            'safetyMirrorCount' => 0,
+            'assemblyPointCount' => 0,
+            'otherCount' => 0,
+            'checkedThisMonth' => 0,
+            'uncheckedThisMonth' => 0,
+            'inspectionPercentage' => 0,
+            'daysLeftInMonth' => max(0, (int) Carbon::now()->diffInDays(Carbon::now()->endOfMonth())),
+            'expiredCount' => 0,
+            'refillQueueCount' => 0,
+            'findingsCount' => 0,
+        ];
 
-        $totalFacilities = SafetyFacility::where('status_aktif', true)->count();
-        $aparCount = SafetyFacility::where('status_aktif', true)->where('kategori', 'apar')->count();
-        $hydrantCount = SafetyFacility::where('status_aktif', true)->where('kategori', 'hydrant')->count();
-        $p3kCount = SafetyFacility::where('status_aktif', true)->where('kategori', 'kotak_p3k')->count();
-        $otherFacilitiesCount = max(0, $totalFacilities - ($aparCount + $hydrantCount + $p3kCount));
+        try {
+            $currentMonthStart = Carbon::now()->startOfMonth();
+            $currentMonthEnd = Carbon::now()->endOfMonth();
 
-        // Inspeksi Bulan Ini
-        $checkedThisMonth = SafetyFacility::where('status_aktif', true)
-            ->whereHas('inspections', function($q) use ($currentMonthStart, $currentMonthEnd) {
-                $q->whereBetween('inspection_date', [$currentMonthStart, $currentMonthEnd]);
-            })->count();
-        $uncheckedThisMonth = max(0, $totalFacilities - $checkedThisMonth);
-        $inspectionPercentage = $totalFacilities > 0 ? round(($checkedThisMonth / $totalFacilities) * 100, 1) : 0;
-        $daysLeftInMonth = max(0, (int) Carbon::now()->endOfMonth()->diffInDays(Carbon::now()));
+            $totalFacilities = SafetyFacility::where('status_aktif', true)->count();
+            $aparCount = SafetyFacility::where('status_aktif', true)->where('category', 'apar')->count();
+            $hydrantCount = SafetyFacility::where('status_aktif', true)->where('category', 'hydrant')->count();
+            $p3kCount = SafetyFacility::where('status_aktif', true)->where('category', 'p3k')->count();
+            $emergencyDoorCount = SafetyFacility::where('status_aktif', true)->where('category', 'emergency_door')->count();
+            $safetyMirrorCount = SafetyFacility::where('status_aktif', true)->where('category', 'safety_mirror')->count();
+            $assemblyPointCount = SafetyFacility::where('status_aktif', true)->where('category', 'assembly_point')->count();
+            $otherCount = $emergencyDoorCount + $safetyMirrorCount + $assemblyPointCount;
 
-        // Expiry & Refill Alerts
-        $expiredCount = SafetyFacility::where('status_aktif', true)
-            ->where('tipe_item', 'CONSUMABLE')
-            ->whereHas('consumableCycle', function($q) use ($today) {
-                $q->where('tgl_kadaluarsa', '<', $today);
-            })->count();
+            // Checked this month
+            $checkedThisMonth = SafetyFacility::where('status_aktif', true)
+                ->whereHas('inspections', function($q) use ($currentMonthStart, $currentMonthEnd) {
+                    $q->whereBetween('inspection_date', [$currentMonthStart, $currentMonthEnd]);
+                })->count();
+            $uncheckedThisMonth = max(0, $totalFacilities - $checkedThisMonth);
+            $inspectionPercentage = $totalFacilities > 0 ? round(($checkedThisMonth / $totalFacilities) * 100, 1) : 0;
 
-        $refillQueueCount = SafetyFacility::where('status_aktif', true)
-            ->where('kategori', 'apar')
-            ->whereHas('consumableCycle', function($q) use ($today) {
-                $q->where('tgl_kadaluarsa', '<', $today)
-                  ->orWhere('kondisi_tekanan', 'HABIS')
-                  ->orWhere('kondisi_tekanan', 'KURANG');
-            })->count();
+            // Expired items
+            $expiredCount = SafetyFacility::where('status_aktif', true)
+                ->where('tipe_item', 'CONSUMABLE')
+                ->whereHas('consumableCycle', function($q) use ($today) {
+                    $q->where('expired_at', '<', $today);
+                })->count();
 
-        $findingsCount = FacilityInspection::where('hasil_evaluasi', 'TEMUAN')
-            ->orWhere('status_verifikasi_k3', 'REJECTED')
-            ->count();
+            // Refill queue
+            $refillQueueCount = SafetyFacility::where('status_aktif', true)
+                ->where('category', 'apar')
+                ->whereHas('consumableCycle', function($q) use ($today) {
+                    $q->where('expired_at', '<', $today);
+                })->count();
+
+            // Inspections findings
+            $findingsCount = FacilityInspection::where('result_status', 'Fail')->count();
+
+            $monitoringData = [
+                'totalFacilities' => $totalFacilities,
+                'aparCount' => $aparCount,
+                'hydrantCount' => $hydrantCount,
+                'p3kCount' => $p3kCount,
+                'emergencyDoorCount' => $emergencyDoorCount,
+                'safetyMirrorCount' => $safetyMirrorCount,
+                'assemblyPointCount' => $assemblyPointCount,
+                'otherCount' => $otherCount,
+                'checkedThisMonth' => $checkedThisMonth,
+                'uncheckedThisMonth' => $uncheckedThisMonth,
+                'inspectionPercentage' => $inspectionPercentage,
+                'daysLeftInMonth' => max(0, (int) Carbon::now()->diffInDays(Carbon::now()->endOfMonth())),
+                'expiredCount' => $expiredCount,
+                'refillQueueCount' => $refillQueueCount,
+                'findingsCount' => $findingsCount,
+            ];
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('HSE Dashboard monitoring query fallback: ' . $e->getMessage());
+        }
 
         return response()->json([
             'success' => true,
@@ -217,20 +257,7 @@ class DashboardController extends Controller
                 'pieData' => $pieData,
 
                 // Monitoring & Inspeksi K3 Summary
-                'monitoring' => [
-                    'totalFacilities' => $totalFacilities,
-                    'aparCount' => $aparCount,
-                    'hydrantCount' => $hydrantCount,
-                    'p3kCount' => $p3kCount,
-                    'otherCount' => $otherFacilitiesCount,
-                    'checkedThisMonth' => $checkedThisMonth,
-                    'uncheckedThisMonth' => $uncheckedThisMonth,
-                    'inspectionPercentage' => $inspectionPercentage,
-                    'daysLeftInMonth' => $daysLeftInMonth,
-                    'expiredCount' => $expiredCount,
-                    'refillQueueCount' => $refillQueueCount,
-                    'findingsCount' => $findingsCount,
-                ],
+                'monitoring' => $monitoringData,
             ],
         ]);
     }
