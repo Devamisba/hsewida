@@ -32,6 +32,7 @@ export function EditFacilityModal({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
+  const [hasSaved, setHasSaved] = useState(false);
 
   // Form Fields
   const [code, setCode] = useState("");
@@ -75,6 +76,7 @@ export function EditFacilityModal({
     if (isOpen && facility) {
       setError("");
       setSuccessMsg("");
+      setHasSaved(false);
       setCode(facility.code || "");
       setName(facility.nama_item || facility.name || "");
       setCategory(facility.category || "apar");
@@ -197,10 +199,13 @@ export function EditFacilityModal({
 
       if (res?.success) {
         setSuccessMsg("Perubahan data fasilitas berhasil disimpan!");
-        setTimeout(() => {
-          onSuccess?.(res.data);
-          onClose();
-        }, 800);
+        setHasSaved(true);
+        onSuccess?.(res.data);
+        setTimeout(() => setSuccessMsg(""), 4000);
+
+
+
+
       } else {
         setError(res?.message || "Gagal memperbarui data fasilitas.");
       }
@@ -551,6 +556,7 @@ export function EditFacilityModal({
               <button
                 type="button"
                 onClick={() => {
+        
                   onClose();
                   onDeleteRequest(facility);
                 }}
@@ -568,7 +574,7 @@ export function EditFacilityModal({
                 onClick={onClose}
                 className="px-4 py-2 border border-slate-200 hover:bg-slate-50 text-slate-700 rounded-xl text-xs font-bold transition cursor-pointer"
               >
-                Batal
+                {hasSaved ? "Tutup" : "Batal"}
               </button>
               <button
                 type="submit"

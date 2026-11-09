@@ -231,9 +231,8 @@ export default function InspectionPage() {
           setFacilityToEdit(null);
         }}
         facility={facilityToEdit}
-        onSuccess={() => {
-          setEditModalOpen(false);
-          setFacilityToEdit(null);
+        onSuccess={(updated) => {
+          if (updated) setFacilityToEdit(updated);
           handleRefresh();
         }}
         onDeleteRequest={(f) => {

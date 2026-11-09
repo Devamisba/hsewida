@@ -748,9 +748,8 @@ export default function MonitoringHSEPage() {
           setFacilityToEdit(null);
         }}
         facility={facilityToEdit}
-        onSuccess={() => {
-          setEditModalOpen(false);
-          setFacilityToEdit(null);
+        onSuccess={(updated) => {
+          if (updated) setFacilityToEdit(updated);
           loadData();
         }}
         onDeleteRequest={(f) => {
