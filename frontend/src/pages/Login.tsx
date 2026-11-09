@@ -93,17 +93,22 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="h-screen w-full bg-[#f8fafc] lg:bg-white flex flex-col lg:flex-row overflow-hidden selection:bg-blue-100 selection:text-blue-900 select-none">
+    <div className="h-screen w-full bg-[#f8fafc] md:bg-white flex flex-col md:flex-row overflow-hidden selection:bg-blue-100 selection:text-blue-900 select-none">
       {/* Sisi Kiri: Form Login */}
-      <div className="w-full lg:w-[45%] xl:w-[42%] 2xl:w-[40%] h-full flex flex-col justify-between p-6 sm:p-8 lg:p-10 xl:p-12 bg-white shadow-sm lg:shadow-none z-10 overflow-y-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+      <div className="w-full md:w-[45%] lg:w-[42%] xl:w-[40%] h-full flex flex-col justify-between p-6 sm:p-8 lg:p-10 xl:p-12 bg-white shadow-sm md:shadow-none z-10 overflow-y-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
         <div className="w-full max-w-[360px] mx-auto flex flex-col justify-between h-full py-1">
-          {/* Logo PT Widatra Bhakti (Aligned to left, clean matching OVMS) */}
+          {/* Logo PT Widatra Bhakti (Gambar 2 + Teks Sesuai Gambar 4) */}
           <div className="pt-1 pb-2 flex items-center min-h-[52px]">
-            <img
-              src="/logo.png"
-              alt="PT WIDATRA BHAKTI"
-              className="h-10 sm:h-11 w-auto object-contain object-left select-none"
-            />
+            <div className="flex items-center gap-2.5 select-none">
+              <img
+                src="/logo-widatra.png"
+                alt="PT WIDATRA BHAKTI"
+                className="h-9 sm:h-10 w-auto object-contain object-left shrink-0"
+              />
+              <span className="font-extrabold text-[15px] sm:text-[16px] text-[#002f6c] tracking-tight leading-none uppercase">
+                PT WIDATRA BHAKTI
+              </span>
+            </div>
           </div>
 
           {/* Form Area */}
@@ -264,8 +269,8 @@ export default function LoginPage() {
         </div>
       </div>
 
-      {/* Sisi Kanan: Inset Card Foto Showcase Gedung / Fasilitas K3 */}
-      <div className="hidden lg:flex lg:w-[55%] xl:w-[58%] 2xl:w-[60%] h-full p-3 sm:p-4 lg:p-5 bg-[#f8fafc] items-center justify-center">
+      {/* Sisi Kanan: Inset Card Foto Showcase Gedung (Gambar 3 Sesuai Gambar 4) */}
+      <div className="hidden md:flex md:w-[55%] lg:w-[58%] xl:w-[60%] h-full p-3 sm:p-4 lg:p-5 bg-[#f8fafc] items-center justify-center">
         <div className="relative w-full h-full rounded-2xl xl:rounded-3xl overflow-hidden shadow-sm border border-slate-200/80 bg-slate-100">
           <img
             src={resolveImageUrl(loginBgImage)}
