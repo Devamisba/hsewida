@@ -14,6 +14,9 @@ import {
   ClipboardCheck,
   MapPin,
   Flame,
+  Droplet,
+  Cross,
+  DoorOpen,
   ArrowRight,
   Activity,
   Layers,
@@ -221,14 +224,36 @@ export default function DashboardHSEPage() {
               >
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-xs font-semibold text-blue-800">Total Fasilitas K3</span>
-                  <Flame size={18} className="text-blue-600 group-hover:scale-110 transition-transform" />
+                  <Layers size={18} className="text-blue-600 group-hover:scale-110 transition-transform" />
                 </div>
                 <div className="text-2xl font-black text-gray-900">
                   {(monitoring.totalFacilities || 0).toLocaleString()} <span className="text-xs font-normal text-gray-500">Unit</span>
                 </div>
-                <p className="text-[11px] text-gray-500 mt-2 truncate">
-                  {monitoring.aparCount || 0} APAR · {monitoring.hydrantCount || 0} Hydrant · {monitoring.p3kCount || 0} P3K
-                </p>
+                <div className="flex items-center gap-2 mt-2 text-xs font-semibold text-gray-600 flex-wrap">
+                  <span className="inline-flex items-center gap-1 hover:text-red-600 transition-colors" title={`APAR: ${monitoring.aparCount || 0} Unit`}>
+                    <Flame size={13} className="text-red-500" />
+                    <span>{monitoring.aparCount || 0}</span>
+                  </span>
+                  <span className="text-gray-300">·</span>
+                  <span className="inline-flex items-center gap-1 hover:text-blue-600 transition-colors" title={`Hydrant: ${monitoring.hydrantCount || 0} Unit`}>
+                    <Droplet size={13} className="text-blue-500" />
+                    <span>{monitoring.hydrantCount || 0}</span>
+                  </span>
+                  <span className="text-gray-300">·</span>
+                  <span className="inline-flex items-center gap-1 hover:text-emerald-600 transition-colors" title={`P3K: ${monitoring.p3kCount || 0} Unit`}>
+                    <Cross size={13} className="text-emerald-600" />
+                    <span>{monitoring.p3kCount || 0}</span>
+                  </span>
+                  {(monitoring.otherCount || 0) > 0 && (
+                    <>
+                      <span className="text-gray-300">·</span>
+                      <span className="inline-flex items-center gap-1 hover:text-amber-600 transition-colors" title={`Fasilitas Lainnya: ${monitoring.otherCount || 0} Unit`}>
+                        <DoorOpen size={13} className="text-amber-500" />
+                        <span>{monitoring.otherCount || 0}</span>
+                      </span>
+                    </>
+                  )}
+                </div>
               </div>
 
               {/* Card 2: Kepatuhan Inspeksi Bulan Ini */}
