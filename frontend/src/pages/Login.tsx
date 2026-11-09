@@ -3,6 +3,7 @@ import { Eye, EyeOff, AlertCircle, Sparkles, X } from "lucide-react";
 import { api } from "@/services/api";
 import { auth } from "@/lib/auth";
 import { K3Loader } from "@/components/K3Loader";
+import { resolveImageUrl } from "@/utils/imageUrl";
 
 const DEMO_ACCOUNTS = [
   { role: "admin", label: "Admin", nik: "SA12345" },
@@ -22,12 +23,25 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
   const [showDemoModal, setShowDemoModal] = useState(false);
+  const [loginBgImage, setLoginBgImage] = useState<string>("/widatra-building.jpg");
 
-  // Auto-redirect if user already has an active session (persistent session like Facebook/Google)
+  // Auto-redirect if user already has an active session
   useEffect(() => {
     if (auth.isAuthenticated()) {
       window.location.href = "/dashboard";
+      return;
     }
+
+    // Fetch dynamic login background image from Master Data
+    api.getSettings()
+      .then((res) => {
+        if (res?.success && res.data?.map?.login_background_image) {
+          setLoginBgImage(res.data.map.login_background_image);
+        }
+      })
+      .catch((err) => {
+        console.warn("Could not load custom login background:", err);
+      });
   }, []);
 
   const performLogin = async (loginIdentifier: string, loginPass: string) => {
@@ -67,60 +81,63 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="h-screen w-screen flex bg-white font-sans antialiased overflow-hidden">
+    <div className="h-screen w-screen flex bg-white font-sans antialiased overflow-hidden select-none">
       {/* Sisi Kiri: Form Login */}
-      <div className="w-full md:w-1/2 h-full bg-white flex flex-col justify-center items-center md:items-end md:pr-10 lg:pr-12 px-6 overflow-hidden">
-        <div className="w-full max-w-[325px]">
-          {/* Logo PT Widatra Bhakti */}
-          <div className="mb-4">
+      <div className="w-full md:w-1/2 h-full bg-white flex flex-col justify-between px-6 sm:px-12 md:px-10 lg:px-16 xl:px-24 py-6 sm:py-8 overflow-y-auto">
+        <div className="hidden sm:block h-2" />
+
+        {/* Center Container Form */}
+        <div className="w-full max-w-[340px] mx-auto md:mx-0 my-auto py-4">
+          {/* Logo PT Widatra Bhakti (Stacked Logo seperti Foto Target) */}
+          <div className="mb-6">
             <img
-              src="/widatra-logo.png"
-              alt="PT WIDATRA BHAKTI"
-              className="h-6 w-auto object-contain"
+              src="/logo.png"
+              alt="Widatra"
+              className="h-12 sm:h-14 w-auto object-contain"
             />
           </div>
 
           {/* Heading */}
-          <div className="mb-5">
-            <h1 className="text-[28px] sm:text-[30px] font-bold text-[#111827] leading-[1.15] tracking-tight">
-              Salam
+          <div className="mb-6">
+            <h1 className="text-[28px] sm:text-[32px] font-bold text-[#111827] leading-[1.15] tracking-tight">
+              Hallo
               <br />
               Welcome Back
             </h1>
-            <p className="mt-1 text-[13px] text-[#8c9ba5] font-normal">
+            <p className="mt-1.5 text-[13px] text-[#94a3b8] font-normal">
               Hey, welcome back to your special place
             </p>
           </div>
 
           {/* Error Message */}
           {errorMsg && (
-            <div className="mb-3 p-2 bg-red-50 border border-red-200 rounded-md flex items-start gap-2 text-red-700 text-xs">
-              <AlertCircle size={14} className="shrink-0 mt-0.5" />
+            <div className="mb-4 p-2.5 bg-red-50 border border-red-200 rounded-xl flex items-start gap-2 text-red-700 text-xs">
+              <AlertCircle size={15} className="shrink-0 mt-0.5" />
               <div className="flex-1">{errorMsg}</div>
             </div>
           )}
 
           {/* Form */}
-          <form onSubmit={handleFormSubmit}>
+          <form onSubmit={handleFormSubmit} className="space-y-3.5">
             {/* Field NIK */}
-            <div className="mb-3">
-              <label className="block text-[11px] font-semibold text-[#64748b] mb-1">
-                NIK (Nomor Induk Karyawan / Rekanan)
+            <div>
+              <label className="block text-[11px] font-bold text-[#4b5563] uppercase tracking-wider mb-1.5">
+                NIK
               </label>
               <input
                 type="text"
                 required
                 value={identifier}
                 onChange={(e) => setIdentifier(e.target.value)}
-                placeholder="Contoh: SA12345, VN10001"
-                className="w-full h-[34px] px-3 bg-[#e8f0fe] border border-transparent rounded-[5px] text-[13px] text-[#1e293b] placeholder:text-[#94a3b8] focus:outline-none focus:bg-white focus:border-[#3b82f6] transition-all"
+                placeholder="SA12345"
+                className="w-full h-[42px] px-3.5 bg-[#edf2f9] border border-transparent rounded-xl text-[13px] text-[#1e293b] placeholder:text-[#94a3b8] focus:outline-none focus:bg-white focus:border-[#2563eb] transition-all"
               />
             </div>
 
             {/* Field Password */}
-            <div className="mb-1">
-              <label className="block text-[11px] font-semibold text-[#64748b] mb-1">
-                Password
+            <div>
+              <label className="block text-[11px] font-bold text-[#4b5563] uppercase tracking-wider mb-1.5">
+                PASSWORD
               </label>
               <div className="relative">
                 <input
@@ -129,21 +146,21 @@ export default function LoginPage() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="w-full h-[34px] pl-3 pr-8 bg-[#e8f0fe] border border-transparent rounded-[5px] text-[13px] text-[#1e293b] placeholder:text-[#94a3b8] focus:outline-none focus:bg-white focus:border-[#3b82f6] transition-all"
+                  className="w-full h-[42px] pl-3.5 pr-10 bg-[#edf2f9] border border-transparent rounded-xl text-[13px] text-[#1e293b] placeholder:text-[#94a3b8] focus:outline-none focus:bg-white focus:border-[#2563eb] transition-all"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute inset-y-0 right-0 pr-2.5 flex items-center text-[#94a3b8] hover:text-[#64748b] transition-colors focus:outline-none cursor-pointer"
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-[#94a3b8] hover:text-[#64748b] transition-colors focus:outline-none cursor-pointer"
                   tabIndex={-1}
                 >
-                  {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
+                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                 </button>
               </div>
             </div>
 
             {/* Forgot Password Link */}
-            <div className="flex justify-end mb-3">
+            <div className="flex justify-end pt-0.5">
               <button
                 type="button"
                 onClick={() =>
@@ -156,61 +173,71 @@ export default function LoginPage() {
             </div>
 
             {/* Remember me Checkbox */}
-            <div className="flex items-center mb-4">
+            <div className="flex items-center pt-0.5 pb-0.5">
               <input
                 id="remember-me"
                 type="checkbox"
                 checked={rememberMe}
                 onChange={(e) => setRememberMe(e.target.checked)}
-                className="h-3.5 w-3.5 rounded-[3px] border-[#cbd5e1] text-[#2563eb] focus:ring-0 cursor-pointer"
+                className="h-4 w-4 rounded-[4px] border-[#cbd5e1] text-[#2563eb] focus:ring-0 cursor-pointer"
               />
               <label
                 htmlFor="remember-me"
-                className="ml-2 text-[11px] text-[#64748b] cursor-pointer select-none"
+                className="ml-2 text-[12px] text-[#64748b] cursor-pointer select-none"
               >
                 Remember me
               </label>
             </div>
 
             {/* Sign In Button */}
-            <div>
+            <div className="pt-1">
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full h-[34px] bg-[#1d68f0] hover:bg-[#185dd9] active:bg-[#124eb8] text-white text-[13px] font-semibold rounded-[5px] shadow-sm transition-colors duration-150 cursor-pointer disabled:opacity-60 flex items-center justify-center"
+                className="w-full h-[42px] bg-[#1d68f0] hover:bg-[#185dd9] active:bg-[#124eb8] text-white text-[13px] font-semibold rounded-xl shadow-sm transition-all duration-150 cursor-pointer disabled:opacity-60 flex items-center justify-center"
               >
                 {loading ? (
-                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                 ) : (
                   "Sign In"
                 )}
               </button>
             </div>
-          </form>
 
-          {/* Footer Note */}
-          <div className="mt-4 text-center text-[11px] text-[#64748b]">
-            Don't have an account?{" "}
-            <button
-              type="button"
-              onClick={() =>
-                alert("Silakan hubungi IT Department untuk pendaftaran akun sistem.")
-              }
-              className="text-[#1d68f0] hover:underline font-medium cursor-pointer"
-            >
-              Report to IT Department
-            </button>
-          </div>
+            {/* Footer Note */}
+            <div className="pt-2 text-center text-[12px] text-[#64748b]">
+              Don't have an account?{" "}
+              <button
+                type="button"
+                onClick={() =>
+                  alert("Silakan hubungi IT Department untuk pendaftaran akun sistem.")
+                }
+                className="text-[#1d68f0] hover:underline font-semibold cursor-pointer"
+              >
+                Report to IT Department
+              </button>
+            </div>
+          </form>
+        </div>
+
+        {/* Footer Copyright */}
+        <div className="pt-4 pb-2 text-center text-[11px] text-[#9ca3af]">
+          © 2026 PT Widatra Bhakti. All rights reserved.
         </div>
       </div>
 
-      {/* Sisi Kanan: Foto Gedung (Natural Aspect Ratio, Tanpa Zooming / Distorsi) */}
-      <div className="hidden md:flex md:w-1/2 h-full bg-[#f2f7fd] items-center justify-start overflow-hidden relative select-none">
-        <img
-          src="/widatra-building.jpg"
-          alt="PT Widatra Bhakti"
-          className="h-full w-auto object-cover object-left pointer-events-none"
-        />
+      {/* Sisi Kanan: Inset Card Foto Showcase Gedung / Fasilitas K3 */}
+      <div className="hidden md:flex md:w-1/2 h-full p-4 md:p-6 lg:p-8 xl:p-10 items-center justify-center bg-white">
+        <div className="w-full h-full rounded-[28px] overflow-hidden shadow-sm relative border border-slate-100 bg-slate-50">
+          <img
+            src={resolveImageUrl(loginBgImage)}
+            alt="PT Widatra Bhakti"
+            className="w-full h-full object-cover object-center select-none"
+            onError={(e) => {
+              (e.target as HTMLImageElement).src = "/widatra-building.jpg";
+            }}
+          />
+        </div>
       </div>
 
       {/* Floating Demo Picker (Bantuan Uji Coba Cepat tanpa Mengganggu Layout) */}

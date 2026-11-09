@@ -322,6 +322,10 @@ class MasterDataController extends Controller
             $settingsMap[$s->key] = $s->type === 'number' && is_numeric($s->value) ? (int)$s->value : $s->value;
         }
 
+        if (!isset($settingsMap['login_background_image'])) {
+            $settingsMap['login_background_image'] = '/widatra-building.jpg';
+        }
+
         return response()->json([
             'success' => true,
             'data' => [
@@ -372,6 +376,12 @@ class MasterDataController extends Controller
                         'message' => 'Radius jangkauan scan alat minimal 1 meter.'
                     ], 422);
                 }
+                if ($item['key'] === 'login_background_image') {
+                    $user = $request->user();
+                    if (!$user || !$user->role || $user->role->code !== 'admin') {
+                        continue; // Skip non-admin
+                    }
+                }
 
                 $setting->update(['value' => (string)$item['value']]);
             }
@@ -383,12 +393,91 @@ class MasterDataController extends Controller
             $settingsMap[$s->key] = $s->type === 'number' && is_numeric($s->value) ? (int)$s->value : $s->value;
         }
 
+        if (!isset($settingsMap['login_background_image'])) {
+            $settingsMap['login_background_image'] = '/widatra-building.jpg';
+        }
+
         return response()->json([
             'success' => true,
             'message' => 'Pengaturan sistem & geofence berhasil diperbarui.',
             'data' => [
                 'list' => $allSettings,
                 'map' => $settingsMap,
+            ]
+        ]);
+    }
+
+    // --- BRANDING & LOGIN SHOWCASE PHOTO (ADMIN ONLY) ---
+    public function uploadLoginImage(Request $request)
+    {
+        $user = $request->user();
+        $roleCode = $user && $user->role ? $user->role->code : null;
+        if ($roleCode !== 'admin') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Hanya Administrator yang memiliki wewenang untuk mengganti foto login.',
+            ], 403);
+        }
+
+        $request->validate([
+            'image' => 'required|image|mimes:jpeg,png,jpg,webp|max:5120',
+        ]);
+
+        $file = $request->file('image');
+        $fileName = 'login_showcase_' . time() . '.' . $file->getClientOriginalExtension();
+        $path = $file->storeAs('branding', $fileName, 'public');
+        $url = '/storage/' . $path;
+
+        SystemSetting::updateOrCreate(
+            ['key' => 'login_background_image'],
+            [
+                'value' => $url,
+                'label' => 'Foto Showcase Halaman Login',
+                'description' => 'Foto gedung atau fasilitas utama pada kartu sisi kanan halaman login sistem HSE PT Widatra Bhakti.',
+                'unit' => 'URL / Path Foto',
+                'group' => 'branding',
+                'type' => 'string',
+            ]
+        );
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Foto showcase halaman login berhasil diperbarui.',
+            'data' => [
+                'login_background_image' => $url,
+            ]
+        ]);
+    }
+
+    public function resetLoginImage(Request $request)
+    {
+        $user = $request->user();
+        $roleCode = $user && $user->role ? $user->role->code : null;
+        if ($roleCode !== 'admin') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Hanya Administrator yang memiliki wewenang untuk mereset foto login.',
+            ], 403);
+        }
+
+        $defaultUrl = '/widatra-building.jpg';
+        SystemSetting::updateOrCreate(
+            ['key' => 'login_background_image'],
+            [
+                'value' => $defaultUrl,
+                'label' => 'Foto Showcase Halaman Login',
+                'description' => 'Foto gedung atau fasilitas utama pada kartu sisi kanan halaman login sistem HSE PT Widatra Bhakti.',
+                'unit' => 'URL / Path Foto',
+                'group' => 'branding',
+                'type' => 'string',
+            ]
+        );
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Foto showcase halaman login berhasil dikembalikan ke default standar pabrik.',
+            'data' => [
+                'login_background_image' => $defaultUrl,
             ]
         ]);
     }

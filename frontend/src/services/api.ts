@@ -22,9 +22,10 @@ export const API_BASE_URL = (() => {
 // Helper for authenticated fetch
 export async function apiRequest<T = any>(endpoint: string, options: RequestInit = {}): Promise<T> {
   const token = auth.getToken();
+  const isFormData = typeof FormData !== 'undefined' && options.body instanceof FormData;
   const headers: Record<string, string> = {
     'Accept': 'application/json',
-    'Content-Type': 'application/json',
+    ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
     ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
     ...((options.headers as Record<string, string>) || {}),
   };
@@ -331,6 +332,21 @@ export const api = {
     return apiRequest('/master/settings', {
       method: 'PUT',
       body: JSON.stringify({ settings }),
+    });
+  },
+
+  uploadLoginImage: async (file: File) => {
+    const fd = new FormData();
+    fd.append('image', file);
+    return apiRequest('/master/upload-login-image', {
+      method: 'POST',
+      body: fd,
+    });
+  },
+
+  resetLoginImage: async () => {
+    return apiRequest('/master/reset-login-image', {
+      method: 'POST',
     });
   },
 

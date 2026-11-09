@@ -73,6 +73,8 @@ Route::prefix('v1')->group(function () {
 
         Route::get('/master/workflow-stages', [MasterDataController::class, 'getWorkflowStages']);
         Route::put('/master/settings', [MasterDataController::class, 'updateSettings']);
+        Route::post('/master/upload-login-image', [MasterDataController::class, 'uploadLoginImage']);
+        Route::post('/master/reset-login-image', [MasterDataController::class, 'resetLoginImage']);
 
         // 5. Work Permits Lifecycle
         Route::get('/permits/my-requests', [WorkPermitController::class, 'myRequests']);
