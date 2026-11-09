@@ -89,12 +89,12 @@ export default function LoginPage() {
 
         {/* Center Container Form */}
         <div className="w-full max-w-[340px]">
-          {/* Logo PT Widatra Bhakti (Stacked Logo) */}
-          <div className="mb-4 sm:mb-5">
+          {/* Logo PT Widatra Bhakti (Di tengah & diperbesar) */}
+          <div className="mb-5 sm:mb-6 w-full flex justify-center">
             <img
               src="/logo.png"
               alt="Widatra"
-              className="h-11 sm:h-12 w-auto object-contain"
+              className="h-16 sm:h-20 w-auto object-contain"
             />
           </div>
 
