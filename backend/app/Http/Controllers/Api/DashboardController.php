@@ -47,6 +47,45 @@ class DashboardController extends Controller
             ->where('end_date', '>=', $today)
             ->count();
 
+        // Hitung Safe Man-Hours kumulatif dari seluruh izin kerja (Disetujui / Selesai)
+        // Rumus K3: Total Pekerja x Jam Kerja/Hari x Hari Selamat Terlaksana
+        $safePermits = WorkPermit::with('workers')
+            ->where('user_id', $user->id)
+            ->whereIn('status', ['Disetujui', 'Selesai'])
+            ->get();
+
+        $safeManHours = 0;
+        $todayCarbon = Carbon::today();
+
+        foreach ($safePermits as $p) {
+            $workers = (int) ($p->total_workers > 0 ? $p->total_workers : max($p->workers ? $p->workers->count() : 0, 1));
+
+            $hoursPerDay = 8;
+            if (!empty($p->daily_start_time) && !empty($p->daily_end_time)) {
+                try {
+                    $startH = Carbon::parse($p->daily_start_time);
+                    $endH = Carbon::parse($p->daily_end_time);
+                    $diffH = abs($startH->diffInHours($endH));
+                    if ($diffH > 0 && $diffH <= 24) {
+                        $hoursPerDay = $diffH;
+                    }
+                } catch (\Exception $e) {
+                    $hoursPerDay = 8;
+                }
+            }
+
+            if ($p->start_date && $p->end_date) {
+                $startD = Carbon::parse($p->start_date)->startOfDay();
+                $endD = Carbon::parse($p->end_date)->startOfDay();
+
+                if ($startD->lte($todayCarbon)) {
+                    $effectiveEnd = $endD->lt($todayCarbon) ? $endD : $todayCarbon;
+                    $days = $startD->diffInDays($effectiveEnd) + 1;
+                    $safeManHours += ($workers * $hoursPerDay * $days);
+                }
+            }
+        }
+
         $chartData = [
             ['name' => 'Jan', 'pengajuan' => 4, 'disetujui' => 4],
             ['name' => 'Feb', 'pengajuan' => 6, 'disetujui' => 5],
@@ -68,7 +107,7 @@ class DashboardController extends Controller
                     'shift' => $p->daily_start_time . ' - ' . $p->daily_end_time,
                 ]),
                 'expiringSoonCount' => $expiringSoonCount,
-                'safeManHours' => 1450,
+                'safeManHours' => $safeManHours,
                 'chartData' => $chartData,
             ],
         ]);
