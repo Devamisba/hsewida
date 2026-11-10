@@ -788,7 +788,7 @@ export default function AparScanPage() {
 
                 <form onSubmit={handlePicLogin} className="space-y-3 text-xs">
                   <div className="space-y-1">
-                    <label className="block font-semibold text-slate-700">Email atau NIK PIC K3</label>
+                    <label className="block font-semibold text-slate-700">Email atau NIP PIC K3</label>
                     <input
                       type="text"
                       required

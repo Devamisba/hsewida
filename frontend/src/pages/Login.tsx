@@ -6,13 +6,13 @@ import { K3Loader } from "@/components/K3Loader";
 import { resolveImageUrl } from "@/utils/imageUrl";
 
 const DEMO_ACCOUNTS = [
-  { role: "admin", label: "Admin", nik: "SA12345" },
-  { role: "pemohon", label: "Vendor (Pemohon)", nik: "VN10001" },
-  { role: "pic_vendor", label: "PIC Widatra (Internal)", nik: "PC10002" },
-  { role: "hse", label: "Tim K3 / HSE", nik: "HS10003" },
-  { role: "pic_k3", label: "PIC K3 (Monitoring)", nik: "PK10006" },
-  { role: "ga_dept_head", label: "Head Dept HRD&GA", nik: "GA10004" },
-  { role: "ga_div_head", label: "Head Division HRD&GA", nik: "GA10005" },
+  { role: "admin", label: "Admin", nip: "SA12345", name: "System Administrator" },
+  { role: "pemohon", label: "Vendor (Pemohon)", nip: "VN10001", name: "PT Maju Mundur" },
+  { role: "pic_vendor", label: "PIC Widatra (Internal)", nip: "PC10002", name: "PIC Widatra (Internal)" },
+  { role: "hse", label: "Tim K3 / HSE", nip: "HS10003", name: "Tim K3 / HSE Officer" },
+  { role: "pic_k3", label: "PIC K3 (Monitoring)", nip: "PK10006", name: "PIC K3 Widatra" },
+  { role: "ga_dept_head", label: "Head Dept HRD&GA", nip: "GA10004", name: "P. Andaru" },
+  { role: "ga_div_head", label: "Head Division HRD&GA", nip: "GA10005", name: "P. Effendy" },
 ];
 
 export default function LoginPage() {
@@ -32,8 +32,8 @@ export default function LoginPage() {
       return;
     }
 
-    // Check remembered NIK
-    const remembered = localStorage.getItem("hse_remembered_nik");
+    // Check remembered NIP
+    const remembered = localStorage.getItem("hse_remembered_nip") || localStorage.getItem("hse_remembered_nik");
     if (remembered) {
       setIdentifier(remembered);
       setRememberMe(true);
@@ -59,18 +59,18 @@ export default function LoginPage() {
       const res = await api.login(loginIdentifier, loginPass);
       if (res.success && res.data) {
         if (rememberMe) {
-          localStorage.setItem("hse_remembered_nik", loginIdentifier.trim());
+          localStorage.setItem("hse_remembered_nip", loginIdentifier.trim());
         } else {
-          localStorage.removeItem("hse_remembered_nik");
+          localStorage.removeItem("hse_remembered_nip"); localStorage.removeItem("hse_remembered_nik");
         }
         auth.setSession(res.data.token, res.data.user);
         window.location.href = "/dashboard";
       } else {
-        setErrorMsg(res.message || "Login gagal, periksa kembali NIK dan password Anda.");
+        setErrorMsg(res.message || "Login gagal, periksa kembali NIP dan password Anda.");
       }
     } catch (err: any) {
       console.error("Login error:", err);
-      setErrorMsg(err.message || "Kredensial NIK atau password tidak sesuai.");
+      setErrorMsg(err.message || "Kredensial NIP atau password tidak sesuai.");
     } finally {
       setLoading(false);
     }
@@ -79,17 +79,17 @@ export default function LoginPage() {
   const handleFormSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!identifier || !password) {
-      setErrorMsg("Harap masukkan NIK dan password.");
+      setErrorMsg("Harap masukkan NIP dan password.");
       return;
     }
     performLogin(identifier, password);
   };
 
-  const handleQuickLogin = (demoNik: string) => {
-    setIdentifier(demoNik);
+  const handleQuickLogin = (demoNip: string) => {
+    setIdentifier(demoNip);
     setPassword("password");
     setShowDemoModal(false);
-    performLogin(demoNik, "password");
+    performLogin(demoNip, "password");
   };
 
   return (
@@ -128,13 +128,13 @@ export default function LoginPage() {
             <form className="space-y-3" onSubmit={handleFormSubmit}>
               <div>
                 <label
-                  htmlFor="nik-input"
+                  htmlFor="nip-input"
                   className="block text-[11px] font-semibold text-slate-600 mb-1 uppercase tracking-wider"
                 >
-                  NIK
+                  NIP
                 </label>
                 <input
-                  id="nik-input"
+                  id="nip-input"
                   type="text"
                   placeholder="SA12345"
                   value={identifier}
@@ -297,7 +297,7 @@ export default function LoginPage() {
             <span>Demo Akun</span>
           </button>
         ) : (
-          <div className="p-3 bg-white/95 backdrop-blur-md border border-slate-200 rounded-xl shadow-xl w-64 animate-in fade-in zoom-in-95">
+          <div className="p-3 bg-white/95 backdrop-blur-md border border-slate-200 rounded-xl shadow-xl w-72 animate-in fade-in zoom-in-95">
             <div className="flex items-center justify-between pb-2 mb-2 border-b border-slate-100">
               <span className="text-[11px] font-bold text-slate-700">Pilih Role Demo (1-Klik)</span>
               <button
@@ -313,11 +313,11 @@ export default function LoginPage() {
                 <button
                   key={acc.role}
                   type="button"
-                  onClick={() => handleQuickLogin(acc.nik)}
+                  onClick={() => handleQuickLogin(acc.nip)}
                   className="p-1.5 rounded-lg border border-slate-100 bg-slate-50 hover:bg-blue-50 hover:border-blue-200 text-left transition cursor-pointer"
                 >
                   <div className="text-[10px] font-semibold text-slate-800 truncate">{acc.label}</div>
-                  <div className="text-[9px] text-slate-400 font-mono">NIK: {acc.nik}</div>
+                  <div className="text-[9px] text-slate-400 font-mono">NIP: {acc.nip}</div>
                 </button>
               ))}
             </div>

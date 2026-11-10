@@ -22,7 +22,7 @@ class AuthController extends Controller
 
         $input = trim($request->email);
 
-        // Search by NIK or email directly in database (case-insensitive)
+        // Search by NIP (nik column) or email directly in database (case-insensitive)
         $user = User::with(['role.permissions'])
             ->whereRaw('LOWER(nik) = ?', [strtolower($input)])
             ->orWhereRaw('LOWER(email) = ?', [strtolower($input)])
@@ -30,7 +30,7 @@ class AuthController extends Controller
 
         if (!$user || !Hash::check($request->password, $user->password)) {
             throw ValidationException::withMessages([
-                'email' => ['Kredensial NIK atau password yang dimasukkan tidak sesuai.'],
+                'email' => ['Kredensial NIP atau password yang dimasukkan tidak sesuai.'],
             ]);
         }
 

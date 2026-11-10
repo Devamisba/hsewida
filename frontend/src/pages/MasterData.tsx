@@ -748,7 +748,7 @@ export default function MasterDataPage() {
                     <table className="w-full text-left text-sm">
                       <thead className="bg-slate-50 border-y border-slate-200 text-xs font-bold text-slate-600 uppercase tracking-wider">
                         <tr>
-                          <th className="px-5 py-3.5">Nama, NIK & Kontak</th>
+                          <th className="px-5 py-3.5">Nama, NIP & Kontak</th>
                           <th className="px-5 py-3.5">Peran / Role</th>
                           <th className="px-5 py-3.5">Instansi / Departemen</th>
                           <th className="px-5 py-3.5">No. Telepon</th>
@@ -761,7 +761,7 @@ export default function MasterDataPage() {
                             <tr key={u.id} className="hover:bg-slate-50/70 transition-colors">
                               <td className="px-5 py-4">
                                 <div className="font-bold text-slate-900">{u.name}</div>
-                                <div className="text-xs font-mono font-semibold text-blue-600">NIK: {u.nik || "-"}</div>
+                                <div className="text-xs font-mono font-semibold text-blue-600">NIP: {u.nik || "-"}</div>
                                 <div className="text-xs text-slate-400">{u.email}</div>
                               </td>
                               <td className="px-5 py-4">
@@ -1957,7 +1957,7 @@ export default function MasterDataPage() {
               {modalType === "user" && (
                 <>
                   <div>
-                    <label className="block text-xs font-bold text-slate-700 uppercase mb-1">NIK (Nomor Induk Karyawan / Rekanan) *</label>
+                    <label className="block text-xs font-bold text-slate-700 uppercase mb-1">NIP (Nomor Induk Pegawai / Rekanan) *</label>
                     <input
                       required
                       type="text"
