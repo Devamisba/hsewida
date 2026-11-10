@@ -7,9 +7,9 @@ import { resolveImageUrl } from "@/utils/imageUrl";
 
 const DEMO_ACCOUNTS = [
   { role: "admin", label: "Admin", nip: "SA12345", name: "System Administrator" },
-  { role: "pemohon", label: "Vendor (Pemohon)", nip: "VN10001", name: "PT Maju Mundur" },
-  { role: "pic_vendor", label: "PIC Widatra (Internal)", nip: "PC10002", name: "PIC Widatra (Internal)" },
-  { role: "hse", label: "Tim K3 / HSE", nip: "HS10003", name: "Tim K3 / HSE Officer" },
+  { role: "pemohon", label: "Vendor (Pemohon)", nip: "VN01", name: "PT Yokohama" },
+  { role: "pic_vendor", label: "PIC Widatra (Internal)", nip: "K302", name: "PIC Widatra" },
+  { role: "hse", label: "Tim K3 / HSE", nip: "K301", name: "Tim K3 / HSE" },
   { role: "pic_k3", label: "PIC K3 (Monitoring)", nip: "PK10006", name: "PIC K3 Widatra" },
   { role: "ga_dept_head", label: "Head Dept HRD&GA", nip: "GA10004", name: "P. Andaru" },
   { role: "ga_div_head", label: "Head Division HRD&GA", nip: "GA10005", name: "P. Effendy" },

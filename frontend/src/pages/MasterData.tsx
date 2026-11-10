@@ -1961,7 +1961,7 @@ export default function MasterDataPage() {
                     <input
                       required
                       type="text"
-                      placeholder="Contoh: SA12345, VN10001"
+                      placeholder="Contoh: SA12345, VN01, K301"
                       value={formData.nik || ""}
                       onChange={(e) => setFormData({ ...formData, nik: e.target.value })}
                       className="w-full p-2.5 border border-slate-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500 font-mono"

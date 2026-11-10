@@ -15,18 +15,18 @@ class UserSeeder extends Seeder
 
         $users = [
             [
-                'nik' => 'VN10001',
-                'name' => 'PT Maju Mundur (Vendor)',
+                'nik' => 'VN01',
+                'name' => 'PT Yokohama',
                 'email' => 'vendor@hse.com',
                 'password' => Hash::make('password'),
                 'role_id' => $roles['pemohon']->id ?? null,
-                'company_name' => 'PT Maju Mundur',
+                'company_name' => 'PT Yokohama',
                 'department' => 'Eksternal',
                 'phone_number' => '081122334455',
             ],
             [
-                'nik' => 'PC10002',
-                'name' => 'PIC Widatra (Internal)',
+                'nik' => 'K302',
+                'name' => 'PIC Widatra',
                 'email' => 'pic@hse.com',
                 'password' => Hash::make('password'),
                 'role_id' => $roles['pic_vendor']->id ?? null,
@@ -35,7 +35,7 @@ class UserSeeder extends Seeder
                 'phone_number' => '089988776655',
             ],
             [
-                'nik' => 'HS10003',
+                'nik' => 'K301',
                 'name' => 'Tim K3 / HSE',
                 'email' => 'hse@hse.com',
                 'password' => Hash::make('password'),
