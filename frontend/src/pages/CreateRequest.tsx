@@ -261,7 +261,7 @@ export default function CreateRequestPage() {
       }
     } else if (currentStep === 2) {
       if (!formData.permitTypes || formData.permitTypes.length === 0) {
-        focusAndScrollToField("section-permit-types", "Mohon pilih minimal satu Jenis Ijin Kerja (Permit Type).");
+        focusAndScrollToField("section-permit-types", "Mohon pilih minimal satu Jenis Izin Kerja (Permit Type).");
         return;
       }
       if (formData.permitTypes.includes("Others") && !formData.otherPermitType?.trim()) {
@@ -298,7 +298,7 @@ export default function CreateRequestPage() {
     if (!msg) return "Mohon lengkapi seluruh data yang diperlukan.";
     const lower = msg.toLowerCase();
     if (lower.includes("jsa")) return "Mohon isi data Job Safety Analysis (JSA) minimal 1 tahapan kerja.";
-    if (lower.includes("permit")) return "Mohon pilih minimal satu Jenis Ijin Kerja.";
+    if (lower.includes("permit")) return "Mohon pilih minimal satu Jenis Izin Kerja.";
     if (lower.includes("ppe") || lower.includes("apd")) return "Mohon pilih minimal satu Alat Pelindung Diri (APD) Wajib.";
     if (lower.includes("pekerja") || lower.includes("worker")) return "Mohon lengkapi data Tenaga Kerja minimal 1 orang.";
     if (lower.includes("penanggungjawab") || lower.includes("pic")) return "Mohon isi Nama Penanggung Jawab Vendor.";
@@ -382,18 +382,18 @@ export default function CreateRequestPage() {
           <h2 className="text-2xl font-bold text-gray-900 mb-2">Request Submitted!</h2>
           {permitNumber && (
             <p className="text-sm font-semibold text-primary mb-2">
-              Nomor Ijin Kerja: <span className="underline">{permitNumber}</span>
+              Nomor Izin Kerja: <span className="underline">{permitNumber}</span>
             </p>
           )}
           <p className="text-gray-500 mb-8 max-w-md">
-            Ijin kerja berhasil tersimpan di sistem dan sedang menunggu verifikasi dari PIC Internal Widatra & Tim K3 (HSE).
+            Izin kerja berhasil tersimpan di sistem dan sedang menunggu verifikasi dari PIC Internal Widatra & Tim K3 (HSE).
           </p>
           <div className="flex gap-3">
             <button 
               onClick={() => navigate("/my-requests")}
               className="px-6 py-2.5 bg-primary text-on-primary rounded-lg font-medium hover:opacity-90 transition-colors cursor-pointer"
             >
-              Lihat Ijin Saya
+              Lihat Izin Saya
             </button>
             <button 
               onClick={() => navigate("/dashboard")}
@@ -408,7 +408,7 @@ export default function CreateRequestPage() {
   }
 
   const steps = [
-    { id: 1, title: "Ijin Kerja & Vendor" },
+    { id: 1, title: "Izin Kerja & Vendor" },
     { id: 2, title: "Permit Type & APD" },
     { id: 3, title: "Data Tenaga Kerja" },
     { id: 4, title: "Job Safety Analysis" },
@@ -425,13 +425,13 @@ export default function CreateRequestPage() {
           <div className="mb-6">
             <h2 className="text-2xl font-bold text-gray-900">
               {extendState?.extendMode 
-                ? `Perpanjangan Ijin Kerja Ke-${formData.extensionPhase || 1} (Fase ${formData.extensionPhase || 1})` 
+                ? `Perpanjangan Izin Kerja Ke-${formData.extensionPhase || 1} (Fase ${formData.extensionPhase || 1})` 
                 : "Create Work Permit Request"}
             </h2>
             <p className="text-sm text-gray-500 mt-1">
               {extendState?.extendMode 
-                ? `Pengajuan perpanjangan masa berlaku untuk Surat Ijin Kerja ${extendState.permitNumber || extendState.id || ""} (SIKA Induk: ${formData.rootPermitNumber || extendState.permitNumber}).`
-                : "Formulir digital Ijin Kerja, Safety Induction & JSA untuk vendor eksternal."}
+                ? `Pengajuan perpanjangan masa berlaku untuk Surat Izin Kerja ${extendState.permitNumber || extendState.id || ""} (SIKA Induk: ${formData.rootPermitNumber || extendState.permitNumber}).`
+                : "Formulir digital Izin Kerja, Safety Induction & JSA untuk vendor eksternal."}
             </p>
           </div>
 
@@ -443,10 +443,10 @@ export default function CreateRequestPage() {
                 </div>
                 <div>
                   <p className="font-bold text-amber-900">
-                    Mode Perpanjangan Ijin Aktif &mdash; Fase {formData.extensionPhase || 1} (Perpanjangan Ke-{formData.extensionPhase || 1})
+                    Mode Perpanjangan Izin Aktif &mdash; Fase {formData.extensionPhase || 1} (Perpanjangan Ke-{formData.extensionPhase || 1})
                   </p>
                   <p className="text-xs text-amber-700 mt-0.5">
-                    Data perusahaan, personel, APD, dan dokumen JSA dari ijin <strong className="underline">{extendState.permitNumber || extendState.id}</strong> telah dimuat secara otomatis. Silakan periksa dan tentukan periode lanjutan kerja (maks. 6 hari).
+                    Data perusahaan, personel, APD, dan dokumen JSA dari izin <strong className="underline">{extendState.permitNumber || extendState.id}</strong> telah dimuat secara otomatis. Silakan periksa dan tentukan periode lanjutan kerja (maks. 6 hari).
                   </p>
                 </div>
               </div>
@@ -588,7 +588,7 @@ export default function CreateRequestPage() {
           fullScreen
           size="lg"
           showSlogan
-          text="Mengirim & Memproses Pengajuan Ijin Kerja..."
+          text="Mengirim & Memproses Pengajuan Izin Kerja..."
         />
       )}
     </div>

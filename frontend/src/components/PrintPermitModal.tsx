@@ -61,7 +61,7 @@ export function PrintPermitModal({ permit, onClose }: PrintPermitModalProps) {
     if (!printContentRef.current || isGenerating) return;
     
     if (!isApproved) {
-      alert("Peringatan K3: Dokumen Surat Ijin Kerja Aman (SIKA) ini belum disetujui resmi oleh Head Division HRD&GA dan belum dapat diunduh.");
+      alert("Peringatan K3: Dokumen Surat Izin Kerja Aman (SIKA) ini belum disetujui resmi oleh Head Division HRD&GA dan belum dapat diunduh.");
       return;
     }
 
@@ -115,7 +115,7 @@ export function PrintPermitModal({ permit, onClose }: PrintPermitModalProps) {
 
   const handlePrint = () => {
     if (!isApproved) {
-      alert("Peringatan K3: Dokumen Surat Ijin Kerja Aman (SIKA) ini belum disetujui resmi oleh Head Division HRD&GA dan belum dapat dicetak.");
+      alert("Peringatan K3: Dokumen Surat Izin Kerja Aman (SIKA) ini belum disetujui resmi oleh Head Division HRD&GA dan belum dapat dicetak.");
       return;
     }
     window.print();
@@ -164,7 +164,7 @@ export function PrintPermitModal({ permit, onClose }: PrintPermitModalProps) {
           <div className="px-4 py-3 bg-slate-900 text-white flex justify-between items-center shrink-0 z-20 shadow-md">
             <div className="flex items-center gap-2 text-sm font-bold">
               <FileText size={18} className="text-blue-400 shrink-0" />
-              <span className="truncate">Lembar Ijin Kerja Aman Resmi (Factory Standard)</span>
+              <span className="truncate">Lembar Izin Kerja Aman Resmi (Factory Standard)</span>
             </div>
             
             <div className="flex items-center gap-2 shrink-0">
@@ -228,7 +228,7 @@ export function PrintPermitModal({ permit, onClose }: PrintPermitModalProps) {
           {!isApproved && (
             <div className="bg-amber-500 text-white px-4 py-2 text-xs font-bold flex items-center justify-center gap-2 shrink-0 shadow-inner">
               <AlertTriangle size={16} />
-              <span>DOKUMEN DRAFT / BELUM DISETUJUI RESMI — Ijin kerja ini masih dalam tahap '{formatPermitStatus(permit.status)}' dan belum sah untuk operasional pabrik.</span>
+              <span>DOKUMEN DRAFT / BELUM DISETUJUI RESMI — Izin kerja ini masih dalam tahap '{formatPermitStatus(permit.status)}' dan belum sah untuk operasional pabrik.</span>
             </div>
           )}
 
@@ -269,7 +269,7 @@ export function PrintPermitModal({ permit, onClose }: PrintPermitModalProps) {
                       FORMULIR SISTEM MANAJEMEN K3 (SMK3)
                     </span>
                     <h2 className="text-sm sm:text-base font-black uppercase text-blue-950 tracking-tight">
-                      SURAT IJIN KERJA AMAN (SIKA)
+                      SURAT IZIN KERJA AMAN (SIKA)
                     </h2>
                     <span className="text-[10px] font-mono font-bold text-slate-600">
                       {permit.id || permit.permit_number || "SIKA-WB-2026"}
@@ -317,7 +317,7 @@ export function PrintPermitModal({ permit, onClose }: PrintPermitModalProps) {
               <div><span className="text-slate-500 block">Lokasi / Area Pabrik:</span><strong>{permit.lokasi || '-'}</strong></div>
               <div>
                 <span className="text-slate-500 block">
-                  Masa Berlaku Ijin {extensionPhase > 0 ? `(Fase ${extensionPhase} Aktif)` : "(Periode Aktif)"}:
+                  Masa Berlaku Izin {extensionPhase > 0 ? `(Fase ${extensionPhase} Aktif)` : "(Periode Aktif)"}:
                 </span>
                 <strong>{formatDateDDMMYY(permit.mulaiKerja)} s/d {formatDateDDMMYY(permit.selesaiKerja)} ({permit.jamKerjaMulai} - {permit.jamKerjaAkhir} WIB)</strong>
                 {isExtension && (
@@ -348,11 +348,11 @@ export function PrintPermitModal({ permit, onClose }: PrintPermitModalProps) {
           {/* 2. Safety & APD */}
           <div className="border border-slate-300 rounded-xl overflow-hidden text-xs">
             <div className="bg-slate-100 font-bold px-4 py-2 border-b border-slate-300 uppercase tracking-wider text-slate-800">
-              II. KLASIFIKASI IJIN KERJA & ALAT PELINDUNG DIRI (APD) WAJIB
+              II. KLASIFIKASI IZIN KERJA & ALAT PELINDUNG DIRI (APD) WAJIB
             </div>
             <div className="grid grid-cols-2 p-4 gap-4">
               <div>
-                <span className="text-slate-500 block mb-1 font-semibold">Jenis Ijin Kerja Terverifikasi:</span>
+                <span className="text-slate-500 block mb-1 font-semibold">Jenis Izin Kerja Terverifikasi:</span>
                 <div className="flex flex-wrap gap-1">
                   {permit.permitTypes && permit.permitTypes.map((pt: string, i: number) => (
                     <span key={i} className="px-2 py-0.5 bg-blue-50 border border-blue-200 text-blue-900 rounded text-[11px] font-bold">
@@ -436,7 +436,7 @@ export function PrintPermitModal({ permit, onClose }: PrintPermitModalProps) {
                 <span className="font-bold text-blue-900 block mb-0.5 flex items-center gap-1">
                   <span className="text-emerald-700 font-bold">☑</span> Pernyataan Otorisasi Reviewer &amp; HSE PT Widatra Bhakti:
                 </span>
-                Telah memeriksa persyaratan teknis, kesiapan pekerja, dan kelayakan mitigasi bahaya di lapangan. Surat Ijin Kerja Aman ini diotorisasi secara digital dan sah berlaku sesuai masa berlakunya.
+                Telah memeriksa persyaratan teknis, kesiapan pekerja, dan kelayakan mitigasi bahaya di lapangan. Surat Izin Kerja Aman ini diotorisasi secara digital dan sah berlaku sesuai masa berlakunya.
               </div>
             </div>
           </div>
@@ -473,7 +473,7 @@ export function PrintPermitModal({ permit, onClose }: PrintPermitModalProps) {
           {/* Footer Notes */}
           <div className="flex justify-between items-center text-[10px] text-slate-500 pt-2 border-t border-slate-200">
             <div>
-              * Lembar ijin kerja ini wajib dipasang di papan informasi keselamatan kerja (Permit Board) di dekat lokasi pekerjaan.
+              * Lembar izin kerja ini wajib dipasang di papan informasi keselamatan kerja (Permit Board) di dekat lokasi pekerjaan.
             </div>
             <div className="font-mono">Dicetak otomatis melalui HSE Portal PT Widatra Bhakti</div>
           </div>

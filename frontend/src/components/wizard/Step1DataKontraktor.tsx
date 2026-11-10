@@ -113,7 +113,7 @@ export function Step1DataKontraktor({ data, updateData }: { data: any, updateDat
           <ClipboardList size={24} />
         </div>
         <div>
-          <h3 className="text-lg font-bold text-gray-900">Ijin Kerja & Data Vendor</h3>
+          <h3 className="text-lg font-bold text-gray-900">Izin Kerja & Data Vendor</h3>
           <p className="text-sm text-gray-500">Data dasar pengajuan izin kerja. Harap isi dengan lengkap dan sesuai dengan kontrak.</p>
         </div>
       </div>
@@ -232,10 +232,10 @@ export function Step1DataKontraktor({ data, updateData }: { data: any, updateDat
                   </div>
                   <div className="space-y-0.5">
                     <h5 className="text-xs font-bold text-amber-950 uppercase tracking-wide">
-                      Regulasi K3: Perpanjangan Ijin Kerja {data.extensionPhase ? `Ke-${data.extensionPhase} (Fase ${data.extensionPhase})` : "Lanjutan"}
+                      Regulasi K3: Perpanjangan Izin Kerja {data.extensionPhase ? `Ke-${data.extensionPhase} (Fase ${data.extensionPhase})` : "Lanjutan"}
                     </h5>
                     <p className="text-[11px] text-amber-800 leading-relaxed">
-                      Berdasarkan standar K3 PT Widatra Bhakti, tiap 1 surat ijin kerja berlaku maksimal <strong>{maxPermitDays > 0 ? `${maxPermitDays} hari kalender` : "fleksibel"}</strong> per lembar pengajuan. Proyek ini dapat diperpanjang berfase-fase, dan sistem menghitung akumulasi total hari kalender sejak SIKA Induk pertama secara otomatis.
+                      Berdasarkan standar K3 PT Widatra Bhakti, tiap 1 surat izin kerja berlaku maksimal <strong>{maxPermitDays > 0 ? `${maxPermitDays} hari kalender` : "fleksibel"}</strong> per lembar pengajuan. Proyek ini dapat diperpanjang berfase-fase, dan sistem menghitung akumulasi total hari kalender sejak SIKA Induk pertama secara otomatis.
                     </p>
                   </div>
                 </div>
@@ -243,7 +243,7 @@ export function Step1DataKontraktor({ data, updateData }: { data: any, updateDat
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 border-t border-amber-200/80">
                   <div className="bg-white/90 p-2.5 rounded-lg border border-amber-200">
                     <span className="text-[10px] uppercase font-bold text-amber-700 block">
-                      {data.extensionPhase && data.extensionPhase > 1 ? "SIKA Induk & Acuan" : "Ijin Acuan Induk"}
+                      {data.extensionPhase && data.extensionPhase > 1 ? "SIKA Induk & Acuan" : "Izin Acuan Induk"}
                     </span>
                     <strong className="text-slate-800 font-mono text-xs block truncate">
                       {data.rootPermitNumber || data.parentPermitNumber || "SIKA Sebelumnya"}

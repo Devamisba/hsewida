@@ -57,7 +57,7 @@ const STEPS: StepDef[] = [
     key: "ga_div_head",
     stepNumber: 4,
     title: "Head Division HRD&GA",
-    subtitle: "Otorisasi Final Ijin",
+    subtitle: "Otorisasi Final Izin",
     roleCode: "ga_div_head",
     roleName: "Head Division HRD&GA",
   },
@@ -256,7 +256,7 @@ export function ApprovalWorkflowStepper({
         <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-xs text-rose-800 flex items-start gap-2 animate-in fade-in">
           <AlertCircle size={16} className="text-rose-600 shrink-0 mt-0.5" />
           <div>
-            <span className="font-bold block">Ijin Kerja Telah Ditolak:</span>
+            <span className="font-bold block">Izin Kerja Telah Ditolak:</span>
             <p className="mt-0.5 text-rose-700 leading-relaxed">{rejectReason}</p>
           </div>
         </div>

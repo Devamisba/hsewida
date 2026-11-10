@@ -53,7 +53,7 @@ export function isParentItem(item: NavItem): item is NavParentItem {
 // SINGLE NAVIGATION CONFIGURATION
 // Struktur hierarki 5 item level atas sesuai instruksi:
 // 1. Dashboard (berdiri sendiri)
-// 2. Perizinan (induk dropdown -> Ijin Kerja Baru, Ijin Saya, Review Ijin, Riwayat)
+// 2. Perizinan (induk dropdown -> Izin Kerja Baru, Izin Saya, Review Izin, Riwayat)
 // 3. Monitoring (induk dropdown -> Monitoring K3, Peta GIS & Geofence)
 // 4. Master Data (berdiri sendiri)
 // 5. Profil (berdiri sendiri)
@@ -75,19 +75,19 @@ export const NAVIGATION_CONFIG: NavItem[] = [
     roles: ["*"],
     children: [
       {
-        name: "Ijin Kerja Baru",
+        name: "Izin Kerja Baru",
         href: "/create-request",
         icon: FilePlus2,
         roles: ["admin", "hse", "kontraktor", "contractor", "pemohon", "vendor"],
       },
       {
-        name: "Ijin Saya",
+        name: "Izin Saya",
         href: "/my-requests",
         icon: Files,
         roles: ["admin", "kontraktor", "contractor", "pemohon", "vendor"],
       },
       {
-        name: "Review Ijin",
+        name: "Review Izin",
         href: "/review",
         icon: CheckSquare,
         roles: ["admin", "hse", "ga_dept_head", "ga_div_head", "pic_vendor"],

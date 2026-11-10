@@ -12,7 +12,7 @@ export function exportWorkPermitsToExcel(
   filterInfo: FilterExportInfo
 ) {
   if (!permits || permits.length === 0) {
-    alert("Tidak ada data ijin kerja yang memenuhi kriteria filter untuk diekspor.");
+    alert("Tidak ada data izin kerja yang memenuhi kriteria filter untuk diekspor.");
     return false;
   }
 
@@ -34,8 +34,8 @@ export function exportWorkPermitsToExcel(
 
   // 1. Data Rows
   const rows = permits.map((p, idx) => {
-    // Tanggal Ijin Kerja
-    const tglIjin = formatTanggalPapan(p.mulaiKerja || p.createdAt || p.start_date);
+    // Tanggal Izin Kerja
+    const tglIzin = formatTanggalPapan(p.mulaiKerja || p.createdAt || p.start_date);
 
     // Kontraktor & PIC (2 baris persis seperti di papan tulis)
     const company = (p.namaKontraktor || p.kontraktor || "PT Vendor").trim();
@@ -59,17 +59,17 @@ export function exportWorkPermitsToExcel(
     // Lokasi
     const lokasi = p.lokasi || p.location?.name || "-";
 
-    // No. Ijin & Status
-    const noIjin = p.id || p.permit_number || "-";
+    // No. Izin & Status
+    const noIzin = p.id || p.permit_number || "-";
     const status = p.status || "-";
 
     return [
       idx + 1,
-      tglIjin,
+      tglIzin,
       contractorCell,
       pekerjaan,
       lokasi,
-      noIjin,
+      noIzin,
       status
     ];
   });
@@ -79,7 +79,7 @@ export function exportWorkPermitsToExcel(
     `Periode: ${filterInfo.periodLabel}${filterInfo.customDateRange ? ` (${filterInfo.customDateRange})` : ""}`,
     `Status: ${filterInfo.statusLabel}`,
     filterInfo.searchKeyword ? `Pencarian: "${filterInfo.searchKeyword}"` : null,
-    `Total Data: ${permits.length} Ijin Kerja`,
+    `Total Data: ${permits.length} Izin Kerja`,
     `Tgl Cetak: ${formattedToday} WIB`
   ].filter(Boolean).join("  |  ");
 
@@ -90,11 +90,11 @@ export function exportWorkPermitsToExcel(
     [], // Blank spacing row
     [
       "NO",
-      "Tgl. Ijin Kerja",
+      "Tgl. Izin Kerja",
       "Kontraktor External / Internal",
       "Pekerjaan",
       "Lokasi Kerja",
-      "No. Ijin SIKA",
+      "No. Izin SIKA",
       "Status"
     ],
     ...rows
@@ -113,11 +113,11 @@ export function exportWorkPermitsToExcel(
   // Set Column Widths (Auto-fit to content)
   ws["!cols"] = [
     { wch: 6 },   // NO
-    { wch: 16 },  // Tgl. Ijin Kerja
+    { wch: 16 },  // Tgl. Izin Kerja
     { wch: 38 },  // Kontraktor External / Internal
     { wch: 32 },  // Pekerjaan
     { wch: 24 },  // Lokasi Kerja
-    { wch: 18 },  // No. Ijin SIKA
+    { wch: 18 },  // No. Izin SIKA
     { wch: 20 },  // Status
   ];
 

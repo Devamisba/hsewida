@@ -25,7 +25,7 @@ export default function PublicQrVerifyPage() {
         if (res.success) {
           setData(res.data);
         } else {
-          setError(res.message || "Ijin kerja tidak valid.");
+          setError(res.message || "Izin kerja tidak valid.");
         }
       } catch (err: any) {
         setError(err.message || "Gagal memverifikasi QR Code.");
@@ -69,7 +69,7 @@ export default function PublicQrVerifyPage() {
                 <p className="text-xs text-slate-500 mt-1 max-w-xs mx-auto">{error}</p>
               </div>
               <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-xs text-rose-800 font-semibold">
-                PERINGATAN: Pekerja dilarang memasuki area pabrik tanpa ijin kerja resmi yang terverifikasi.
+                PERINGATAN: Pekerja dilarang memasuki area pabrik tanpa izin kerja resmi yang terverifikasi.
               </div>
             </div>
           )}
@@ -84,7 +84,7 @@ export default function PublicQrVerifyPage() {
               }`}>
                 <div className="flex items-center justify-center gap-2 font-black text-base">
                   {data.status === 'Disetujui' ? <CheckCircle2 className="text-emerald-600" size={22} /> : <AlertTriangle className="text-amber-600" size={22} />}
-                  <span>{data.status === 'Disetujui' ? 'IJIN KERJA RESMI & VALID' : `STATUS: ${data.status.toUpperCase()}`}</span>
+                  <span>{data.status === 'Disetujui' ? 'IZIN KERJA RESMI & VALID' : `STATUS: ${data.status.toUpperCase()}`}</span>
                 </div>
                 <div className="font-mono text-sm font-extrabold tracking-wider">{data.permit_number}</div>
               </div>

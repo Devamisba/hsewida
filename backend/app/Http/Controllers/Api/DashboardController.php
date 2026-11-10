@@ -21,8 +21,24 @@ class DashboardController extends Controller
         $user = $request->user();
         $today = Carbon::today()->toDateString();
         $threeDaysLater = Carbon::today()->addDays(3)->toDateString();
+        $period = strtolower($request->query('period', 'monthly'));
 
-        $pendingCount = WorkPermit::where('user_id', $user->id)
+        $isVendor = in_array(strtolower(optional($user->role)->code ?? ''), ['pemohon', 'vendor', 'kontraktor', 'contractor']);
+
+        $basePermitQuery = function() use ($user, $isVendor) {
+            $q = WorkPermit::query();
+            if ($isVendor && $user) {
+                $q->where(function($sub) use ($user) {
+                    $sub->where('user_id', $user->id);
+                    if (!empty($user->vendor_id)) {
+                        $sub->orWhere('vendor_id', $user->vendor_id);
+                    }
+                });
+            }
+            return $q;
+        };
+
+        $pendingCount = $basePermitQuery()
             ->whereIn('status', [
                 'Menunggu PIC Widatra',
                 'Menunggu PIC Vendor', 
@@ -34,8 +50,8 @@ class DashboardController extends Controller
             ])
             ->count();
 
-        $activeToday = WorkPermit::with('location')
-            ->where('user_id', $user->id)
+        $activeToday = $basePermitQuery()
+            ->with('location')
             ->where('status', 'Disetujui')
             ->where('start_date', '<=', $today)
             ->where('end_date', '>=', $today)
@@ -43,7 +59,7 @@ class DashboardController extends Controller
             ->orderBy('id', 'desc')
             ->get();
 
-        $expiringSoonCount = WorkPermit::where('user_id', $user->id)
+        $expiringSoonCount = $basePermitQuery()
             ->where('status', 'Disetujui')
             ->where('end_date', '<=', $threeDaysLater)
             ->where('end_date', '>=', $today)
@@ -51,8 +67,8 @@ class DashboardController extends Controller
 
         // Hitung Safe Man-Hours kumulatif dari seluruh izin kerja (Disetujui / Selesai)
         // Rumus K3: Total Pekerja x Jam Kerja/Hari x Hari Selamat Terlaksana
-        $safePermits = WorkPermit::with('workers')
-            ->where('user_id', $user->id)
+        $safePermits = $basePermitQuery()
+            ->with('workers')
             ->whereIn('status', ['Disetujui', 'Selesai'])
             ->get();
 
@@ -88,14 +104,93 @@ class DashboardController extends Controller
             }
         }
 
-        $chartData = [
-            ['name' => 'Jan', 'pengajuan' => 4, 'disetujui' => 4],
-            ['name' => 'Feb', 'pengajuan' => 6, 'disetujui' => 5],
-            ['name' => 'Mar', 'pengajuan' => 3, 'disetujui' => 3],
-            ['name' => 'Apr', 'pengajuan' => 8, 'disetujui' => 7],
-            ['name' => 'Mei', 'pengajuan' => 5, 'disetujui' => 5],
-            ['name' => 'Jun', 'pengajuan' => 9, 'disetujui' => 8],
-        ];
+        // Hitung Data Diagram Aktivitas Pengajuan Izin Secara Real-Time dari Database
+        $chartData = [];
+        $periodSubtitle = 'Tren izin kerja 6 bulan terakhir';
+
+        if ($period === 'daily') {
+            $periodSubtitle = 'Tren izin kerja 7 hari terakhir';
+            for ($i = 6; $i >= 0; $i--) {
+                $d = Carbon::today()->subDays($i);
+                $start = $d->copy()->startOfDay();
+                $end = $d->copy()->endOfDay();
+                $label = $d->locale('id')->isoFormat('ddd, DD/MM');
+
+                $pengajuan = $basePermitQuery()->whereBetween('created_at', [$start, $end])->count();
+                $disetujui = $basePermitQuery()
+                    ->whereBetween('created_at', [$start, $end])
+                    ->whereIn('status', ['Disetujui', 'Selesai'])
+                    ->count();
+
+                $chartData[] = [
+                    'name' => $label,
+                    'pengajuan' => $pengajuan,
+                    'disetujui' => $disetujui,
+                ];
+            }
+        } elseif ($period === 'weekly') {
+            $periodSubtitle = 'Tren izin kerja 4 minggu terakhir';
+            for ($i = 3; $i >= 0; $i--) {
+                $start = Carbon::today()->subWeeks($i)->startOfWeek();
+                $end = Carbon::today()->subWeeks($i)->endOfWeek();
+                $label = 'Mgg ' . (4 - $i) . ' (' . $start->format('d/m') . ')';
+
+                $pengajuan = $basePermitQuery()->whereBetween('created_at', [$start, $end])->count();
+                $disetujui = $basePermitQuery()
+                    ->whereBetween('created_at', [$start, $end])
+                    ->whereIn('status', ['Disetujui', 'Selesai'])
+                    ->count();
+
+                $chartData[] = [
+                    'name' => $label,
+                    'pengajuan' => $pengajuan,
+                    'disetujui' => $disetujui,
+                ];
+            }
+        } elseif ($period === 'yearly') {
+            $periodSubtitle = 'Tren izin kerja 5 tahun terakhir';
+            $currentYear = (int) Carbon::now()->format('Y');
+            for ($i = 4; $i >= 0; $i--) {
+                $y = $currentYear - $i;
+                $start = Carbon::create($y, 1, 1, 0, 0, 0);
+                $end = Carbon::create($y, 12, 31, 23, 59, 59);
+
+                $pengajuan = $basePermitQuery()->whereBetween('created_at', [$start, $end])->count();
+                $disetujui = $basePermitQuery()
+                    ->whereBetween('created_at', [$start, $end])
+                    ->whereIn('status', ['Disetujui', 'Selesai'])
+                    ->count();
+
+                $chartData[] = [
+                    'name' => (string) $y,
+                    'pengajuan' => $pengajuan,
+                    'disetujui' => $disetujui,
+                ];
+            }
+        } else {
+            // monthly (default)
+            $periodSubtitle = 'Tren izin kerja 6 bulan terakhir';
+            $indoMonths = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+            for ($i = 5; $i >= 0; $i--) {
+                $m = Carbon::now()->subMonths($i);
+                $start = $m->copy()->startOfMonth();
+                $end = $m->copy()->endOfMonth();
+                $monthIndex = (int) $m->format('n') - 1;
+                $name = $indoMonths[$monthIndex] ?? $m->format('M');
+
+                $pengajuan = $basePermitQuery()->whereBetween('created_at', [$start, $end])->count();
+                $disetujui = $basePermitQuery()
+                    ->whereBetween('created_at', [$start, $end])
+                    ->whereIn('status', ['Disetujui', 'Selesai'])
+                    ->count();
+
+                $chartData[] = [
+                    'name' => $name,
+                    'pengajuan' => $pengajuan,
+                    'disetujui' => $disetujui,
+                ];
+            }
+        }
 
         return response()->json([
             'success' => true,
@@ -111,6 +206,8 @@ class DashboardController extends Controller
                 'expiringSoonCount' => $expiringSoonCount,
                 'safeManHours' => $safeManHours,
                 'chartData' => $chartData,
+                'period' => $period,
+                'periodSubtitle' => $periodSubtitle,
             ],
         ]);
     }

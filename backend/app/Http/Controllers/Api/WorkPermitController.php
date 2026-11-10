@@ -39,7 +39,7 @@ class WorkPermitController extends Controller
 
     /**
      * Get permits submitted by the current authenticated contractor/vendor.
-     * Rule: Ditolak & Selesai hanya tampil di Ijin Saya selama 12 jam sejak status diubah (updated_at).
+     * Rule: Ditolak & Selesai hanya tampil di Izin Saya selama 12 jam sejak status diubah (updated_at).
      * Setelah 12 jam, dokumen otomatis hanya tampil di menu Riwayat.
      */
     public function myRequests(Request $request)
@@ -257,8 +257,8 @@ class WorkPermitController extends Controller
             'noHpPengawas.required' => 'Mohon isi No. HP Pengawas Pekerjaan.',
             'pengawasHse.required' => 'Mohon isi Nama Pengawas K3 / HSE Lapangan.',
             'noHpHse.required' => 'Mohon isi No. HP Pengawas K3 / HSE.',
-            'permitTypes.required' => 'Mohon pilih minimal satu Jenis Ijin Kerja.',
-            'permitTypes.min' => 'Mohon pilih minimal satu Jenis Ijin Kerja.',
+            'permitTypes.required' => 'Mohon pilih minimal satu Jenis Izin Kerja.',
+            'permitTypes.min' => 'Mohon pilih minimal satu Jenis Izin Kerja.',
             'ppe.required' => 'Mohon pilih minimal satu Alat Pelindung Diri (APD) Wajib.',
             'ppe.min' => 'Mohon pilih minimal satu Alat Pelindung Diri (APD) Wajib.',
             'pekerja.required' => 'Mohon isi data Tenaga Kerja minimal 1 orang.',
@@ -283,7 +283,7 @@ class WorkPermitController extends Controller
         if ($validated['requestType'] === 'Baru' && $start->lt($minStart)) {
             return response()->json([
                 'success' => false,
-                'message' => "Aturan K3: Pengajuan ijin kerja baru wajib diajukan minimal H-{$minLeadDays} sebelum tanggal pelaksanaan (" . $minStart->toDateString() . ")."
+                'message' => "Aturan K3: Pengajuan izin kerja baru wajib diajukan minimal H-{$minLeadDays} sebelum tanggal pelaksanaan (" . $minStart->toDateString() . ")."
             ], 422);
         }
 
@@ -302,7 +302,7 @@ class WorkPermitController extends Controller
             if ($end->gt($maxEnd)) {
                 return response()->json([
                     'success' => false,
-                    'message' => "Aturan K3: Masa berlaku satu ijin kerja maksimal adalah {$maxPermitDays} hari kalender (" . $maxEnd->toDateString() . ")."
+                    'message' => "Aturan K3: Masa berlaku satu izin kerja maksimal adalah {$maxPermitDays} hari kalender (" . $maxEnd->toDateString() . ")."
                 ], 422);
             }
         }
@@ -345,7 +345,7 @@ class WorkPermitController extends Controller
             if (empty($validated['parentPermitId'])) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Permohonan perpanjangan wajib menyertakan ID dokumen ijin acuan (parentPermitId).'
+                    'message' => 'Permohonan perpanjangan wajib menyertakan ID dokumen izin acuan (parentPermitId).'
                 ], 422);
             }
 
@@ -353,14 +353,14 @@ class WorkPermitController extends Controller
             if (!$parentPermit) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Dokumen ijin kerja acuan tidak ditemukan di sistem.'
+                    'message' => 'Dokumen izin kerja acuan tidak ditemukan di sistem.'
                 ], 422);
             }
 
             if ($parentPermit->status !== 'Disetujui') {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Hanya ijin kerja berstatus Disetujui yang dapat diajukan perpanjangan.'
+                    'message' => 'Hanya izin kerja berstatus Disetujui yang dapat diajukan perpanjangan.'
                 ], 422);
             }
 
@@ -371,7 +371,7 @@ class WorkPermitController extends Controller
             if ($activeChild) {
                 return response()->json([
                     'success' => false,
-                    'message' => "Ijin kerja {$parentPermit->permit_number} sudah memiliki pengajuan perpanjangan aktif ({$activeChild->permit_number} - Status: {$activeChild->status}). Silakan lanjutkan proses dari ijin perpanjangan tersebut."
+                    'message' => "Izin kerja {$parentPermit->permit_number} sudah memiliki pengajuan perpanjangan aktif ({$activeChild->permit_number} - Status: {$activeChild->status}). Silakan lanjutkan proses dari izin perpanjangan tersebut."
                 ], 422);
             }
 
@@ -472,7 +472,7 @@ class WorkPermitController extends Controller
 
             return response()->json([
                 'success' => true,
-                'message' => 'Ijin kerja berhasil diajukan dengan nomor ' . $permitNumber,
+                'message' => 'Izin kerja berhasil diajukan dengan nomor ' . $permitNumber,
                 'data' => $permit->load(['location', 'permitTypes', 'ppes', 'workers', 'jsas']),
             ], 201);
         });
@@ -564,12 +564,12 @@ class WorkPermitController extends Controller
             'user_id' => $permit->user_id,
             'type' => 'permit_approved',
             'reference_id' => $permit->id,
-            'message' => 'Ijin kerja ' . $permit->permit_number . ' telah disetujui ke tahap: ' . $nextStatus,
+            'message' => 'Izin kerja ' . $permit->permit_number . ' telah disetujui ke tahap: ' . $nextStatus,
         ]);
 
         return response()->json([
             'success' => true,
-            'message' => 'Ijin kerja berhasil disetujui ke tahap ' . $nextStatus . '.',
+            'message' => 'Izin kerja berhasil disetujui ke tahap ' . $nextStatus . '.',
             'data' => $permit->load('approvals.user:id,name'),
         ]);
     }
@@ -628,12 +628,12 @@ class WorkPermitController extends Controller
             'user_id' => $permit->user_id,
             'type' => 'permit_rejected',
             'reference_id' => $permit->id,
-            'message' => 'Ijin kerja ' . $permit->permit_number . ' ditolak pada tahap ' . $permit->status . '. Alasan: ' . $request->reject_reason,
+            'message' => 'Izin kerja ' . $permit->permit_number . ' ditolak pada tahap ' . $permit->status . '. Alasan: ' . $request->reject_reason,
         ]);
 
         return response()->json([
             'success' => true,
-            'message' => 'Ijin kerja telah ditolak.',
+            'message' => 'Izin kerja telah ditolak.',
             'data' => $permit->load('approvals.user:id,name'),
         ]);
     }
@@ -648,7 +648,7 @@ class WorkPermitController extends Controller
         if ($parent->status !== 'Disetujui') {
             return response()->json([
                 'success' => false,
-                'message' => 'Hanya ijin kerja yang telah Disetujui yang dapat diajukan perpanjangan.'
+                'message' => 'Hanya izin kerja yang telah Disetujui yang dapat diajukan perpanjangan.'
             ], 422);
         }
 
@@ -659,7 +659,7 @@ class WorkPermitController extends Controller
         if ($activeChild) {
             return response()->json([
                 'success' => false,
-                'message' => "Ijin kerja {$parent->permit_number} sudah memiliki pengajuan perpanjangan aktif ({$activeChild->permit_number} - Status: {$activeChild->status}). Silakan lanjutkan dari ijin perpanjangan tersebut."
+                'message' => "Izin kerja {$parent->permit_number} sudah memiliki pengajuan perpanjangan aktif ({$activeChild->permit_number} - Status: {$activeChild->status}). Silakan lanjutkan dari izin perpanjangan tersebut."
             ], 422);
         }
 
@@ -713,7 +713,7 @@ class WorkPermitController extends Controller
         if ($permit->status !== 'Disetujui') {
             return response()->json([
                 'success' => false,
-                'message' => 'Hanya ijin kerja berstatus Disetujui yang dapat ditutup/diselesaikan.'
+                'message' => 'Hanya izin kerja berstatus Disetujui yang dapat ditutup/diselesaikan.'
             ], 422);
         }
 
@@ -724,7 +724,7 @@ class WorkPermitController extends Controller
             'user_id' => $user->id,
             'role_at_action' => $roleCode,
             'action' => 'Close',
-            'note' => $request->note ?? 'Penutupan ijin kerja resmi & verifikasi safety housekeeping selesai.',
+            'note' => $request->note ?? 'Penutupan izin kerja resmi & verifikasi safety housekeeping selesai.',
             'action_date' => now(),
         ]);
 
@@ -732,12 +732,12 @@ class WorkPermitController extends Controller
             'user_id' => $permit->user_id,
             'type' => 'permit_closed',
             'reference_id' => $permit->id,
-            'message' => 'Ijin kerja ' . $permit->permit_number . ' telah resmi diselesaikan & ditutup oleh Tim K3 (HSE).',
+            'message' => 'Izin kerja ' . $permit->permit_number . ' telah resmi diselesaikan & ditutup oleh Tim K3 (HSE).',
         ]);
 
         return response()->json([
             'success' => true,
-            'message' => 'Ijin kerja berhasil ditutup dengan status Selesai.',
+            'message' => 'Izin kerja berhasil ditutup dengan status Selesai.',
             'data' => $permit,
         ]);
     }
@@ -754,13 +754,13 @@ class WorkPermitController extends Controller
         if (!$permit) {
             return response()->json([
                 'success' => false,
-                'message' => 'QR Code tidak valid atau ijin kerja tidak ditemukan di sistem HSE Widatra.'
+                'message' => 'QR Code tidak valid atau izin kerja tidak ditemukan di sistem HSE Widatra.'
             ], 404);
         }
 
         return response()->json([
             'success' => true,
-            'message' => 'Ijin kerja terverifikasi resmi oleh sistem HSE PT Widatra Bhakti.',
+            'message' => 'Izin kerja terverifikasi resmi oleh sistem HSE PT Widatra Bhakti.',
             'data' => [
                 'permit_number' => $permit->permit_number,
                 'job_title' => $permit->job_title,

@@ -64,8 +64,8 @@ const MATRIX_MODULES: MatrixModuleDef[] = [
   },
   {
     id: "permits",
-    name: "Surat Ijin Kerja (Permits)",
-    description: "Pengajuan dan manajemen Surat Ijin Kerja Aman (SIKA)",
+    name: "Surat Izin Kerja (Permits)",
+    description: "Pengajuan dan manajemen Surat Izin Kerja Aman (SIKA)",
     icon: FileText,
     actions: {
       view: ["permits.view_own", "permits.view_all"],

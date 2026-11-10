@@ -83,7 +83,7 @@ class MasterDataController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Opsi kategori ijin berhasil ditambahkan.',
+            'message' => 'Opsi kategori izin berhasil ditambahkan.',
             'data' => $pt->load('defaultPpes')
         ], 201);
     }
@@ -107,7 +107,7 @@ class MasterDataController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Kategori ijin berhasil diperbarui.',
+            'message' => 'Kategori izin berhasil diperbarui.',
             'data' => $pt->load('defaultPpes')
         ]);
     }
@@ -133,7 +133,7 @@ class MasterDataController extends Controller
     {
         $pt = PermitTypeOption::findOrFail($id);
         $pt->delete();
-        return response()->json(['success' => true, 'message' => 'Kategori ijin berhasil dihapus.']);
+        return response()->json(['success' => true, 'message' => 'Kategori izin berhasil dihapus.']);
     }
 
     // --- PPE OPTIONS ---
@@ -284,17 +284,17 @@ class MasterDataController extends Controller
                 'role_name' => 'Head Division HRD&GA',
                 'sla_hours' => 24,
                 'sla_label' => '24 Jam Kerja',
-                'description' => 'Persetujuan eksekutif final (Final Sign-off) yang mengaktifkan status ijin kerja secara resmi dan menerbitkan QR Code terenkripsi.',
+                'description' => 'Persetujuan eksekutif final (Final Sign-off) yang mengaktifkan status izin kerja secara resmi dan menerbitkan QR Code terenkripsi.',
                 'mandatory_items' => ['Final Approval Sign-off', 'Penerbitan QR Code Digital', 'Notifikasi Resmi Terdistribusi'],
                 'badge_color' => 'rose',
             ],
         ];
 
         $terminalStatuses = [
-            ['code' => 'Disetujui', 'name' => 'Ijin Kerja Disetujui (Aktif)', 'type' => 'active', 'description' => 'Permit aktif dan pekerjaan di lapangan diizinkan berjalan sesuai tanggal & jam kerja.'],
-            ['code' => 'Ditolak', 'name' => 'Permohonan Ditolak', 'type' => 'rejected', 'description' => 'Ijin kerja ditolak pada salah satu tahap verifikasi disertai alasan penolakan wajib.'],
+            ['code' => 'Disetujui', 'name' => 'Izin Kerja Disetujui (Aktif)', 'type' => 'active', 'description' => 'Permit aktif dan pekerjaan di lapangan diizinkan berjalan sesuai tanggal & jam kerja.'],
+            ['code' => 'Ditolak', 'name' => 'Permohonan Ditolak', 'type' => 'rejected', 'description' => 'Izin kerja ditolak pada salah satu tahap verifikasi disertai alasan penolakan wajib.'],
             ['code' => 'Perpanjangan', 'name' => 'Pengajuan Perpanjangan Berfase', 'type' => 'extension', 'description' => 'Permohonan penambahan durasi kerja berfase (maksimal 6 hari kalender per lembar SIKA).'],
-            ['code' => 'Selesai', 'name' => 'Ijin Kerja Ditutup / Selesai', 'type' => 'closed', 'description' => 'Pekerjaan fisik selesai, area telah dibersihkan (housekeeping), dan inspeksi akhir HSE terpenuhi.'],
+            ['code' => 'Selesai', 'name' => 'Izin Kerja Ditutup / Selesai', 'type' => 'closed', 'description' => 'Pekerjaan fisik selesai, area telah dibersihkan (housekeeping), dan inspeksi akhir HSE terpenuhi.'],
             ['code' => 'Kadaluwarsa', 'name' => 'Masa Berlaku Habis', 'type' => 'expired', 'description' => 'Tanggal selesai permit telah terlewati otomatis tanpa perpanjangan.'],
         ];
 

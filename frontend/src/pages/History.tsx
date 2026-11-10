@@ -181,7 +181,7 @@ export default function HistoryPage() {
 
   const handleExtend = (req: any) => {
     if (req.hasActiveChild) {
-      alert("Ijin kerja ini sudah pernah diajukan perpanjangan ke fase berikutnya. Silakan lanjutkan dari dokumen perpanjangan terbaru.");
+      alert("Izin kerja ini sudah pernah diajukan perpanjangan ke fase berikutnya. Silakan lanjutkan dari dokumen perpanjangan terbaru.");
       return;
     }
     navigate("/create-request", {
@@ -202,7 +202,7 @@ export default function HistoryPage() {
 
   const handleOpenPrintModal = (permit: any) => {
     if (!canPrintPermit(permit.status)) {
-      alert("Surat Ijin Kerja Aman (SIKA) resmi hanya dapat dicetak setelah disetujui penuh oleh seluruh pihak berwenang (hingga Head Division HRD&GA).");
+      alert("Surat Izin Kerja Aman (SIKA) resmi hanya dapat dicetak setelah disetujui penuh oleh seluruh pihak berwenang (hingga Head Division HRD&GA).");
       return;
     }
     setPrintModalPermit(permit);
@@ -230,7 +230,7 @@ export default function HistoryPage() {
     fetchHistory();
   }, []);
 
-  // Hitung izin yang akan berakhir dalam 3 hari (hanya untuk role internal; untuk vendor di menu Ijin Saya)
+  // Hitung izin yang akan berakhir dalam 3 hari (hanya untuk role internal; untuk vendor di menu Izin Saya)
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const expiringItems = isVendorRole ? [] : requests.filter((req) => {
@@ -274,7 +274,7 @@ export default function HistoryPage() {
         if (diffDays < 0 || diffDays > 3) return false;
       }
 
-      // 2. Filter Status Ijin Kerja
+      // 2. Filter Status Izin Kerja
       if (statusFilter !== "ALL") {
         if (req.status !== statusFilter) return false;
       }
@@ -384,11 +384,11 @@ export default function HistoryPage() {
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div>
               <h2 className="text-2xl font-bold text-gray-900">
-                {historyTab === "permits" ? "Riwayat Ijin Kerja" : "Inspeksi K3 & APAR"}
+                {historyTab === "permits" ? "Riwayat Izin Kerja" : "Inspeksi K3 & APAR"}
               </h2>
               <p className="text-sm text-gray-500 mt-1">
                 {historyTab === "permits" 
-                  ? "Arsip dan pencatatan seluruh riwayat ijin kerja yang telah diajukan."
+                  ? "Arsip dan pencatatan seluruh riwayat izin kerja yang telah diajukan."
                   : "Daftar seluruh riwayat inspeksi berkala APAR dan fasilitas keselamatan kerja."}
               </p>
             </div>
@@ -407,7 +407,7 @@ export default function HistoryPage() {
                     )}
                   >
                     <FileText size={14} />
-                    <span>Ijin Kerja (SIKA)</span>
+                    <span>Izin Kerja (SIKA)</span>
                   </button>
                   <button
                     type="button"
@@ -597,12 +597,12 @@ export default function HistoryPage() {
               )}
             </div>
 
-            {/* Baris 2: STATUS IJIN KERJA */}
+            {/* Baris 2: STATUS IZIN KERJA */}
             <div className="space-y-2 pt-2 border-t border-slate-100">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2 text-xs font-bold text-slate-700 tracking-wider">
                   <ShieldCheck size={15} className="text-emerald-600" />
-                  <span>STATUS IJIN KERJA:</span>
+                  <span>STATUS IZIN KERJA:</span>
                 </div>
                 {statusFilter !== "ALL" && (
                   <button
@@ -713,7 +713,7 @@ export default function HistoryPage() {
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Cari nomor ijin (WP-...), kontraktor, pekerjaan, lokasi..."
+                  placeholder="Cari nomor izin (WP-...), kontraktor, pekerjaan, lokasi..."
                   className="w-full pl-9 pr-8 py-2 text-xs border border-slate-300 rounded-xl focus:outline-none focus:border-primary bg-slate-50/50"
                 />
                 {searchQuery && (
@@ -729,7 +729,7 @@ export default function HistoryPage() {
 
               <div className="flex items-center justify-between sm:justify-end gap-3">
                 <span className="text-xs text-slate-500 font-medium">
-                  Menampilkan <strong>{filteredRequests.length}</strong> dari {requests.length} ijin
+                  Menampilkan <strong>{filteredRequests.length}</strong> dari {requests.length} izin
                 </span>
 
                 {!isVendorRole && (
@@ -753,7 +753,7 @@ export default function HistoryPage() {
               <table className="w-full text-left border-collapse">
                 <thead className="bg-primary-container/20">
                   <tr>
-                    <th className="px-5 py-4 text-xs font-semibold text-gray-600 uppercase tracking-wider">No. Ijin</th>
+                    <th className="px-5 py-4 text-xs font-semibold text-gray-600 uppercase tracking-wider">No. Izin</th>
                     <th className="px-5 py-4 text-xs font-semibold text-gray-600 uppercase tracking-wider">Pekerjaan</th>
                     <th className="px-5 py-4 text-xs font-semibold text-gray-600 uppercase tracking-wider">Lokasi</th>
                     <th className="px-5 py-4 text-xs font-semibold text-gray-600 uppercase tracking-wider">Tanggal</th>
@@ -765,7 +765,7 @@ export default function HistoryPage() {
                   {loading ? (
                     <tr>
                       <td colSpan={6} className="py-16 text-center">
-                        <K3Loader size="md" text="Memuat riwayat ijin kerja..." />
+                        <K3Loader size="md" text="Memuat riwayat izin kerja..." />
                       </td>
                     </tr>
                   ) : displayedRequests.length > 0 ? (
@@ -810,7 +810,7 @@ export default function HistoryPage() {
                               <button
                                 onClick={() => handleExtend(req)}
                                 className="p-2 text-amber-600 hover:text-amber-700 hover:bg-amber-50 rounded-lg transition-colors cursor-pointer"
-                                title={`Perpanjang Ijin Kerja (Fase ${(req.extensionPhase || 0) + 1})`}
+                                title={`Perpanjang Izin Kerja (Fase ${(req.extensionPhase || 0) + 1})`}
                               >
                                 <CalendarPlus size={18} />
                               </button>
@@ -826,7 +826,7 @@ export default function HistoryPage() {
                               <button 
                                 onClick={() => handleOpenPrintModal(req)}
                                 className="p-2 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 rounded-lg transition-colors cursor-pointer" 
-                                title="Cetak & Unduh Surat Ijin Kerja Resmi"
+                                title="Cetak & Unduh Surat Izin Kerja Resmi"
                               >
                                 <Printer size={18} />
                               </button>
@@ -857,7 +857,7 @@ export default function HistoryPage() {
                           </>
                         ) : hasActiveFilters ? (
                           <>
-                            <p className="text-base font-medium text-gray-800">Tidak Ada Ijin Kerja yang Cocok</p>
+                            <p className="text-base font-medium text-gray-800">Tidak Ada Izin Kerja yang Cocok</p>
                             <p className="text-xs text-gray-500 mt-1">Tidak ada data yang sesuai dengan kombinasi periode waktu, status, atau kata kunci pencarian Anda.</p>
                             <button 
                               type="button"
@@ -871,7 +871,7 @@ export default function HistoryPage() {
                         ) : (
                           <>
                             <FileText size={40} className="mx-auto mb-3 opacity-20" />
-                            <p className="text-base font-medium text-gray-800">Belum Ada Riwayat Ijin Kerja</p>
+                            <p className="text-base font-medium text-gray-800">Belum Ada Riwayat Izin Kerja</p>
                             <p className="text-xs text-gray-500 mt-1">Data arsip dan riwayat izin kerja akan tercatat di sini setelah pengajuan diproses.</p>
                           </>
                         )}
@@ -887,7 +887,7 @@ export default function HistoryPage() {
           <div className="sm:hidden space-y-4">
             {loading ? (
               <div className="py-14 bg-white rounded-xl border border-gray-200 flex justify-center shadow-xs">
-                <K3Loader size="md" text="Memuat riwayat ijin kerja..." />
+                <K3Loader size="md" text="Memuat riwayat izin kerja..." />
               </div>
             ) : displayedRequests.length > 0 ? (
               displayedRequests.map((req) => (
@@ -935,7 +935,7 @@ export default function HistoryPage() {
                         <button
                           onClick={() => handleExtend(req)}
                           className="p-2 text-amber-600 hover:text-amber-700 bg-amber-50 rounded-lg transition-colors cursor-pointer"
-                          title={`Perpanjang Ijin Kerja (Fase ${(req.extensionPhase || 0) + 1})`}
+                          title={`Perpanjang Izin Kerja (Fase ${(req.extensionPhase || 0) + 1})`}
                         >
                           <CalendarPlus size={16} />
                         </button>
@@ -979,7 +979,7 @@ export default function HistoryPage() {
                   </>
                 ) : hasActiveFilters ? (
                   <>
-                    <p className="text-sm font-semibold text-gray-800">Tidak Ada Ijin Kerja yang Cocok</p>
+                    <p className="text-sm font-semibold text-gray-800">Tidak Ada Izin Kerja yang Cocok</p>
                     <p className="text-xs text-gray-400">Tidak ada data yang sesuai dengan filter periode atau status yang Anda pilih.</p>
                     <button 
                       type="button"
@@ -993,7 +993,7 @@ export default function HistoryPage() {
                 ) : (
                   <>
                     <FileText size={32} className="mx-auto mb-2 opacity-20" />
-                    <p className="text-sm font-semibold text-gray-800">Belum Ada Riwayat Ijin Kerja</p>
+                    <p className="text-sm font-semibold text-gray-800">Belum Ada Riwayat Izin Kerja</p>
                     <p className="text-xs text-gray-400 mt-1">Data arsip dan riwayat izin kerja akan tampil di sini.</p>
                   </>
                 )}
@@ -1074,7 +1074,7 @@ export default function HistoryPage() {
                   />
                 )}
 
-                {/* 0.5. Info Audit Jejak Perpanjangan Ijin (Khusus Tipe Perpanjangan) */}
+                {/* 0.5. Info Audit Jejak Perpanjangan Izin (Khusus Tipe Perpanjangan) */}
                 {selectedRequest.requestType === 'Perpanjangan' && (
                   <div className="bg-amber-50/90 border border-amber-200 rounded-xl p-4 sm:p-5 shadow-sm space-y-3 animate-in fade-in">
                     <div className="flex items-center gap-2.5">
@@ -1083,10 +1083,10 @@ export default function HistoryPage() {
                       </div>
                       <div>
                         <h4 className="text-sm font-bold text-amber-950">
-                          Informasi Audit Perpanjangan Ijin Kerja Ke-{selectedRequest.extensionPhase || 1}
+                          Informasi Audit Perpanjangan Izin Kerja Ke-{selectedRequest.extensionPhase || 1}
                         </h4>
                         <p className="text-xs text-amber-800 mt-0.5">
-                          Ijin ini dicatat sebagai kelanjutan legal Fase {selectedRequest.extensionPhase || 1} dari proyek SIKA.
+                          Izin ini dicatat sebagai kelanjutan legal Fase {selectedRequest.extensionPhase || 1} dari proyek SIKA.
                         </p>
                       </div>
                     </div>
@@ -1169,15 +1169,15 @@ export default function HistoryPage() {
                   </div>
                 </section>
 
-                {/* 2. Jenis Ijin & APD */}
+                {/* 2. Jenis Izin & APD */}
                 <section>
                   <div className="flex items-center gap-2 mb-4">
                     <Shield className="text-primary" size={18} />
-                    <h4 className="text-base font-bold text-gray-900">2. Klasifikasi Ijin & Keselamatan</h4>
+                    <h4 className="text-base font-bold text-gray-900">2. Klasifikasi Izin & Keselamatan</h4>
                   </div>
                   <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden flex flex-col md:flex-row">
                     <div className="flex-1 p-5 border-b md:border-b-0 md:border-r border-gray-100">
-                      <span className="block text-xs text-gray-500 mb-3">Jenis Ijin Kerja (Permit Type)</span>
+                      <span className="block text-xs text-gray-500 mb-3">Jenis Izin Kerja (Permit Type)</span>
                       <div className="flex flex-wrap gap-2">
                         {selectedRequest.permitTypes.map((pt: string, i: number) => (
                           <span key={i} className="inline-flex items-center gap-1 px-2.5 py-1 bg-primary-container/30 text-primary border border-primary-container rounded-lg text-xs font-medium">
@@ -1298,7 +1298,7 @@ export default function HistoryPage() {
                   <button 
                     disabled
                     className="px-5 py-2.5 text-sm font-medium text-gray-400 bg-gray-100 border border-gray-200 rounded-lg flex items-center gap-2 cursor-not-allowed opacity-75"
-                    title="Ijin kerja belum dapat dicetak karena belum disetujui penuh oleh Head Division HRD&GA"
+                    title="Izin kerja belum dapat dicetak karena belum disetujui penuh oleh Head Division HRD&GA"
                   >
                     <Lock size={16} /> Menunggu Approval Akhir (Terkunci)
                   </button>

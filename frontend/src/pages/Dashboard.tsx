@@ -8,7 +8,8 @@ import { api } from "@/services/api";
 import { auth } from "@/lib/auth";
 
 export default function DashboardPage() {
-  const [loading, setLoading] = useState(true);
+  const [initialLoading, setInitialLoading] = useState(true);
+  const [chartLoading, setChartLoading] = useState(false);
   const [chartPeriod, setChartPeriod] = useState<'daily' | 'weekly' | 'monthly' | 'yearly'>('monthly');
   const [dashboardData, setDashboardData] = useState<any>({
     pendingCount: 0,
@@ -24,24 +25,30 @@ export default function DashboardPage() {
   const isVendorRole = ["pemohon", "vendor", "kontraktor", "contractor"].includes((userRole || "").toLowerCase().trim());
 
   useEffect(() => {
-    const fetchDashboard = async (period = chartPeriod) => {
-      setLoading(true);
+    let isMounted = true;
+    const fetchDashboard = async () => {
+      if (!initialLoading) {
+        setChartLoading(true);
+      }
       try {
-        // Jika API mendukung parameter period, kirimkan; kalau tidak, beri fallback ke data yang ada
-        const res = await api.getContractorDashboard({ period });
-        if (res.success && res.data) {
+        const res = await api.getContractorDashboard({ period: chartPeriod });
+        if (isMounted && res.success && res.data) {
           setDashboardData(res.data);
         }
       } catch (err: any) {
         console.warn("Could not fetch contractor dashboard:", err.message);
       } finally {
-        setLoading(false);
+        if (isMounted) {
+          setInitialLoading(false);
+          setChartLoading(false);
+        }
       }
     };
     fetchDashboard();
+    return () => { isMounted = false; };
   }, [chartPeriod]);
 
-  if (loading) {
+  if (initialLoading) {
     return (
       <div className="flex-1 flex flex-col h-full bg-background">
         <Header title="Dashboard" />
@@ -67,7 +74,7 @@ export default function DashboardPage() {
           <div className="flex flex-col lg:flex-row gap-4 justify-between items-start lg:items-center">
             <div>
               <h2 className="text-2xl font-bold text-gray-900">Selamat Datang, {userName}!</h2>
-              <p className="text-sm text-gray-500 mt-1">Pantau status ijin kerja operasional Anda hari ini.</p>
+              <p className="text-sm text-gray-500 mt-1">Pantau status izin kerja operasional Anda hari ini.</p>
             </div>
           </div>
 {/* Alert K3 */}
@@ -125,7 +132,7 @@ export default function DashboardPage() {
                       <PlusCircle size={22} />
                     </div>
                     <div>
-                      <h3 className="font-bold text-sm sm:text-base text-white">Buat Ijin Baru</h3>
+                      <h3 className="font-bold text-sm sm:text-base text-white">Buat Izin Baru</h3>
                       <p className="text-slate-400 text-xs mt-0.5">Ajukan Work Permit keselamatan baru</p>
                     </div>
                   </div>
@@ -141,8 +148,8 @@ export default function DashboardPage() {
                       <CalendarPlus size={22} />
                     </div>
                     <div>
-                      <h3 className="font-bold text-sm sm:text-base text-gray-900">Perpanjang Ijin</h3>
-                      <p className="text-gray-500 text-xs mt-0.5">Cek ijin aktif & ajukan perpanjangan</p>
+                      <h3 className="font-bold text-sm sm:text-base text-gray-900">Perpanjang Izin</h3>
+                      <p className="text-gray-500 text-xs mt-0.5">Cek izin aktif & ajukan perpanjangan</p>
                     </div>
                   </div>
                   <ArrowRight size={18} className="text-gray-400 group-hover:text-gray-700 group-hover:translate-x-1 transition-all shrink-0" />
@@ -185,7 +192,7 @@ export default function DashboardPage() {
                     <div className="p-8 text-center text-gray-500">
                       <FileText size={32} className="mx-auto mb-2 opacity-20" />
                       <p className="text-sm font-medium text-gray-800">Tidak ada pekerjaan aktif hari ini.</p>
-                      <p className="text-xs text-gray-400 mt-0.5">Ijin kerja yang telah disetujui akan muncul saat tanggal kerja tiba.</p>
+                      <p className="text-xs text-gray-400 mt-0.5">Izin kerja yang telah disetujui akan muncul saat tanggal kerja tiba.</p>
                     </div>
                   )}
                 </div>
@@ -195,11 +202,18 @@ export default function DashboardPage() {
             {/* Kanan: Grafik Aktivitas */}
             <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-200 flex flex-col">
               <div className="mb-6">
-                <h3 className="text-base font-bold text-gray-900">Aktivitas Pengajuan Ijin</h3>
-                <p className="text-xs text-gray-500 mt-1">Tren ijin kerja 6 bulan terakhir</p>
+                <h3 className="text-base font-bold text-gray-900">Aktivitas Pengajuan Izin</h3>
+                <p className="text-xs text-gray-500 mt-1">
+                  {dashboardData.periodSubtitle || (
+                    chartPeriod === 'daily' ? 'Tren izin kerja 7 hari terakhir' :
+                    chartPeriod === 'weekly' ? 'Tren izin kerja 4 minggu terakhir' :
+                    chartPeriod === 'yearly' ? 'Tren izin kerja 5 tahun terakhir' :
+                    'Tren izin kerja 6 bulan terakhir'
+                  )}
+                </p>
               </div>
               
-              <div className="flex-1 min-h-[250px] w-full">
+              <div className={cn("flex-1 min-h-[250px] w-full transition-opacity duration-200", chartLoading && "opacity-50")}>
   <div className="flex gap-2 mt-2 mb-4">
     {(['daily','weekly','monthly','yearly'] as const).map(p => (
       <button

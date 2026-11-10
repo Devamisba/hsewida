@@ -57,7 +57,7 @@ export default function DashboardGAPage() {
           
           <div className="flex flex-col lg:flex-row gap-4 justify-between items-start lg:items-center">
             <div>
-              <h2 className="text-2xl font-bold text-gray-900">Portal HRD & GA (Persetujuan Ijin Kerja)</h2>
+              <h2 className="text-2xl font-bold text-gray-900">Portal HRD & GA (Persetujuan Izin Kerja)</h2>
               <p className="text-sm text-gray-500 mt-1">Validasi data pekerja pihak ketiga, kepatuhan K3, dan akses masuk area pabrik.</p>
             </div>
           </div>
@@ -86,7 +86,7 @@ export default function DashboardGAPage() {
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             
-            {/* Kiri: Ijin Menunggu Validasi GA */}
+            {/* Kiri: Izin Menunggu Validasi GA */}
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden flex flex-col">
               <div className="p-4 md:p-5 border-b border-warning-container bg-warning-container/10 flex justify-between items-center">
                 <h3 className="text-base font-bold text-gray-900 flex items-center gap-2">
@@ -131,7 +131,7 @@ export default function DashboardGAPage() {
                         <td colSpan={3} className="px-4 py-8 text-center text-gray-500">
                           <CheckCircle2 size={28} className="mx-auto mb-1 text-emerald-500 opacity-60" />
                           <p className="text-xs font-semibold text-gray-700">Tidak ada permit menunggu validasi GA</p>
-                          <p className="text-[11px] text-gray-400">Semua ijin telah selesai ditinjau.</p>
+                          <p className="text-[11px] text-gray-400">Semua izin telah selesai ditinjau.</p>
                         </td>
                       </tr>
                     )}

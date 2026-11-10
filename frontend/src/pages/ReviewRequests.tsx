@@ -179,10 +179,10 @@ export default function ReviewRequestsPage() {
         setApproveModal({ isOpen: true, id });
         fetchQueue();
       } else {
-        alert(res.message || "Gagal menyetujui ijin kerja.");
+        alert(res.message || "Gagal menyetujui izin kerja.");
       }
     } catch (err: any) {
-      const msg = err.response?.data?.message || err.message || "Gagal menyetujui ijin kerja. Tahap ini terkunci di luar wewenang Anda.";
+      const msg = err.response?.data?.message || err.message || "Gagal menyetujui izin kerja. Tahap ini terkunci di luar wewenang Anda.";
       alert(msg);
     }
   };
@@ -205,10 +205,10 @@ export default function ReviewRequestsPage() {
         setRejectReason("");
         fetchQueue();
       } else {
-        alert(res.message || "Gagal menolak ijin kerja.");
+        alert(res.message || "Gagal menolak izin kerja.");
       }
     } catch (err: any) {
-      const msg = err.response?.data?.message || err.message || "Gagal menolak ijin kerja. Tahap ini terkunci di luar wewenang Anda.";
+      const msg = err.response?.data?.message || err.message || "Gagal menolak izin kerja. Tahap ini terkunci di luar wewenang Anda.";
       alert(msg);
     }
   };
@@ -223,13 +223,13 @@ export default function ReviewRequestsPage() {
       setSelectedRequest(null);
       fetchQueue();
     } catch (err: any) {
-      alert(err.response?.data?.message || err.message || "Gagal menutup ijin kerja.");
+      alert(err.response?.data?.message || err.message || "Gagal menutup izin kerja.");
     }
   };
 
   return (
     <div className="flex-1 flex flex-col h-full bg-background overflow-hidden relative">
-      <Header title={role === 'hse' ? "Review Ijin (HSE)" : role === 'ga_dept_head' ? "Persetujuan (Head Dept HRD&GA)" : role === 'ga_div_head' ? "Persetujuan Akhir (Head Division HRD&GA)" : "Review PIC Widatra"} />
+      <Header title={role === 'hse' ? "Review Izin (HSE)" : role === 'ga_dept_head' ? "Persetujuan (Head Dept HRD&GA)" : role === 'ga_div_head' ? "Persetujuan Akhir (Head Division HRD&GA)" : "Review PIC Widatra"} />
       
       <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8">
         <div className="max-w-7xl mx-auto space-y-6">
@@ -239,7 +239,7 @@ export default function ReviewRequestsPage() {
                 {role === 'hse' ? 'Review Keselamatan (HSE)' : role === 'ga_dept_head' ? 'Persetujuan Head Dept HRD&GA' : role === 'ga_div_head' ? 'Validasi Akhir Head Division HRD&GA' : 'Review PIC Widatra (Internal)'}
               </h2>
               <p className="text-sm text-gray-500 mt-1">
-                Daftar ijin kerja yang membutuhkan persetujuan Anda.
+                Daftar izin kerja yang membutuhkan persetujuan Anda.
                 {loading && <span className="text-xs text-primary font-medium animate-pulse ml-2">Memuat antrean...</span>}
               </p>
             </div>
@@ -273,7 +273,7 @@ export default function ReviewRequestsPage() {
                   {loading ? (
                     <tr>
                       <td colSpan={5} className="px-6 py-16 text-center">
-                        <K3Loader size="md" text="Memuat antrean review ijin kerja..." />
+                        <K3Loader size="md" text="Memuat antrean review izin kerja..." />
                       </td>
                     </tr>
                   ) : filteredRequests.length > 0 ? (
@@ -340,7 +340,7 @@ export default function ReviewRequestsPage() {
                       <td colSpan={5} className="px-6 py-12 text-center text-gray-500">
                         <CheckSquare size={40} className="mx-auto mb-3 opacity-20" />
                         <p className="text-base font-medium">Semua Bersih!</p>
-                        <p className="text-sm">Tidak ada ijin kerja yang perlu di-review saat ini.</p>
+                        <p className="text-sm">Tidak ada izin kerja yang perlu di-review saat ini.</p>
                       </td>
                     </tr>
                   )}
@@ -352,7 +352,7 @@ export default function ReviewRequestsPage() {
             <div className="block lg:hidden divide-y divide-gray-100">
               {loading ? (
                 <div className="p-12 text-center flex justify-center">
-                  <K3Loader size="md" text="Memuat antrean review ijin kerja..." />
+                  <K3Loader size="md" text="Memuat antrean review izin kerja..." />
                 </div>
               ) : filteredRequests.length > 0 ? (
                 filteredRequests.map((req) => (
@@ -414,7 +414,7 @@ export default function ReviewRequestsPage() {
                 <div className="p-8 text-center text-gray-500">
                   <CheckSquare size={36} className="mx-auto mb-2 opacity-20" />
                   <p className="text-sm font-medium text-gray-800">Semua Bersih!</p>
-                  <p className="text-xs text-gray-500 mt-0.5">Tidak ada ijin kerja yang perlu di-review saat ini.</p>
+                  <p className="text-xs text-gray-500 mt-0.5">Tidak ada izin kerja yang perlu di-review saat ini.</p>
                 </div>
               )}
             </div>
@@ -491,7 +491,7 @@ export default function ReviewRequestsPage() {
                   />
                 )}
 
-                {/* 0.5. Info Audit Jejak Perpanjangan Ijin (Khusus Tipe Perpanjangan) */}
+                {/* 0.5. Info Audit Jejak Perpanjangan Izin (Khusus Tipe Perpanjangan) */}
                 {selectedRequest.requestType === 'Perpanjangan' && (
                   <div className="bg-amber-50/90 border border-amber-200 rounded-xl p-4 sm:p-5 shadow-sm space-y-3 animate-in fade-in">
                     <div className="flex items-center gap-2.5">
@@ -500,10 +500,10 @@ export default function ReviewRequestsPage() {
                       </div>
                       <div>
                         <h4 className="text-sm font-bold text-amber-950">
-                          Informasi Audit Perpanjangan Ijin Kerja Ke-{selectedRequest.extensionPhase || 1}
+                          Informasi Audit Perpanjangan Izin Kerja Ke-{selectedRequest.extensionPhase || 1}
                         </h4>
                         <p className="text-xs text-amber-800 mt-0.5">
-                          Ijin ini diajukan sebagai kelanjutan legal Fase {selectedRequest.extensionPhase || 1} dari proyek SIKA.
+                          Izin ini diajukan sebagai kelanjutan legal Fase {selectedRequest.extensionPhase || 1} dari proyek SIKA.
                         </p>
                       </div>
                     </div>
@@ -586,15 +586,15 @@ export default function ReviewRequestsPage() {
                   </div>
                 </section>
 
-                {/* 2. Jenis Ijin & APD */}
+                {/* 2. Jenis Izin & APD */}
                 <section>
                   <div className="flex items-center gap-2 mb-4">
                     <Shield className="text-primary" size={18} />
-                    <h4 className="text-base font-bold text-gray-900">2. Klasifikasi Ijin & Keselamatan</h4>
+                    <h4 className="text-base font-bold text-gray-900">2. Klasifikasi Izin & Keselamatan</h4>
                   </div>
                   <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden flex flex-col md:flex-row">
                     <div className="flex-1 p-5 border-b md:border-b-0 md:border-r border-gray-100">
-                      <span className="block text-xs text-gray-500 mb-3">Jenis Ijin Kerja (Permit Type)</span>
+                      <span className="block text-xs text-gray-500 mb-3">Jenis Izin Kerja (Permit Type)</span>
                       <div className="flex flex-wrap gap-2">
                         {selectedRequest.permitTypes.map((pt: string) => (
                           <span key={pt} className="px-3 py-1.5 bg-blue-50 text-blue-700 border border-blue-100 rounded-lg text-xs font-semibold flex items-center gap-1.5">
@@ -722,7 +722,7 @@ export default function ReviewRequestsPage() {
                         <FileCheck size={16} className="text-blue-700" />
                         Pernyataan & Disclaimer Otorisasi Reviewer (Wajib Dicentang)
                       </strong>
-                      Saya menyatakan telah memeriksa persyaratan K3 (HSE), kesiapan pekerja, dan kelengkapan dokumen ijin kerja ini secara seksama. Dengan mencentang pernyataan ini, saya bertanggung jawab atas verifikasi dokumen ini dan mengotorisasi pekerjaan untuk dilanjutkan ke tahap berikutnya sesuai wewenang saya.
+                      Saya menyatakan telah memeriksa persyaratan K3 (HSE), kesiapan pekerja, dan kelengkapan dokumen izin kerja ini secara seksama. Dengan mencentang pernyataan ini, saya bertanggung jawab atas verifikasi dokumen ini dan mengotorisasi pekerjaan untuk dilanjutkan ke tahap berikutnya sesuai wewenang saya.
                     </div>
                   </label>
                 </section>
@@ -738,7 +738,7 @@ export default function ReviewRequestsPage() {
                   onClick={() => setPrintPermit(selectedRequest)}
                   className="w-full sm:w-auto px-4 py-2 text-xs sm:text-sm font-bold text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg flex items-center justify-center gap-2 transition-colors cursor-pointer"
                 >
-                  <Printer size={15} /> Cetak Lembar Ijin
+                  <Printer size={15} /> Cetak Lembar Izin
                 </button>
               </div>
 
@@ -809,7 +809,7 @@ export default function ReviewRequestsPage() {
           <div className="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200">
             <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-error/5">
               <h3 className="text-lg font-bold text-error flex items-center gap-2">
-                <AlertTriangle size={20} /> Tolak Ijin Kerja
+                <AlertTriangle size={20} /> Tolak Izin Kerja
               </h3>
               <button 
                 onClick={() => setRejectModal({ isOpen: false, id: null })}
@@ -856,10 +856,10 @@ export default function ReviewRequestsPage() {
                 <CheckCircle size={36} />
               </div>
               <h3 className="text-2xl font-extrabold text-gray-900 mb-2">
-                Ijin Kerja Disetujui
+                Izin Kerja Disetujui
               </h3>
               <p className="text-sm text-gray-500 mb-8">
-                Ijin Kerja <strong>{approveModal.id}</strong> berhasil disetujui. Notifikasi telah dikirimkan ke pihak terkait.
+                Izin Kerja <strong>{approveModal.id}</strong> berhasil disetujui. Notifikasi telah dikirimkan ke pihak terkait.
               </p>
               
               <button 
@@ -879,7 +879,7 @@ export default function ReviewRequestsPage() {
           <div className="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200">
             <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-blue-50">
               <h3 className="text-lg font-bold text-blue-900 flex items-center gap-2">
-                <CheckCircle size={20} className="text-blue-600" /> Tutup Ijin Kerja (Safety Close-Out)
+                <CheckCircle size={20} className="text-blue-600" /> Tutup Izin Kerja (Safety Close-Out)
               </h3>
               <button 
                 onClick={() => setCloseModal({ isOpen: false, id: null, rawId: undefined, notes: "" })}

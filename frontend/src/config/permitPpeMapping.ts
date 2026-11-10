@@ -36,6 +36,17 @@ export const PERMIT_TYPE_PPE_RULES: Record<string, string[]> = {
     "fire extinguisher",
     "respiratory protection",
   ],
+  "izin kerja panas": [
+    "safety helmet",
+    "helm keselamatan",
+    "safety shoes",
+    "sepatu safety",
+    "face shield",
+    "safety glasses",
+    "gloves",
+    "fire extinguisher",
+    "respiratory protection",
+  ],
 
   // 2. Work at Height / Pekerjaan Ketinggian (> 1.8 meter)
   "work at height": [
@@ -51,6 +62,18 @@ export const PERMIT_TYPE_PPE_RULES: Record<string, string[]> = {
     "barricade",
   ],
   "ijin kerja ketinggian": [
+    "safety helmet",
+    "helm keselamatan",
+    "safety shoes",
+    "sepatu safety",
+    "body harness",
+    "full body harness",
+    "lifeline",
+    "safety net",
+    "safety line",
+    "barricade",
+  ],
+  "izin kerja ketinggian": [
     "safety helmet",
     "helm keselamatan",
     "safety shoes",

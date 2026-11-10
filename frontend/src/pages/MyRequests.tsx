@@ -229,7 +229,7 @@ export default function MyRequestsPage() {
 
   const handleExtend = (req: any) => {
     if (req.hasActiveChild) {
-      alert("Ijin kerja ini sudah pernah diajukan perpanjangan ke fase berikutnya. Silakan lanjutkan dari dokumen perpanjangan terbaru.");
+      alert("Izin kerja ini sudah pernah diajukan perpanjangan ke fase berikutnya. Silakan lanjutkan dari dokumen perpanjangan terbaru.");
       return;
     }
     navigate("/create-request", { 
@@ -250,7 +250,7 @@ export default function MyRequestsPage() {
 
   const handleOpenPrintModal = (permit: any) => {
     if (!canPrintPermit(permit.status)) {
-      alert("Surat Ijin Kerja Aman (SIKA) resmi hanya dapat dicetak setelah disetujui penuh oleh seluruh pihak berwenang (hingga Head Division HRD&GA).");
+      alert("Surat Izin Kerja Aman (SIKA) resmi hanya dapat dicetak setelah disetujui penuh oleh seluruh pihak berwenang (hingga Head Division HRD&GA).");
       return;
     }
     setPrintModalPermit(permit);
@@ -287,14 +287,14 @@ export default function MyRequestsPage() {
 
   return (
     <div className="flex-1 flex flex-col h-full bg-background overflow-hidden relative">
-      <Header title="Ijin Saya" />
+      <Header title="Izin Saya" />
       
       <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8">
         <div className="max-w-7xl mx-auto space-y-6">
           <div className="flex justify-between items-end">
             <div>
-              <h2 className="text-2xl font-bold text-gray-900">Daftar Ijin Kerja Saya</h2>
-              <p className="text-sm text-gray-500 mt-1">Kelola dan pantau seluruh status ijin aktif maupun riwayat arsip pengajuan Anda.</p>
+              <h2 className="text-2xl font-bold text-gray-900">Daftar Izin Kerja Saya</h2>
+              <p className="text-sm text-gray-500 mt-1">Kelola dan pantau seluruh status izin aktif maupun riwayat arsip pengajuan Anda.</p>
             </div>
             {loading && <span className="text-xs text-primary font-medium animate-pulse">Memuat data dari server...</span>}
           </div>
@@ -417,7 +417,7 @@ export default function MyRequestsPage() {
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Cari nomor ijin (WP-...), pekerjaan, lokasi..."
+                  placeholder="Cari nomor izin (WP-...), pekerjaan, lokasi..."
                   className="w-full pl-9 pr-8 py-2 text-xs border border-slate-300 rounded-xl focus:outline-none focus:border-primary bg-slate-50/50"
                 />
                 {searchQuery && (
@@ -432,7 +432,7 @@ export default function MyRequestsPage() {
               </div>
 
               <span className="text-xs text-slate-500 font-medium">
-                Menampilkan <strong>{filteredRequests.length}</strong> dari {requests.length} ijin kerja
+                Menampilkan <strong>{filteredRequests.length}</strong> dari {requests.length} izin kerja
               </span>
             </div>
           </div>
@@ -443,7 +443,7 @@ export default function MyRequestsPage() {
               <table className="w-full text-left text-xs border-collapse">
                 <thead className="bg-slate-50/80 border-b border-gray-200 text-gray-600 text-[11px] uppercase tracking-wider font-bold">
                   <tr>
-                    <th className="px-5 py-3.5 w-3/12">No. Ijin</th>
+                    <th className="px-5 py-3.5 w-3/12">No. Izin</th>
                     <th className="px-4 py-3.5 w-3/12">Pekerjaan</th>
                     <th className="px-4 py-3.5 w-2/12">Lokasi</th>
                     <th className="px-4 py-3.5 w-2/12">Tanggal</th>
@@ -455,7 +455,7 @@ export default function MyRequestsPage() {
                   {loading ? (
                     <tr>
                       <td colSpan={6} className="py-16 text-center">
-                        <K3Loader size="md" text="Memuat ijin kerja..." />
+                        <K3Loader size="md" text="Memuat izin kerja..." />
                       </td>
                     </tr>
                   ) : filteredRequests.length > 0 ? (
@@ -514,7 +514,7 @@ export default function MyRequestsPage() {
                               <button 
                                 onClick={() => handleExtend(req)}
                                 className="p-1.5 text-amber-700 hover:text-amber-800 hover:bg-amber-50 bg-white border border-amber-200 rounded-lg transition-colors cursor-pointer" 
-                                title={`Perpanjang Ijin Kerja (Fase ${(req.extensionPhase || 0) + 1})`}
+                                title={`Perpanjang Izin Kerja (Fase ${(req.extensionPhase || 0) + 1})`}
                               >
                                 <CalendarPlus size={15} />
                               </button>
@@ -530,7 +530,7 @@ export default function MyRequestsPage() {
                               <button 
                                 onClick={() => handleOpenPrintModal(req)} 
                                 className="p-1.5 text-emerald-700 hover:text-emerald-800 hover:bg-emerald-50 bg-white border border-emerald-200 rounded-lg transition-colors cursor-pointer" 
-                                title="Cetak & Unduh Surat Ijin Kerja Resmi"
+                                title="Cetak & Unduh Surat Izin Kerja Resmi"
                               >
                                 <Printer size={15} />
                               </button>
@@ -552,12 +552,12 @@ export default function MyRequestsPage() {
                       <td colSpan={6} className="px-6 py-12 text-center text-gray-500">
                         <FileText size={40} className="mx-auto mb-3 opacity-20" />
                         <p className="text-base font-medium text-gray-800">
-                          {requests.length === 0 ? "Belum Ada Ijin Kerja" : "Tidak Ada Ijin Kerja yang Cocok"}
+                          {requests.length === 0 ? "Belum Ada Izin Kerja" : "Tidak Ada Izin Kerja yang Cocok"}
                         </p>
                         <p className="text-xs text-gray-500 mt-1 max-w-md mx-auto">
                           {requests.length === 0 
-                            ? "Anda belum memiliki riwayat pengajuan izin kerja. Klik 'Buat Ijin Kerja Baru' untuk mengajukan permohonan." 
-                            : "Tidak ditemukan ijin kerja yang sesuai dengan filter atau kata kunci pencarian Anda."}
+                            ? "Anda belum memiliki riwayat pengajuan izin kerja. Klik 'Buat Izin Kerja Baru' untuk mengajukan permohonan." 
+                            : "Tidak ditemukan izin kerja yang sesuai dengan filter atau kata kunci pencarian Anda."}
                         </p>
                       </td>
                     </tr>
@@ -571,7 +571,7 @@ export default function MyRequestsPage() {
           <div className="sm:hidden space-y-4">
             {loading ? (
               <div className="py-14 bg-white rounded-xl border border-gray-200 flex justify-center shadow-xs">
-                <K3Loader size="md" text="Memuat ijin kerja..." />
+                <K3Loader size="md" text="Memuat izin kerja..." />
               </div>
             ) : filteredRequests.length > 0 ? (
               filteredRequests.map((req) => (
@@ -629,7 +629,7 @@ export default function MyRequestsPage() {
                       <button 
                         onClick={() => handleExtend(req)}
                         className="p-2 text-amber-600 hover:text-amber-700 bg-amber-50 rounded-lg transition-colors cursor-pointer"
-                        title={`Perpanjang Ijin Kerja (Fase ${(req.extensionPhase || 0) + 1})`}
+                        title={`Perpanjang Izin Kerja (Fase ${(req.extensionPhase || 0) + 1})`}
                       >
                         <CalendarPlus size={16} />
                       </button>
@@ -665,12 +665,12 @@ export default function MyRequestsPage() {
             <div className="bg-white p-8 rounded-xl border border-gray-200 text-center text-gray-500">
               <FileText size={32} className="mx-auto mb-2 opacity-20" />
               <p className="text-sm font-semibold text-gray-700">
-                {requests.length === 0 ? "Belum Ada Ijin Kerja" : "Tidak Ada Ijin Kerja yang Cocok"}
+                {requests.length === 0 ? "Belum Ada Izin Kerja" : "Tidak Ada Izin Kerja yang Cocok"}
               </p>
               <p className="text-xs text-gray-400 mt-1 max-w-md mx-auto">
                 {requests.length === 0 
-                  ? "Anda belum memiliki pengajuan ijin kerja. Klik 'Buat Ijin Kerja Baru' untuk mengajukan permohonan." 
-                  : "Tidak ditemukan ijin kerja yang sesuai dengan filter atau kata kunci pencarian Anda."}
+                  ? "Anda belum memiliki pengajuan izin kerja. Klik 'Buat Izin Kerja Baru' untuk mengajukan permohonan." 
+                  : "Tidak ditemukan izin kerja yang sesuai dengan filter atau kata kunci pencarian Anda."}
               </p>
             </div>
           )}
@@ -747,7 +747,7 @@ export default function MyRequestsPage() {
                   />
                 )}
 
-                {/* 0.5. Info Audit Jejak Perpanjangan Ijin (Khusus Tipe Perpanjangan) */}
+                {/* 0.5. Info Audit Jejak Perpanjangan Izin (Khusus Tipe Perpanjangan) */}
                 {selectedRequest.requestType === 'Perpanjangan' && (
                   <div className="bg-amber-50/90 border border-amber-200 rounded-xl p-4 sm:p-5 shadow-sm space-y-3 animate-in fade-in">
                     <div className="flex items-center gap-2.5">
@@ -756,10 +756,10 @@ export default function MyRequestsPage() {
                       </div>
                       <div>
                         <h4 className="text-sm font-bold text-amber-950">
-                          Informasi Audit Perpanjangan Ijin Kerja Ke-{selectedRequest.extensionPhase || 1}
+                          Informasi Audit Perpanjangan Izin Kerja Ke-{selectedRequest.extensionPhase || 1}
                         </h4>
                         <p className="text-xs text-amber-800 mt-0.5">
-                          Ijin ini diterbitkan sebagai kelanjutan legal Fase {selectedRequest.extensionPhase || 1} dari proyek SIKA.
+                          Izin ini diterbitkan sebagai kelanjutan legal Fase {selectedRequest.extensionPhase || 1} dari proyek SIKA.
                         </p>
                       </div>
                     </div>
@@ -842,15 +842,15 @@ export default function MyRequestsPage() {
                   </div>
                 </section>
 
-                {/* 2. Jenis Ijin & APD */}
+                {/* 2. Jenis Izin & APD */}
                 <section>
                   <div className="flex items-center gap-2 mb-4">
                     <Shield className="text-primary" size={18} />
-                    <h4 className="text-base font-bold text-gray-900">2. Klasifikasi Ijin & Keselamatan</h4>
+                    <h4 className="text-base font-bold text-gray-900">2. Klasifikasi Izin & Keselamatan</h4>
                   </div>
                   <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden flex flex-col md:flex-row">
                     <div className="flex-1 p-5 border-b md:border-b-0 md:border-r border-gray-100">
-                      <span className="block text-xs text-gray-500 mb-3">Jenis Ijin Kerja (Permit Type)</span>
+                      <span className="block text-xs text-gray-500 mb-3">Jenis Izin Kerja (Permit Type)</span>
                       <div className="flex flex-wrap gap-2">
                         {selectedRequest.permitTypes.map((pt: string, i: number) => (
                           <span key={i} className="inline-flex items-center gap-1 px-2.5 py-1 bg-primary-container/30 text-primary border border-primary-container rounded-lg text-xs font-medium">
@@ -977,9 +977,9 @@ export default function MyRequestsPage() {
                       handleExtend(req);
                     }}
                     className="px-5 py-2.5 text-sm font-medium text-amber-800 bg-amber-100 hover:bg-amber-200 rounded-lg flex items-center gap-2 transition-colors cursor-pointer"
-                    title={`Perpanjang Ijin Kerja (Masa H-${extensionWindowDays})`}
+                    title={`Perpanjang Izin Kerja (Masa H-${extensionWindowDays})`}
                   >
-                    <CalendarPlus size={18} /> Perpanjang Ijin
+                    <CalendarPlus size={18} /> Perpanjang Izin
                   </button>
                 )}
                 <button 
@@ -999,7 +999,7 @@ export default function MyRequestsPage() {
                   <button 
                     disabled
                     className="px-5 py-2.5 text-sm font-medium text-gray-400 bg-gray-100 border border-gray-200 rounded-lg flex items-center gap-2 cursor-not-allowed opacity-75"
-                    title="Ijin kerja belum dapat dicetak karena belum disetujui penuh oleh Head Division HRD&GA"
+                    title="Izin kerja belum dapat dicetak karena belum disetujui penuh oleh Head Division HRD&GA"
                   >
                     <Lock size={16} /> Menunggu Approval Akhir (Terkunci)
                   </button>

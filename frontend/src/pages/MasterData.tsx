@@ -1141,7 +1141,7 @@ export default function MasterDataPage() {
                           </div>
                         </div>
 
-                        {/* Baris Bawah: Info Ijin Kerja & Hint Detail */}
+                        {/* Baris Bawah: Info Izin Kerja & Hint Detail */}
                         <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-[11px]">
                           {requiringPermitCount > 0 ? (
                             <span className="font-semibold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-full border border-blue-100">
@@ -1180,7 +1180,7 @@ export default function MasterDataPage() {
               {/* Stepper Pipeline Card */}
               <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-6">
                 <div>
-                  <h3 className="text-lg font-bold text-slate-900">Alur Persetujuan Bertingkat Ijin Kerja (Approval Pipeline)</h3>
+                  <h3 className="text-lg font-bold text-slate-900">Alur Persetujuan Bertingkat Izin Kerja (Approval Pipeline)</h3>
                   <p className="text-xs text-slate-500 mt-0.5">Urutan tahapan verifikasi hukum & keselamatan kerja pabrik sesuai SOP PT Widatra Bhakti.</p>
                 </div>
 
@@ -1545,7 +1545,7 @@ export default function MasterDataPage() {
                     <div>
                       <h4 className="text-sm font-bold text-slate-900">Jendela Perpanjangan Izin</h4>
                       <p className="text-xs text-slate-500 mt-1 leading-relaxed">
-                        Batas hari sebelum tanggal kedaluwarsa izin di mana tombol "Perpanjang Ijin" mulai dibuka untuk kontraktor pada modul Ijin Saya.
+                        Batas hari sebelum tanggal kedaluwarsa izin di mana tombol "Perpanjang Izin" mulai dibuka untuk kontraktor pada modul Izin Saya.
                       </p>
                     </div>
                   </div>
@@ -2190,7 +2190,7 @@ export default function MasterDataPage() {
                     <input
                       required
                       type="text"
-                      placeholder="Contoh: Ijin Kerja Ruang Terbatas (Confined Space)"
+                      placeholder="Contoh: Izin Kerja Ruang Terbatas (Confined Space)"
                       value={formData.name || ""}
                       onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                       className="w-full p-2.5 border border-slate-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500 font-medium"

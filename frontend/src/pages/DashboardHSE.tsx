@@ -132,7 +132,7 @@ export default function DashboardHSEPage() {
           <div className="flex flex-col lg:flex-row gap-4 justify-between items-start lg:items-center">
             <div>
               <h2 className="text-2xl font-bold text-gray-900">Portal Keselamatan Kerja (HSE)</h2>
-              <p className="text-sm text-gray-500 mt-1">Pantau kepatuhan ijin kerja, JSA, dan kesiapan fasilitas keselamatan kerja hari ini.</p>
+              <p className="text-sm text-gray-500 mt-1">Pantau kepatuhan izin kerja, JSA, dan kesiapan fasilitas keselamatan kerja hari ini.</p>
             </div>
             
             <div className="flex flex-wrap gap-2 w-full lg:w-auto">
@@ -140,7 +140,7 @@ export default function DashboardHSEPage() {
                 onClick={() => navigate('/review')}
                 className="flex-1 sm:flex-none flex items-center justify-center gap-2 bg-success-container/30 text-success border border-success/30 px-3.5 py-2 rounded-lg hover:bg-success-container/50 transition-colors text-xs sm:text-sm font-semibold cursor-pointer"
               >
-                <ScanLine size={16} /> Antrean Review Ijin
+                <ScanLine size={16} /> Antrean Review Izin
               </button>
               <button 
                 onClick={() => navigate('/monitoring')}
@@ -422,8 +422,8 @@ export default function DashboardHSEPage() {
               {/* Card 1: Grafik Profil Risiko */}
               <div className="bg-white p-5 rounded-xl shadow-xs border border-gray-200 flex flex-col">
                 <div className="mb-4">
-                  <h3 className="text-base font-bold text-gray-900">Profil Risiko Ijin Aktif</h3>
-                  <p className="text-xs text-gray-500 mt-1">Distribusi ijin berdasarkan klasifikasi bahaya</p>
+                  <h3 className="text-base font-bold text-gray-900">Profil Risiko Izin Aktif</h3>
+                  <p className="text-xs text-gray-500 mt-1">Distribusi izin berdasarkan klasifikasi bahaya</p>
                 </div>
                 
                 <div className="min-h-[220px] w-full flex items-center justify-center">
