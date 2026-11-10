@@ -30,7 +30,8 @@ import {
   Crosshair,
   Image as ImageIcon,
   UploadCloud,
-  Lock
+  Lock,
+  Sparkles
 } from "lucide-react";
 import { api } from "@/services/api";
 import { auth } from "@/lib/auth";
@@ -131,6 +132,8 @@ export default function MasterDataPage() {
     geofence_plant_radius_meters: DEFAULT_PLANT_CENTER.radiusMeters,
     geofence_child_radius_meters: DEFAULT_PLANT_CENTER.childRadiusMeters,
     login_background_image: "/widatra-building.jpg",
+    company_logo: "/logo-widatra.png",
+    company_name: "PT WIDATRA BHAKTI",
   });
   const [isSavingSettings, setIsSavingSettings] = useState(false);
 
@@ -231,6 +234,112 @@ export default function MasterDataPage() {
       showFeedback("error", err.message || "Gagal mereset foto login.");
     } finally {
       setIsResettingLoginImage(false);
+    }
+  };
+
+  const [isUploadingLogo, setIsUploadingLogo] = useState(false);
+  const [isResettingLogo, setIsResettingLogo] = useState(false);
+  const [isSavingCompanyName, setIsSavingCompanyName] = useState(false);
+  const companyLogoInputRef = useRef<HTMLInputElement>(null);
+
+  const handleUploadCompanyLogo = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!isAdmin) {
+      showFeedback("error", "Hanya Administrator yang memiliki wewenang untuk mengganti logo perusahaan.");
+      return;
+    }
+
+    if (!file.type.startsWith("image/")) {
+      showFeedback("error", "File yang dipilih harus berupa gambar (PNG, JPG, SVG, atau WEBP).");
+      return;
+    }
+
+    if (file.size > 3 * 1024 * 1024) {
+      showFeedback("error", "Ukuran logo terlalu besar. Maksimal 3 MB.");
+      return;
+    }
+
+    setIsUploadingLogo(true);
+    try {
+      const res = await api.uploadCompanyLogo(file);
+      if (res?.success && res.data?.company_logo) {
+        setPolicySettingsMap(prev => ({
+          ...prev,
+          company_logo: res.data.company_logo
+        }));
+        localStorage.setItem("hse_company_logo", res.data.company_logo);
+        showFeedback("success", "Logo resmi perusahaan berhasil diperbarui!");
+      } else {
+        showFeedback("error", res?.message || "Gagal mengunggah logo perusahaan.");
+      }
+    } catch (err: any) {
+      showFeedback("error", err.message || "Gagal mengunggah logo ke server.");
+    } finally {
+      setIsUploadingLogo(false);
+      if (companyLogoInputRef.current) {
+        companyLogoInputRef.current.value = "";
+      }
+    }
+  };
+
+  const handleResetCompanyLogo = async () => {
+    if (!isAdmin) {
+      showFeedback("error", "Hanya Administrator yang memiliki wewenang untuk mereset logo perusahaan.");
+      return;
+    }
+
+    if (!confirm("Kembalikan logo perusahaan ke standar bawaan PT Widatra Bhakti?")) {
+      return;
+    }
+
+    setIsResettingLogo(true);
+    try {
+      const res = await api.resetCompanyLogo();
+      if (res?.success) {
+        setPolicySettingsMap(prev => ({
+          ...prev,
+          company_logo: "/logo-widatra.png"
+        }));
+        localStorage.setItem("hse_company_logo", "/logo-widatra.png");
+        showFeedback("success", "Logo perusahaan berhasil dikembalikan ke standar bawaan.");
+      } else {
+        showFeedback("error", res?.message || "Gagal mereset logo.");
+      }
+    } catch (err: any) {
+      showFeedback("error", err.message || "Gagal mereset logo.");
+    } finally {
+      setIsResettingLogo(false);
+    }
+  };
+
+  const handleSaveCompanyName = async () => {
+    if (!isAdmin) {
+      showFeedback("error", "Hanya Administrator yang memiliki wewenang untuk mengubah nama perusahaan.");
+      return;
+    }
+    const nameToSave = (policySettingsMap.company_name || "").trim();
+    if (!nameToSave) {
+      showFeedback("error", "Nama perusahaan tidak boleh kosong.");
+      return;
+    }
+
+    setIsSavingCompanyName(true);
+    try {
+      const res = await api.updateSettings([
+        { key: "company_name", value: nameToSave }
+      ]);
+      if (res?.success) {
+        localStorage.setItem("hse_company_name", nameToSave);
+        showFeedback("success", "Nama perusahaan berhasil disimpan dan diperbarui di seluruh sistem!");
+      } else {
+        showFeedback("error", res?.message || "Gagal menyimpan nama perusahaan.");
+      }
+    } catch (err: any) {
+      showFeedback("error", err.message || "Gagal menyimpan nama perusahaan.");
+    } finally {
+      setIsSavingCompanyName(false);
     }
   };
 
@@ -1772,6 +1881,153 @@ export default function MasterDataPage() {
                     <p className="text-[11px] text-slate-400">
                       Jarak toleransi maksimal petugas dari fisik alat saat scan QR (&lt;{policySettingsMap.geofence_child_radius_meters ?? 25}m).
                     </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* ========================================================================= */}
+              {/* SECTION: BRANDING LOGO & TEKS NAMA PERUSAHAAN (HALAMAN LOGIN & SISTEM) */}
+              {/* ========================================================================= */}
+              <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-5">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2.5 bg-blue-50 text-blue-700 rounded-xl border border-blue-100">
+                      <Sparkles size={22} className="text-blue-600" />
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <h4 className="text-base font-bold text-slate-900">
+                          Logo & Teks Nama Perusahaan (Halaman Login)
+                        </h4>
+                        {isAdmin ? (
+                          <span className="px-2.5 py-0.5 bg-blue-100 text-blue-800 text-[10px] font-bold rounded-full">
+                            Khusus Administrator
+                          </span>
+                        ) : (
+                          <span className="px-2.5 py-0.5 bg-amber-100 text-amber-800 text-[10px] font-bold rounded-full flex items-center gap-1">
+                            <Lock size={11} /> Hanya Admin
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-xs text-slate-500 mt-0.5">
+                        Atur logo resmi dan teks nama perusahaan yang tampil di sudut kiri atas halaman login dan identitas sistem HSE.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center pt-2">
+                  {/* Preview Logo & Teks Samping */}
+                  <div className="lg:col-span-5">
+                    <div className="p-6 bg-slate-50 border border-slate-200 rounded-2xl flex flex-col justify-center gap-3 shadow-inner relative group">
+                      <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                        Live Preview Sudut Kiri Login
+                      </div>
+                      <div className="flex items-center gap-3 p-3 bg-white rounded-xl border border-slate-200/80 shadow-xs">
+                        <img
+                          src={resolveImageUrl(policySettingsMap.company_logo || "/logo-widatra.png")}
+                          alt={policySettingsMap.company_name || "PT WIDATRA BHAKTI"}
+                          className="h-10 sm:h-11 w-auto object-contain object-left shrink-0"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).src = "/logo-widatra.png";
+                          }}
+                        />
+                        <span className="font-extrabold text-[15px] sm:text-[16px] text-[#22247b] tracking-tight leading-none uppercase truncate">
+                          {policySettingsMap.company_name || "PT WIDATRA BHAKTI"}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Kontrol & Form Nama Perusahaan */}
+                  <div className="lg:col-span-7 space-y-4">
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 uppercase mb-1">
+                        Teks Nama Perusahaan (Di samping Logo) *
+                      </label>
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          disabled={!isAdmin || isSavingCompanyName}
+                          value={policySettingsMap.company_name ?? "PT WIDATRA BHAKTI"}
+                          onChange={(e) => setPolicySettingsMap(prev => ({ ...prev, company_name: e.target.value }))}
+                          placeholder="Contoh: PT WIDATRA BHAKTI"
+                          className="flex-1 p-2.5 border border-slate-200 rounded-xl text-sm font-bold uppercase tracking-tight focus:ring-2 focus:ring-blue-500 outline-none"
+                        />
+                        {isAdmin && (
+                          <button
+                            type="button"
+                            disabled={isSavingCompanyName}
+                            onClick={handleSaveCompanyName}
+                            className="px-4 py-2.5 bg-slate-900 hover:bg-slate-800 disabled:bg-slate-400 text-white rounded-xl text-xs font-bold transition shadow-sm cursor-pointer shrink-0"
+                          >
+                            {isSavingCompanyName ? "Menyimpan..." : "Simpan Teks"}
+                          </button>
+                        )}
+                      </div>
+                      <p className="text-[11px] text-slate-400 mt-1">
+                        Teks ini ditampilkan dalam huruf kapital tebal (bold uppercase) di samping logo login.
+                      </p>
+                    </div>
+
+                    {isAdmin ? (
+                      <div className="space-y-2 pt-2 border-t border-slate-100">
+                        <label className="block text-xs font-bold text-slate-700 uppercase mb-1">
+                          File Logo Perusahaan
+                        </label>
+                        <div className="flex flex-wrap items-center gap-2.5">
+                          <input
+                            type="file"
+                            ref={companyLogoInputRef}
+                            onChange={handleUploadCompanyLogo}
+                            accept="image/png,image/jpeg,image/jpg,image/webp,image/svg+xml"
+                            className="hidden"
+                          />
+                          <button
+                            type="button"
+                            disabled={isUploadingLogo}
+                            onClick={() => companyLogoInputRef.current?.click()}
+                            className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 disabled:bg-blue-400 text-white rounded-xl text-xs font-bold transition-all shadow-sm cursor-pointer"
+                          >
+                            {isUploadingLogo ? (
+                              <>
+                                <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                <span>Mengunggah Logo...</span>
+                              </>
+                            ) : (
+                              <>
+                                <UploadCloud size={16} />
+                                <span>Ganti Logo Perusahaan</span>
+                              </>
+                            )}
+                          </button>
+
+                          {policySettingsMap.company_logo && policySettingsMap.company_logo !== "/logo-widatra.png" && (
+                            <button
+                              type="button"
+                              disabled={isResettingLogo}
+                              onClick={handleResetCompanyLogo}
+                              className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-slate-100 hover:bg-slate-200 active:bg-slate-300 text-slate-700 rounded-xl text-xs font-semibold transition-all cursor-pointer"
+                              title="Kembalikan ke logo resmi awal"
+                            >
+                              <RefreshCw size={14} className={isResettingLogo ? "animate-spin" : ""} />
+                              <span>Reset Logo ke Standar</span>
+                            </button>
+                          )}
+                        </div>
+
+                        <p className="text-[11px] text-slate-500 leading-relaxed">
+                          Format yang didukung: <strong>PNG (Direkomendasikan transparan), JPG, WEBP, SVG</strong> (Maksimal 3 MB).
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="p-3 bg-amber-50/80 border border-amber-200 rounded-xl text-xs text-amber-900 flex items-start gap-2.5">
+                        <Lock size={16} className="text-amber-600 shrink-0 mt-0.5" />
+                        <p className="text-[11px] text-amber-800">
+                          Hanya Administrator yang memiliki wewenang untuk mengganti logo perusahaan.
+                        </p>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>

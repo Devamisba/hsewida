@@ -350,6 +350,21 @@ export const api = {
     });
   },
 
+  uploadCompanyLogo: async (file: File) => {
+    const fd = new FormData();
+    fd.append('image', file);
+    return apiRequest('/master/upload-company-logo', {
+      method: 'POST',
+      body: fd,
+    });
+  },
+
+  resetCompanyLogo: async () => {
+    return apiRequest('/master/reset-company-logo', {
+      method: 'POST',
+    });
+  },
+
   // 10. Monitoring & K3
   getFacilities: async (category?: string, tipe_item?: string, search?: string, area_zone?: string, month?: string, check_month_status?: string) => {
     const params = new URLSearchParams();

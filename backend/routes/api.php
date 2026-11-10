@@ -75,6 +75,8 @@ Route::prefix('v1')->group(function () {
         Route::put('/master/settings', [MasterDataController::class, 'updateSettings']);
         Route::post('/master/upload-login-image', [MasterDataController::class, 'uploadLoginImage']);
         Route::post('/master/reset-login-image', [MasterDataController::class, 'resetLoginImage']);
+        Route::post('/master/upload-company-logo', [MasterDataController::class, 'uploadCompanyLogo']);
+        Route::post('/master/reset-company-logo', [MasterDataController::class, 'resetCompanyLogo']);
 
         // 5. Work Permits Lifecycle
         Route::get('/permits/my-requests', [WorkPermitController::class, 'myRequests']);

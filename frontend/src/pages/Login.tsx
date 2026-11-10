@@ -24,6 +24,8 @@ export default function LoginPage() {
   const [errorMsg, setErrorMsg] = useState("");
   const [showDemoModal, setShowDemoModal] = useState(false);
   const [loginBgImage, setLoginBgImage] = useState<string>("/widatra-building.jpg");
+  const [companyLogo, setCompanyLogo] = useState<string>(() => localStorage.getItem("hse_company_logo") || "/logo-widatra.png");
+  const [companyName, setCompanyName] = useState<string>(() => localStorage.getItem("hse_company_name") || "PT WIDATRA BHAKTI");
 
   // Auto-redirect if user already has an active session
   useEffect(() => {
@@ -39,15 +41,25 @@ export default function LoginPage() {
       setRememberMe(true);
     }
 
-    // Fetch dynamic login background image from Master Data
+    // Fetch dynamic branding & login background image from Master Data
     api.getSettings()
       .then((res) => {
-        if (res?.success && res.data?.map?.login_background_image) {
-          setLoginBgImage(res.data.map.login_background_image);
+        if (res?.success && res.data?.map) {
+          if (res.data.map.login_background_image) {
+            setLoginBgImage(res.data.map.login_background_image);
+          }
+          if (res.data.map.company_logo) {
+            setCompanyLogo(res.data.map.company_logo);
+            localStorage.setItem("hse_company_logo", res.data.map.company_logo);
+          }
+          if (res.data.map.company_name) {
+            setCompanyName(res.data.map.company_name);
+            localStorage.setItem("hse_company_name", res.data.map.company_name);
+          }
         }
       })
       .catch((err) => {
-        console.warn("Could not load custom login background:", err);
+        console.warn("Could not load custom login background/branding:", err);
       });
   }, []);
 
@@ -97,16 +109,19 @@ export default function LoginPage() {
       {/* Sisi Kiri: Form Login */}
       <div className="w-full md:w-[45%] lg:w-[42%] xl:w-[40%] h-full flex flex-col justify-between p-6 sm:p-8 lg:p-10 xl:p-12 bg-white shadow-sm md:shadow-none z-10 overflow-y-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
         <div className="w-full max-w-[360px] mx-auto flex flex-col justify-between h-full py-1">
-          {/* Logo & Nama Perusahaan PT Widatra Bhakti */}
+          {/* Logo & Nama Perusahaan (Dinamis dari Master Data) */}
           <div className="pt-1 pb-2 min-h-[52px] flex items-center">
             <div className="flex items-center gap-2.5 sm:gap-3 select-none">
               <img
-                src="/logo-widatra.png"
-                alt="PT Widatra Bhakti"
+                src={resolveImageUrl(companyLogo)}
+                alt={companyName}
                 className="h-10 sm:h-11 w-auto object-contain object-left shrink-0"
+                onError={(e) => {
+                  (e.target as HTMLImageElement).src = "/logo-widatra.png";
+                }}
               />
               <span className="font-extrabold text-[15px] sm:text-[16px] text-[#22247b] tracking-tight leading-none uppercase">
-                PT WIDATRA BHAKTI
+                {companyName}
               </span>
             </div>
           </div>

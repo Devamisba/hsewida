@@ -325,6 +325,12 @@ class MasterDataController extends Controller
         if (!isset($settingsMap['login_background_image'])) {
             $settingsMap['login_background_image'] = '/widatra-building.jpg';
         }
+        if (!isset($settingsMap['company_logo'])) {
+            $settingsMap['company_logo'] = '/logo-widatra.png';
+        }
+        if (!isset($settingsMap['company_name'])) {
+            $settingsMap['company_name'] = 'PT WIDATRA BHAKTI';
+        }
 
         return response()->json([
             'success' => true,
@@ -376,7 +382,7 @@ class MasterDataController extends Controller
                         'message' => 'Radius jangkauan scan alat minimal 1 meter.'
                     ], 422);
                 }
-                if ($item['key'] === 'login_background_image') {
+                if ($item['key'] === 'login_background_image' || $item['key'] === 'company_logo' || $item['key'] === 'company_name') {
                     $user = $request->user();
                     if (!$user || !$user->role || $user->role->code !== 'admin') {
                         continue; // Skip non-admin
@@ -384,6 +390,20 @@ class MasterDataController extends Controller
                 }
 
                 $setting->update(['value' => (string)$item['value']]);
+            } else {
+                if (in_array($item['key'], ['company_name', 'company_logo', 'login_background_image'])) {
+                    $user = $request->user();
+                    if ($user && $user->role && $user->role->code === 'admin') {
+                        SystemSetting::create([
+                            'key' => $item['key'],
+                            'value' => (string)$item['value'],
+                            'label' => $item['key'] === 'company_name' ? 'Nama / Teks Perusahaan' : ($item['key'] === 'company_logo' ? 'Logo Perusahaan' : 'Foto Showcase'),
+                            'description' => 'Branding sistem PT Widatra Bhakti',
+                            'group' => 'branding',
+                            'type' => 'string',
+                        ]);
+                    }
+                }
             }
         }
 
@@ -395,6 +415,12 @@ class MasterDataController extends Controller
 
         if (!isset($settingsMap['login_background_image'])) {
             $settingsMap['login_background_image'] = '/widatra-building.jpg';
+        }
+        if (!isset($settingsMap['company_logo'])) {
+            $settingsMap['company_logo'] = '/logo-widatra.png';
+        }
+        if (!isset($settingsMap['company_name'])) {
+            $settingsMap['company_name'] = 'PT WIDATRA BHAKTI';
         }
 
         return response()->json([
@@ -478,6 +504,80 @@ class MasterDataController extends Controller
             'message' => 'Foto showcase halaman login berhasil dikembalikan ke default standar pabrik.',
             'data' => [
                 'login_background_image' => $defaultUrl,
+            ]
+        ]);
+    }
+
+    public function uploadCompanyLogo(Request $request)
+    {
+        $user = $request->user();
+        $roleCode = $user && $user->role ? $user->role->code : null;
+        if ($roleCode !== 'admin') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Hanya Administrator yang memiliki wewenang untuk mengganti logo perusahaan.',
+            ], 403);
+        }
+
+        $request->validate([
+            'image' => 'required|image|mimes:jpeg,png,jpg,webp,svg|max:3072',
+        ]);
+
+        $file = $request->file('image');
+        $fileName = 'company_logo_' . time() . '.' . $file->getClientOriginalExtension();
+        $path = $file->storeAs('branding', $fileName, 'public');
+        $url = '/storage/' . $path;
+
+        SystemSetting::updateOrCreate(
+            ['key' => 'company_logo'],
+            [
+                'value' => $url,
+                'label' => 'Logo Resmi Perusahaan',
+                'description' => 'Logo resmi yang ditampilkan di samping nama perusahaan pada halaman login.',
+                'unit' => 'URL / Path Logo',
+                'group' => 'branding',
+                'type' => 'string',
+            ]
+        );
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Logo resmi perusahaan berhasil diperbarui.',
+            'data' => [
+                'company_logo' => $url,
+            ]
+        ]);
+    }
+
+    public function resetCompanyLogo(Request $request)
+    {
+        $user = $request->user();
+        $roleCode = $user && $user->role ? $user->role->code : null;
+        if ($roleCode !== 'admin') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Hanya Administrator yang memiliki wewenang untuk mereset logo.',
+            ], 403);
+        }
+
+        $defaultUrl = '/logo-widatra.png';
+        SystemSetting::updateOrCreate(
+            ['key' => 'company_logo'],
+            [
+                'value' => $defaultUrl,
+                'label' => 'Logo Resmi Perusahaan',
+                'description' => 'Logo resmi yang ditampilkan di samping nama perusahaan pada halaman login.',
+                'unit' => 'URL / Path Logo',
+                'group' => 'branding',
+                'type' => 'string',
+            ]
+        );
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Logo resmi berhasil dikembalikan ke standar awal.',
+            'data' => [
+                'company_logo' => $defaultUrl,
             ]
         ]);
     }
