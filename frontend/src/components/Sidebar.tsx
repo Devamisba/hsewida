@@ -92,12 +92,6 @@ export const NAVIGATION_CONFIG: NavItem[] = [
         icon: CheckSquare,
         roles: ["admin", "hse", "ga_dept_head", "ga_div_head", "pic_vendor"],
       },
-      {
-        name: "Riwayat",
-        href: "/history",
-        icon: Clock,
-        roles: ["admin", "hse", "ga_dept_head", "ga_div_head", "pic_vendor", "kontraktor", "contractor", "pemohon", "vendor"],
-      },
     ],
   },
 
@@ -128,7 +122,15 @@ export const NAVIGATION_CONFIG: NavItem[] = [
     ],
   },
 
-  // 4. Master Data (Standalone)
+  // 4. Riwayat (Standalone untuk Seluruh Role)
+  {
+    name: "Riwayat",
+    href: "/history",
+    icon: Clock,
+    roles: ["*"],
+  },
+
+  // 5. Master Data (Standalone)
   {
     name: "Master Data",
     href: "/master-data",
@@ -136,7 +138,7 @@ export const NAVIGATION_CONFIG: NavItem[] = [
     roles: ["admin", "hse", "ga_dept_head", "ga_div_head"],
   },
 
-  // 5. Profil (Standalone)
+  // 6. Profil (Standalone)
   {
     name: "Profil",
     href: "/profile",
