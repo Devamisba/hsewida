@@ -9,8 +9,8 @@ A. Informasi Arsitektur & Lingkungan Server (LOKAL vs SERVER LIVE aaPanel)
 | Komponen              | Lingkungan Lokal (Development)                     | Server LIVE / Production (aaPanel)                |
 +-----------------------+----------------------------------------------------+---------------------------------------------------+
 | Domain Frontend       | http://localhost:5173                              | https://hse.widatra.com (Static / Port 443 SSL)   |
-| Path Root Frontend    | C:\Users\W I N D O W S\Documents\hse\frontend      | /www/wwwroot/hse.widatra.com                      |
-| Path Dist Frontend    | C:\Users\W I N D O W S\Documents\hse\frontend\dist | /www/wwwroot/hse.widatra.com (isi dist)           |
+| Path Root Frontend    | C:\Users\W I N D O W S\Documents\hse\frontend      | /www/wwwroot/hse.widatra.com/frontend             |
+| Path Dist Frontend    | C:\Users\W I N D O W S\Documents\hse\frontend\dist | /www/wwwroot/hse.widatra.com/frontend (isi dist)  |
 | Backend REST API      | http://127.0.0.1:8000                              | https://api.hse.widatra.com (PHP 8.4 / 443 SSL)   |
 | Path Backend Server   | C:\Users\W I N D O W S\Documents\hse\backend       | /www/wwwroot/api.hse.widatra.com/backend          |
 | Web Server & PHP      | PHP 8.2+ CLI / Artisan Serve                       | Nginx + PHP 8.4 (aaPanel Managed)                 |
@@ -102,7 +102,7 @@ Gunakan paket deploy zip yang sudah terkompilasi bersih dari lokal.
 
 1. Langkah Deploy Frontend (hse.widatra.com):
    a. Masuk ke aaPanel -> Menu "Files".
-   b. Buka direktori: /www/wwwroot/hse.widatra.com
+   b. Buka direktori: /www/wwwroot/hse.widatra.com/frontend
    c. Klik tombol "Upload" -> Pilih file "frontend_dist.zip" dari komputer lokal.
    d. Klik kanan "frontend_dist.zip" -> Klik "Unzip" (Centang opsi Overwrite).
    e. Hapus file zip setelah selesai diekstrak.

@@ -284,14 +284,14 @@ flowchart TD
             CompiledDist["/frontend/dist (Bundle React Siap Saji)"]
         end
 
-        subgraph FolderFE["/www/wwwroot/hse.widatra.com (Frontend Web Server Root)"]
+        subgraph FolderFE["/www/wwwroot/hse.widatra.com/frontend (Frontend Web Server)"]
             NginxRoot["Web Root Nginx (HTML, JS, CSS Statis)"]
         end
     end
 
     RepoMain -->|1. git pull origin main| RepoServer
     RepoServer --> CompiledDist
-    CompiledDist -->|2. cp -rf .../dist/* /www/wwwroot/hse.widatra.com/| NginxRoot
+    CompiledDist -->|2. cp -rf .../dist/* /www/wwwroot/hse.widatra.com/frontend/| NginxRoot
     LaravelBackend -->|3. php artisan optimize:clear| LaravelBackend
 
     NginxRoot --> ClientBrowser["User Browser: https://hse.widatra.com"]
@@ -300,8 +300,8 @@ flowchart TD
 
 #### Mengapa Perintah Deploy Menggunakan `cp -rf` Lintas Folder?
 * Folder **`/www/wwwroot/api.hse.widatra.com`** adalah tempat repositori Git di-clone pertama kali. Folder ini menampung kode Laravel (Backend) dan folder `frontend/dist/` hasil build lokal.
-* Folder **`/www/wwwroot/hse.widatra.com/`** adalah lokasi web root bersih tempat Nginx melayani pengunjung domain utama `https://hse.widatra.com` tanpa nesting folder `/frontend` lagi.
-* Perintah `cp -rf /www/wwwroot/api.hse.widatra.com/frontend/dist/* /www/wwwroot/hse.widatra.com/` bertugas **menjembatani dan mendistribusikan** aset frontend dari folder repositori ke folder web live secara instan tanpa perlu git clone ulang di dua tempat.
+* Folder **`/www/wwwroot/hse.widatra.com/frontend/`** adalah lokasi web root tempat Nginx melayani pengunjung domain utama `https://hse.widatra.com`.
+* Perintah `cp -rf /www/wwwroot/api.hse.widatra.com/frontend/dist/* /www/wwwroot/hse.widatra.com/frontend/` bertugas **menjembatani dan mendistribusikan** aset frontend dari folder repositori ke folder web live secara instan tanpa perlu git clone ulang di dua tempat.
 
 ---
 
@@ -310,13 +310,13 @@ flowchart TD
 #### Opsi A: Update Tampilan / Frontend Saja (Excel Template, CSS, Pagination, Tombol)
 Gunakan perintah ini jika perubahan hanya terjadi pada antarmuka frontend:
 ```bash
-cd /www/wwwroot/api.hse.widatra.com && cp -r /home/sysmin/.ssh/* /root/.ssh/ 2>/dev/null; git pull origin main && cp -rf frontend/dist/* /www/wwwroot/hse.widatra.com/ && echo "=== FRONTEND WEB LIVE SELESAI DIUPDATE ==="
+cd /www/wwwroot/api.hse.widatra.com && cp -r /home/sysmin/.ssh/* /root/.ssh/ 2>/dev/null; git pull origin main && cp -rf frontend/dist/* /www/wwwroot/hse.widatra.com/frontend/ && echo "=== FRONTEND WEB LIVE SELESAI DIUPDATE ==="
 ```
 
 #### Opsi B: All-in-One Deployment (Frontend + Backend + Cache Refresh) — *Direkomendasikan*
 Gunakan perintah ini untuk pembaruan menyeluruh agar backend dan frontend sinkron 100%:
 ```bash
-cd /www/wwwroot/api.hse.widatra.com && cp -r /home/sysmin/.ssh/* /root/.ssh/ 2>/dev/null; git pull origin main && cp -rf frontend/dist/* /www/wwwroot/hse.widatra.com/ && cd backend && php artisan optimize:clear && echo "=== DEPLOYMENT LENGKAP SELESAI ==="
+cd /www/wwwroot/api.hse.widatra.com && cp -r /home/sysmin/.ssh/* /root/.ssh/ 2>/dev/null; git pull origin main && cp -rf frontend/dist/* /www/wwwroot/hse.widatra.com/frontend/ && cd backend && php artisan optimize:clear && echo "=== DEPLOYMENT LENGKAP SELESAI ==="
 ```
 
 #### Opsi C: Jika Terdapat Migrasi Database Baru (Backend Migration)

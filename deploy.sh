@@ -3,14 +3,14 @@
 # SCRIPT DEPLOYMENT RESMI HSE PT WIDATRA BHAKTI (VPS / aaPanel)
 # Repository Monorepo: /www/wwwroot/api.hse.widatra.com
 # Path Backend (API) : /www/wwwroot/api.hse.widatra.com/backend (Running: /public)
-# Path Frontend (Web): /www/wwwroot/hse.widatra.com (Running: /)
+# Path Frontend (Web): /www/wwwroot/hse.widatra.com/frontend (Running: /)
 # ==============================================================================
 
 set -e
 
 REPO_DIR="/www/wwwroot/api.hse.widatra.com"
 BACKEND_DIR="/www/wwwroot/api.hse.widatra.com/backend"
-FRONTEND_WEB_DIR="/www/wwwroot/hse.widatra.com"
+FRONTEND_WEB_DIR="/www/wwwroot/hse.widatra.com/frontend"
 
 echo "=========================================================="
 echo "  MEMULAI DEPLOYMENT RESMI HSE PT WIDATRA BHAKTI"

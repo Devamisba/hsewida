@@ -1,13 +1,13 @@
-# 🚀 PANDUAN LENGKAP PUSH GIT & DEPLOYMENT SERVER aaPanel
+# 🚀 PANDUAN RESMI PUSH GIT & DEPLOYMENT SERVER aaPanel
 ## Proyek HSE PT Widatra Bhakti (SIM-K3)
 
-Dokumen ini disusun sebagai **Standard Operating Procedure (SOP)** resmi bagi tim pengembang (Frontend, Backend, dan Sysadmin) agar alur sinkronisasi dari komputer lokal ke repositori GitHub hingga server produksi aaPanel berjalan rapi, konsisten, dan **bebas dari salah folder atau duplikasi file**.
+Dokumen ini disusun sebagai **Standard Operating Procedure (SOP)** resmi bagi seluruh tim pengembang (Frontend, Backend, dan Sysadmin). Panduan ini memastikan alur kerja dari komputer lokal ke GitHub hingga server live aaPanel berjalan rapi, konsisten, dan **tepat pada direktori yang telah dikonfigurasi di aaPanel**.
 
 ---
 
 ## 1. PETA ARSITEKTUR FOLDER SERVER aaPanel
 
-Di server VPS aaPanel, sistem menggunakan konfigurasi **2 domain terpisah**:
+Sesuai konfigurasi situs web di aaPanel Anda:
 
 ```
 /www/wwwroot/
@@ -17,63 +17,64 @@ Di server VPS aaPanel, sistem menggunakan konfigurasi **2 domain terpisah**:
 │   ├── backend/                     (Kode Laravel 11 - PHP 8.4)
 │   │   ├── app/
 │   │   ├── routes/
-│   │   ├── storage/                 (Foto inspeksi, berkas izin, cache)
+│   │   ├── storage/                 (Foto inspeksi, berkas izin, log, cache)
 │   │   └── public/                  <--- Menjalankan API Laravel (/public)
 │   ├── frontend/                    (Source Code React + Vite)
 │   │   ├── src/
 │   │   └── dist/                    (File terkompilasi hasil build produksi)
 │   └── deploy.sh                    (Skrip otomatisasi deploy server)
 │
-└── hse.widatra.com/                 <--- WEB ROOT FRONTEND (DIKUNJUNGI USER)
-    ├── assets/                      (File bundle JS & CSS hasil build)
-    ├── index.html                   (Pintu masuk aplikasi Single Page Application)
-    ├── logo-widatra.png             (Aset resmi logo)
-    ├── widatra-building.jpg         (Aset resmi background login)
-    └── .user.ini                    (Keamanan PHP aaPanel)
+└── hse.widatra.com/                 <--- INDUK FOLDER SITUS WEB FRONTEND
+    │
+    └── frontend/                    <--- DIREKTORI SITUS RESMI (DIKUNJUNGI USER)
+        ├── assets/                  (Bundle JavaScript & CSS hasil build)
+        ├── index.html               (Pintu masuk aplikasi Single Page Application)
+        ├── logo-widatra.png         (Aset resmi logo)
+        ├── widatra-building.jpg     (Aset resmi background login)
+        └── .user.ini                (Keamanan PHP aaPanel)
 ```
-
-> ⚠️ **ATURAN EMAS PATH:**  
-> - Folder `hse.widatra.com/` **TIDAK MEMILIKI** subfolder `frontend/` lagi.
-> - Seluruh file build dari `api.hse.widatra.com/frontend/dist/*` langsung disalin ke root `hse.widatra.com/`.
 
 ---
 
 ## 2. PENGATURAN RESMI SITUS DI aaPANEL
 
-Pastikan pengaturan menu **Situs web (Websites)** di aaPanel mengikuti konfigurasi standar berikut:
+Berikut adalah pengaturan baku menu **Situs web (Websites)** di aaPanel:
 
-| Domain | Direktori Situs | Direktori Menjalankan | Keterangan |
+| Domain Situs | Direktori Situs | Direktori Menjalankan | Keterangan |
 |---|---|---|---|
 | **`api.hse.widatra.com`** | `/www/wwwroot/api.hse.widatra.com/backend` | `/public` | API Laravel (Backend) |
-| **`hse.widatra.com`** | `/www/wwwroot/hse.widatra.com` | `/` | Web React (Frontend) |
+| **`hse.widatra.com`** | `/www/wwwroot/hse.widatra.com/frontend` | `/` | Web React (Frontend) |
+
+> ⚠️ **CATATAN PENTING (MENGAPA SEBELUMNYA BINGUNG):**  
+> Di folder `/www/wwwroot/hse.widatra.com/` (folder induk luar), sebelumnya sempat tercecer file `index.html`, folder `assets/`, dan file sampah bawaan template Next.js (`next.svg`, `vercel.svg`, dll).  
+> **Padahal Nginx hanya membaca file di dalam folder `/frontend/`!**  
+> File-file yang tercecer di luar tersebut tidak dibaca oleh website dan hanya membuat bingung.
 
 ---
 
-## 3. PEMBERSIHAN SEKALI JALAN (ONE-TIME CLEANUP)
+## 3. PEMBERSIHAN SEKALI JALAN DI TERMINAL aaPanel (ONE-TIME CLEANUP)
 
-Jika di server Anda saat ini masih terdapat file-file sampah bekas template lama atau subfolder `frontend/` duplikat, jalankan perintah pembersihan ini **hanya 1 kali** melalui Terminal aaPanel / SSH:
+Jalankan perintah ini **hanya 1 kali** melalui menu **Terminal** di aaPanel (atau SSH root) untuk merapikan seluruh file yang salah tempat dan membuang file sampah:
 
 ```bash
-# Masuk ke folder web frontend
+# 1. Bersihkan file-file tercecer & sampah template di folder induk luar
 cd /www/wwwroot/hse.widatra.com
-
-# Hapus file-file sampah template Next.js/Vercel lama
 rm -f file.svg globe.svg next.svg vercel.svg window.svg
-
-# Hapus logo-logo lama yang sudah usang
 rm -f k3-logo.png logo.png widatra-logo.png logo-widatra.jpg
+rm -f index.html widatra-building.jpg logo-widatra.png
+rm -rf assets
 
-# Hapus subfolder frontend duplikat lama
-rm -rf frontend
+# 2. Pastikan subfolder frontend ada dan bersih
+mkdir -p /www/wwwroot/hse.widatra.com/frontend
 
-# Salin ulang file dist resmi terbaru dari repositori
-cp -rf /www/wwwroot/api.hse.widatra.com/frontend/dist/* /www/wwwroot/hse.widatra.com/
+# 3. Salin hasil build dist resmi terbaru ke dalam /www/wwwroot/hse.widatra.com/frontend/
+cp -rf /www/wwwroot/api.hse.widatra.com/frontend/dist/* /www/wwwroot/hse.widatra.com/frontend/
 
-# Perbaiki kepemilikan dan hak akses file
+# 4. Atur kepemilikan user www dan hak akses permission
 chown -R www:www /www/wwwroot/hse.widatra.com
 chmod -R 755 /www/wwwroot/hse.widatra.com
 
-echo "=== PEMBERSIHAN SELESAI: FOLDER SUDAH BERSIH DAN RAPI ==="
+echo "=== PEMBERSIHAN SELESAI: FOLDER SUDAH BERSIH DAN SESUAI DIREKTORI aaPANEL ==="
 ```
 
 ---
@@ -125,21 +126,21 @@ git push origin main
 Buka menu **Terminal** di aaPanel (atau SSH root), lalu pilih salah satu perintah sesuai kebutuhan:
 
 ### 🌟 Opsi 1: All-in-One Deployment (PALING DIREKOMENDASIKAN)
-*Gunakan perintah ini setiap kali ada update. Perintah ini otomatis mengupdate Frontend sekaligus Backend dan membersihkan cache Laravel:*
+*Gunakan perintah ini setiap kali ada update. Perintah ini otomatis mengupdate Frontend ke folder `/www/wwwroot/hse.widatra.com/frontend/` sekaligus mengoptimasi Backend Laravel:*
 ```bash
-cd /www/wwwroot/api.hse.widatra.com && cp -r /home/sysmin/.ssh/* /root/.ssh/ 2>/dev/null; git pull origin main && cp -rf frontend/dist/* /www/wwwroot/hse.widatra.com/ && cd backend && php artisan optimize:clear && echo "=== DEPLOYMENT SELESAI & WEB LIVE TERUPDATE ==="
+cd /www/wwwroot/api.hse.widatra.com && cp -r /home/sysmin/.ssh/* /root/.ssh/ 2>/dev/null; git pull origin main && cp -rf frontend/dist/* /www/wwwroot/hse.widatra.com/frontend/ && cd backend && php artisan optimize:clear && echo "=== DEPLOYMENT SELESAI & WEB LIVE TERUPDATE ==="
 ```
 
 ### ⚡ Opsi 2: Update Tampilan Frontend Saja
 *Gunakan jika hanya mengubah tombol, template Excel, styling Tailwind, atau teks:*
 ```bash
-cd /www/wwwroot/api.hse.widatra.com && cp -r /home/sysmin/.ssh/* /root/.ssh/ 2>/dev/null; git pull origin main && cp -rf frontend/dist/* /www/wwwroot/hse.widatra.com/ && echo "=== FRONTEND SELESAI DIUPDATE ==="
+cd /www/wwwroot/api.hse.widatra.com && cp -r /home/sysmin/.ssh/* /root/.ssh/ 2>/dev/null; git pull origin main && cp -rf frontend/dist/* /www/wwwroot/hse.widatra.com/frontend/ && echo "=== FRONTEND SELESAI DIUPDATE ==="
 ```
 
 ### 🗄️ Opsi 3: Update Backend dengan Migrasi Database
 *Gunakan jika tim backend menambahkan tabel atau kolom baru di database:*
 ```bash
-cd /www/wwwroot/api.hse.widatra.com && cp -r /home/sysmin/.ssh/* /root/.ssh/ 2>/dev/null; git pull origin main && cp -rf frontend/dist/* /www/wwwroot/hse.widatra.com/ && cd backend && php artisan migrate --force && php artisan optimize:clear && echo "=== BACKEND & DATABASE TERSINKRONISASI ==="
+cd /www/wwwroot/api.hse.widatra.com && cp -r /home/sysmin/.ssh/* /root/.ssh/ 2>/dev/null; git pull origin main && cp -rf frontend/dist/* /www/wwwroot/hse.widatra.com/frontend/ && cd backend && php artisan migrate --force && php artisan optimize:clear && echo "=== BACKEND & DATABASE TERSINKRONISASI ==="
 ```
 
 ### 🤖 Opsi 4: Menggunakan Skrip Otomatis `deploy.sh`
