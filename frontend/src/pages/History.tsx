@@ -248,18 +248,10 @@ export default function HistoryPage() {
   const [customEndDate, setCustomEndDate] = useState<string>("");
   const [searchQuery, setSearchQuery] = useState<string>("");
 
-  // Pastikan vendor luar tidak berada pada filter status Disetujui
-  useEffect(() => {
-    if (isVendorRole && statusFilter === "Disetujui") {
-      setStatusFilter("ALL");
-    }
-  }, [isVendorRole, statusFilter]);
 
   // Counter badge dinamis untuk baris Status
   const statusCounts = useMemo(() => {
-    const list = isVendorRole
-      ? requests.filter((r) => r.status === "Selesai" || r.status === "Ditolak")
-      : requests;
+    const list = requests;
     return {
       all: list.length,
       disetujui: requests.filter((r) => r.status === "Disetujui").length,
@@ -272,10 +264,6 @@ export default function HistoryPage() {
   // Logika Filter Data
   const filteredRequests = useMemo(() => {
     return requests.filter((req) => {
-      // Khusus vendor luar: riwayat hanya menampilkan yang Selesai atau Ditolak
-      if (isVendorRole && req.status !== "Selesai" && req.status !== "Ditolak") {
-        return false;
-      }
 
       // 1. Filter Banner Segera Berakhir jika aktif
       if (showExpiringOnly) {
@@ -650,8 +638,7 @@ export default function HistoryPage() {
                   </span>
                 </button>
 
-                {/* Disetujui - Hanya untuk internal reviewer/admin, disembunyikan untuk vendor */}
-                {!isVendorRole && (
+                {/* Disetujui */}
                   <button
                     type="button"
                     onClick={() => setStatusFilter("Disetujui")}
@@ -671,7 +658,6 @@ export default function HistoryPage() {
                       {statusCounts.disetujui}
                     </span>
                   </button>
-                )}
 
                 {/* Selesai */}
                 <button

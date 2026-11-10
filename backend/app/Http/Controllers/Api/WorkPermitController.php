@@ -168,21 +168,14 @@ class WorkPermitController extends Controller
         $today = now()->format('Y-m-d');
 
         // Untuk role Pemohon / Kontraktor / Vendor luar:
-        // Riwayat HANYA menampilkan izin kerja milik akun mereka sendiri dengan status Selesai atau Ditolak.
+        // Riwayat menampilkan seluruh arsip izin kerja milik mereka (Disetujui/Habis Kontrak, Selesai, Ditolak).
         if (in_array($roleCode, ['pemohon', 'kontraktor', 'vendor', 'contractor'])) {
             $query->where('user_id', $user->id)
-                  ->whereIn('status', ['Selesai', 'Ditolak']);
+                  ->whereIn('status', ['Disetujui', 'Selesai', 'Ditolak']);
         } else {
             // Untuk Admin / HSE / Reviewer Internal:
-            // Menampilkan Selesai, Ditolak, atau Disetujui yang habis masa berlakunya (end_date < today)
-            $query->where(function($q) use ($today) {
-                $q->where('status', 'Selesai')
-                  ->orWhere('status', 'Ditolak')
-                  ->orWhere(function($sub) use ($today) {
-                      $sub->where('status', 'Disetujui')
-                          ->where('end_date', '<', $today);
-                  });
-            });
+            // Menampilkan seluruh izin kerja final/arsip (Disetujui, Selesai, Ditolak)
+            $query->whereIn('status', ['Disetujui', 'Selesai', 'Ditolak']);
         }
 
         // Filter tab tambahan jika disediakan
