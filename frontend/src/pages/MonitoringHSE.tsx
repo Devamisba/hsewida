@@ -27,7 +27,8 @@ import {
   CalendarCheck,
   CheckCircle2,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  MoreVertical
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer } from "recharts";
@@ -853,6 +854,7 @@ function FacilityDataTable({
   const [typeFilter, setTypeFilter] = useState<"ALL" | "CONSUMABLE" | "KONDISI">("ALL");
   const [monthCheckFilter, setMonthCheckFilter] = useState<"ALL" | "CHECKED" | "UNCHECKED">("ALL");
   const [currentPage, setCurrentPage] = useState<number>(1);
+  const [openActionMenuId, setOpenActionMenuId] = useState<number | string | null>(null);
   const ITEMS_PER_PAGE = 15;
 
   // Real-time Monthly Tracker metrics for active category
@@ -1268,7 +1270,8 @@ function FacilityDataTable({
                 </td>
               </tr>
             ) : (
-              paginatedFacilities.map((facility) => {
+              paginatedFacilities.map((facility, index) => {
+                const isNearBottom = index >= paginatedFacilities.length - 2 && paginatedFacilities.length > 2;
                 const isConsumable = facility.tipe_item === "CONSUMABLE";
                 const locationName = typeof facility.location === "object" 
                   ? facility.location?.name 
@@ -1385,7 +1388,7 @@ function FacilityDataTable({
                       <MonitoringStatusBadge status={facility.expiry_tier || facility.calculated_status || facility.status} />
                     </td>
 
-                    {/* Action Buttons: Detail & Riwayat (Primary) + QR + Edit + Hapus (Icons) */}
+                    {/* Action Buttons: Detail (Primary) + Titik Tiga (Menu: Cetak QR, Edit, Hapus) */}
                     <td className="px-4 py-3 text-right whitespace-nowrap">
                       <div className="flex items-center justify-end gap-1.5">
                         <button 
@@ -1398,36 +1401,88 @@ function FacilityDataTable({
                           <span>Detail</span>
                         </button>
 
-                        <button
-                          type="button"
-                          onClick={() => onShowSticker(facility)}
-                          title={`Cetak Label QR Stiker ${facility.code}`}
-                          className="p-1.5 bg-white border border-slate-200 hover:border-purple-300 hover:bg-purple-50 text-slate-600 hover:text-purple-700 rounded-lg text-xs font-semibold transition cursor-pointer active:scale-95"
-                        >
-                          <QrCode size={13} />
-                        </button>
-
-                        {onEdit && (
+                        <div className="relative">
                           <button
                             type="button"
-                            onClick={() => onEdit(facility)}
-                            title={`Edit Data Fasilitas ${facility.code}`}
-                            className="p-1.5 bg-white border border-slate-200 hover:border-blue-300 hover:bg-blue-50 text-slate-600 hover:text-blue-700 rounded-lg text-xs font-semibold transition cursor-pointer active:scale-95"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setOpenActionMenuId(openActionMenuId === facility.id ? null : facility.id);
+                            }}
+                            title="Pilihan Aksi Lainnya"
+                            className={cn(
+                              "p-1.5 rounded-lg border text-slate-600 transition cursor-pointer active:scale-95",
+                              openActionMenuId === facility.id
+                                ? "bg-slate-100 border-slate-300 text-slate-900 shadow-inner"
+                                : "bg-white border-slate-200 hover:bg-slate-50 hover:border-slate-300"
+                            )}
                           >
-                            <Edit3 size={13} />
+                            <MoreVertical size={13} />
                           </button>
-                        )}
 
-                        {onDelete && (
-                          <button
-                            type="button"
-                            onClick={() => onDelete(facility)}
-                            title={`Hapus/Nonaktifkan Fasilitas ${facility.code}`}
-                            className="p-1.5 bg-white border border-slate-200 hover:border-red-300 hover:bg-red-50 text-slate-600 hover:text-red-600 rounded-lg text-xs font-semibold transition cursor-pointer active:scale-95"
-                          >
-                            <Trash2 size={13} />
-                          </button>
-                        )}
+                          {openActionMenuId === facility.id && (
+                            <>
+                              <div 
+                                className="fixed inset-0 z-30" 
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setOpenActionMenuId(null);
+                                }} 
+                              />
+                              <div 
+                                className={cn(
+                                  "absolute right-0 z-40 w-44 bg-white rounded-xl shadow-xl border border-slate-200 py-1 text-left animate-in fade-in zoom-in-95 duration-100",
+                                  isNearBottom ? "bottom-full mb-1.5" : "top-full mt-1.5"
+                                )}
+                              >
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setOpenActionMenuId(null);
+                                    onShowSticker(facility);
+                                  }}
+                                  className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-purple-50 hover:text-purple-700 text-left transition cursor-pointer"
+                                >
+                                  <QrCode size={13} className="text-purple-600 shrink-0" />
+                                  <span>Cetak Label QR</span>
+                                </button>
+
+                                {onEdit && (
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setOpenActionMenuId(null);
+                                      onEdit(facility);
+                                    }}
+                                    className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-blue-50 hover:text-blue-700 text-left transition cursor-pointer"
+                                  >
+                                    <Edit3 size={13} className="text-blue-600 shrink-0" />
+                                    <span>Edit Fasilitas</span>
+                                  </button>
+                                )}
+
+                                {onDelete && (
+                                  <>
+                                    <div className="my-1 border-t border-slate-100" />
+                                    <button
+                                      type="button"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setOpenActionMenuId(null);
+                                        onDelete(facility);
+                                      }}
+                                      className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-semibold text-rose-600 hover:bg-rose-50 text-left transition cursor-pointer"
+                                    >
+                                      <Trash2 size={13} className="text-rose-600 shrink-0" />
+                                      <span>Hapus Fasilitas</span>
+                                    </button>
+                                  </>
+                                )}
+                              </div>
+                            </>
+                          )}
+                        </div>
                       </div>
                     </td>
                   </tr>
@@ -1575,49 +1630,96 @@ function FacilityDataTable({
                 </div>
 
                 {/* Touch-Friendly Action Buttons */}
-                <div className="flex items-center gap-1.5 pt-1">
-                  <button
-                    type="button"
-                    onClick={() => onShowSticker(facility)}
-                    title={`Cetak QR ${facility.code}`}
-                    className="flex-1 inline-flex items-center justify-center gap-1 py-2 px-2.5 bg-purple-50 text-purple-700 border border-purple-200 hover:bg-purple-100 rounded-lg text-xs font-bold transition cursor-pointer active:scale-95"
-                  >
-                    <QrCode size={13} />
-                    <span>QR</span>
-                  </button>
-
-                  {onEdit && (
-                    <button
-                      type="button"
-                      onClick={() => onEdit(facility)}
-                      title={`Edit Data ${facility.code}`}
-                      className="flex-1 inline-flex items-center justify-center gap-1 py-2 px-2.5 bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 rounded-lg text-xs font-bold transition cursor-pointer active:scale-95"
-                    >
-                      <Edit3 size={13} />
-                      <span>Edit</span>
-                    </button>
-                  )}
-
+                <div className="flex items-center gap-2 pt-1">
                   <button 
                     type="button"
                     onClick={() => onOpenDetail(facility)} 
                     title="Buka Menu Aksi & Riwayat Monitoring"
-                    className="flex-[2] inline-flex items-center justify-center gap-1 py-2 px-3 bg-slate-800 hover:bg-slate-900 text-white rounded-lg text-xs font-bold transition shadow-xs cursor-pointer active:scale-95"
+                    className="flex-1 inline-flex items-center justify-center gap-1.5 py-2 px-3 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-bold transition shadow-xs cursor-pointer active:scale-95"
                   >
                     <Eye size={13} />
-                    <span>Kelola & Riwayat</span>
+                    <span>Detail & Riwayat</span>
                   </button>
 
-                  {onDelete && (
+                  <div className="relative">
                     <button
                       type="button"
-                      onClick={() => onDelete(facility)}
-                      title={`Hapus ${facility.code}`}
-                      className="inline-flex items-center justify-center p-2 bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 rounded-lg text-xs font-bold transition cursor-pointer active:scale-95"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setOpenActionMenuId(openActionMenuId === `mobile-${facility.id}` ? null : `mobile-${facility.id}`);
+                      }}
+                      className={cn(
+                        "p-2 rounded-lg border text-slate-600 transition cursor-pointer active:scale-95",
+                        openActionMenuId === `mobile-${facility.id}`
+                          ? "bg-slate-100 border-slate-300 text-slate-900"
+                          : "bg-white border-slate-200 hover:bg-slate-50"
+                      )}
+                      title="Aksi Lainnya"
                     >
-                      <Trash2 size={13} />
+                      <MoreVertical size={14} />
                     </button>
-                  )}
+
+                    {openActionMenuId === `mobile-${facility.id}` && (
+                      <>
+                        <div 
+                          className="fixed inset-0 z-30" 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setOpenActionMenuId(null);
+                          }} 
+                        />
+                        <div 
+                          className="absolute right-0 bottom-full mb-1.5 z-40 w-44 bg-white rounded-xl shadow-xl border border-slate-200 py-1 text-left animate-in fade-in zoom-in-95 duration-100"
+                        >
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setOpenActionMenuId(null);
+                              onShowSticker(facility);
+                            }}
+                            className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-purple-50 hover:text-purple-700 text-left transition cursor-pointer"
+                          >
+                            <QrCode size={13} className="text-purple-600 shrink-0" />
+                            <span>Cetak Label QR</span>
+                          </button>
+
+                          {onEdit && (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setOpenActionMenuId(null);
+                                onEdit(facility);
+                              }}
+                              className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-blue-50 hover:text-blue-700 text-left transition cursor-pointer"
+                            >
+                              <Edit3 size={13} className="text-blue-600 shrink-0" />
+                              <span>Edit Fasilitas</span>
+                            </button>
+                          )}
+
+                          {onDelete && (
+                            <>
+                              <div className="my-1 border-t border-slate-100" />
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setOpenActionMenuId(null);
+                                  onDelete(facility);
+                                }}
+                                className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-semibold text-rose-600 hover:bg-rose-50 text-left transition cursor-pointer"
+                              >
+                                <Trash2 size={13} className="text-rose-600 shrink-0" />
+                                <span>Hapus Fasilitas</span>
+                              </button>
+                            </>
+                          )}
+                        </div>
+                      </>
+                    )}
+                  </div>
                 </div>
               </div>
             );
