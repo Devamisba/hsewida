@@ -526,26 +526,24 @@ export function InspectionDataTable({
           <table className="w-full text-left border-collapse text-xs">
             <thead>
               <tr className="bg-slate-50/80 border-b border-slate-200 text-slate-500 uppercase text-[10px] font-bold tracking-wider">
-                <th className="py-3 px-4 w-52">Kode & Lokasi</th>
+                <th className="py-3 px-4 min-w-[260px]">Kode & Lokasi</th>
                 <th className="py-3 px-4 w-36">Status Cek</th>
-                <th className="py-3 px-4 w-36">Waktu Cek</th>
-                <th className="py-3 px-4 w-44">Pemeriksa Lapangan</th>
-                <th className="py-3 px-4 w-40">Parameter Fisik</th>
-                <th className="py-3 px-4 w-48">Bukti Foto & GPS</th>
-                <th className="py-3 px-4 w-40">Verifikasi PIC</th>
+                <th className="py-3 px-4 w-40">Waktu Cek</th>
+                <th className="py-3 px-4 w-48">Pemeriksa Lapangan</th>
+                <th className="py-3 px-4 w-44">Verifikasi PIC</th>
                 <th className="py-3 px-4 text-right w-36">Aksi</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
               {loading ? (
                 <tr>
-                  <td colSpan={8} className="py-12 text-center text-xs text-slate-400">
+                  <td colSpan={6} className="py-12 text-center text-xs text-slate-400">
                     Memuat data inspeksi fasilitas...
                   </td>
                 </tr>
               ) : items.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="py-12 text-center text-xs text-slate-500">
+                  <td colSpan={6} className="py-12 text-center text-xs text-slate-500">
                     Tidak ada fasilitas yang sesuai dengan filter pencarian.
                     {hasActiveFilters && (
                       <div className="mt-2">
@@ -568,8 +566,6 @@ export function InspectionDataTable({
                   const isPending = row.check_status === "PENDING";
                   const inspector = row.inspector_name || "-";
                   const pic = row.pic_name || null;
-                  const results = Array.isArray(row.checklist_results) ? row.checklist_results : [];
-                  const photos = Array.isArray(row.foto_bukti) ? row.foto_bukti : [];
                   const isPass = row.result_status === "Pass";
 
                   return (
@@ -688,90 +684,7 @@ export function InspectionDataTable({
                         )}
                       </td>
 
-                      {/* 5. Parameter Fisik */}
-                      <td className="py-3 px-4">
-                        {hasInspection && results.length > 0 ? (() => {
-                          const totalParams = results.length;
-                          const passedParams = results.filter((r: any) => r.passed !== false && r.jawaban !== "Rusak" && r.jawaban !== "Karat / Rusak").length;
-                          const allPassed = totalParams > 0 && passedParams === totalParams;
-
-                          if (allPassed) {
-                            return (
-                              <div className="flex flex-col gap-0.5" title={results.map((r: any) => `${r.code || r.item}: ${r.jawaban || 'OK'}`).join(' | ')}>
-                                <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-800 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded w-fit">
-                                  <CheckCircle2 size={10} className="text-emerald-600" />
-                                  {passedParams}/{totalParams} Normal
-                                </span>
-                                <span className="text-[10px] text-slate-400 font-medium">Fisik & jarum aman</span>
-                              </div>
-                            );
-                          }
-
-                          return (
-                            <div className="flex flex-col gap-1">
-                              <span className="inline-flex items-center gap-1 text-[10px] font-bold text-rose-800 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded w-fit">
-                                <AlertTriangle size={10} className="text-rose-600" />
-                                {totalParams - passedParams} Kendala
-                              </span>
-                              <div className="flex flex-wrap gap-0.5 max-w-[170px]">
-                                {results.filter((r: any) => !(r.passed !== false && r.jawaban !== "Rusak" && r.jawaban !== "Karat / Rusak")).map((r: any, rIdx: number) => (
-                                  <span key={rIdx} className="text-[9px] font-bold text-rose-700 bg-rose-100/70 border border-rose-200 px-1.5 py-0.5 rounded">
-                                    {r.code || r.item}: {r.jawaban}
-                                  </span>
-                                ))}
-                              </div>
-                            </div>
-                          );
-                        })() : (
-                          <span className="text-[11px] text-slate-400">-</span>
-                        )}
-                      </td>
-
-                      {/* 6. Bukti Foto & GPS */}
-                      <td className="py-3 px-4 max-w-[200px]">
-                        {hasInspection ? (
-                          <div className="space-y-1">
-                            {row.notes && (
-                              <p className="text-[11px] text-slate-600 line-clamp-1" title={row.notes}>
-                                {row.notes}
-                              </p>
-                            )}
-                            <div className="flex items-center gap-1.5 flex-wrap">
-                              {photos.length > 0 && photos.map((photo: string, pIdx: number) => (
-                                <button
-                                  key={pIdx}
-                                  type="button"
-                                  onClick={() => {
-                                    setActivePhoto(photo);
-                                    setActivePhotoMeta(row);
-                                  }}
-                                  className="relative w-8 h-8 rounded border border-slate-300 overflow-hidden hover:opacity-90 transition group cursor-pointer shadow-2xs shrink-0"
-                                  title="Lihat foto realtime & watermark GPS"
-                                >
-                                  <img src={photo} alt="Bukti" className="w-full h-full object-cover" />
-                                  <div className="absolute inset-0 bg-black/20 group-hover:bg-transparent flex items-center justify-center">
-                                    <Camera size={10} className="text-white drop-shadow" />
-                                  </div>
-                                </button>
-                              ))}
-                              {photos.length > 0 && (
-                                <span className="inline-flex items-center gap-0.5 text-[9px] font-bold text-purple-700 bg-purple-50 border border-purple-200 px-1.5 py-0.5 rounded">
-                                  <Sparkles size={9} />
-                                  Foto
-                                </span>
-                              )}
-                            </div>
-                            <div className="text-[9px] text-slate-400 flex items-center gap-1 font-mono truncate" title={row.gps_coordinates || "-7.644263, 112.694194"}>
-                              <Navigation size={9} className="text-slate-400 shrink-0" />
-                              <span className="truncate">{row.gps_coordinates || "-7.644263, 112.694194"}</span>
-                            </div>
-                          </div>
-                        ) : (
-                          <span className="text-[11px] text-slate-400">-</span>
-                        )}
-                      </td>
-
-                      {/* 7. Verifikasi PIC */}
+                      {/* 5. Verifikasi PIC */}
                       <td className="py-3 px-4 whitespace-nowrap">
                         {hasInspection ? (
                           isVerified ? (
@@ -805,7 +718,7 @@ export function InspectionDataTable({
                         )}
                       </td>
 
-                      {/* 8. Aksi */}
+                      {/* 6. Aksi */}
                       <td className="py-3 px-4 text-right whitespace-nowrap">
                         <div className="flex items-center gap-1.5 justify-end">
                           
