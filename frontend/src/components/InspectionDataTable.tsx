@@ -455,9 +455,10 @@ export function InspectionDataTable({
 
         </div>
 
-        {/* Row 2: Zone Filter Pills & Export Excel Button */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pt-2 border-t border-slate-100 text-xs">
-          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden shrink-0 whitespace-nowrap">
+        {/* Row 2: Zone Filter Pills & Export Excel Button (Responsive, No Overflow) */}
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 pt-2.5 border-t border-slate-100 text-xs">
+          {/* Left: Zone Filter Pills */}
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 max-w-full min-w-0 [scrollbar-width:thin] [scrollbar-color:#cbd5e1_transparent] [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-thumb]:bg-slate-200 [&::-webkit-scrollbar-thumb]:rounded-full whitespace-nowrap">
             <span className="text-[11px] font-bold text-slate-500 mr-1 flex items-center gap-1 shrink-0">
               <MapPin size={12} /> Zona:
             </span>
@@ -483,8 +484,9 @@ export function InspectionDataTable({
             })}
           </div>
 
-          <div className="flex items-center gap-2 shrink-0 self-end sm:self-auto flex-wrap">
-            <div className="flex items-center gap-1.5 bg-slate-100 px-2.5 py-1 rounded-lg border border-slate-200">
+          {/* Right: Siklus Bulan & Export Excel Button */}
+          <div className="flex items-center gap-2 shrink-0 flex-wrap sm:flex-nowrap justify-start lg:justify-end">
+            <div className="flex items-center gap-1.5 bg-slate-100 px-2.5 py-1.5 rounded-lg border border-slate-200 shrink-0">
               <span className="text-[10px] font-bold text-slate-500 uppercase">Siklus Bulan:</span>
               <input
                 type="month"
@@ -504,7 +506,7 @@ export function InspectionDataTable({
               type="button"
               onClick={handleExportExcel}
               disabled={items.length === 0}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-white bg-emerald-700 hover:bg-emerald-800 disabled:bg-slate-300 disabled:cursor-not-allowed transition shadow-xs cursor-pointer"
+              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold text-white bg-emerald-700 hover:bg-emerald-800 disabled:bg-slate-300 disabled:cursor-not-allowed transition shadow-xs cursor-pointer whitespace-nowrap shrink-0"
               title="Download Laporan Resmi Kesiapan K3 PT Widatra Bhakti ke Format Excel (.xlsx)"
             >
               <FileSpreadsheet size={14} />
