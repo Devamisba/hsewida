@@ -524,30 +524,32 @@ export function FacilityDetailActionModal({
                 </Link>
               )}
 
-              {/* 2. Checklist Inspeksi K3 */}
-              <button
-                type="button"
-                onClick={() => {
-                  onClose();
-                  onInspect(facility);
-                }}
-                className="flex items-center justify-between p-3 rounded-lg border border-sky-200 bg-sky-50/50 hover:bg-sky-100/70 hover:border-sky-300 transition text-left group cursor-pointer"
-              >
-                <div className="flex items-center gap-2.5 min-w-0">
-                  <div className="w-8 h-8 rounded-md bg-sky-100 text-sky-700 flex items-center justify-center shrink-0">
-                    <ClipboardCheck size={16} />
-                  </div>
-                  <div className="min-w-0">
-                    <div className="font-bold text-xs text-sky-900">
-                      Checklist Inspeksi
+              {/* 2. Checklist Inspeksi K3 (Khusus untuk fasilitas selain APAR, karena APAR sudah menggunakan Form K3 Lapangan) */}
+              {!isApar && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    onClose();
+                    onInspect(facility);
+                  }}
+                  className="flex items-center justify-between p-3 rounded-lg border border-sky-200 bg-sky-50/50 hover:bg-sky-100/70 hover:border-sky-300 transition text-left group cursor-pointer"
+                >
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <div className="w-8 h-8 rounded-md bg-sky-100 text-sky-700 flex items-center justify-center shrink-0">
+                      <ClipboardCheck size={16} />
                     </div>
-                    <p className="text-[11px] text-sky-700 truncate">
-                      Input form checklist berkala
-                    </p>
+                    <div className="min-w-0">
+                      <div className="font-bold text-xs text-sky-900">
+                        Checklist Inspeksi
+                      </div>
+                      <p className="text-[11px] text-sky-700 truncate">
+                        Input form checklist berkala
+                      </p>
+                    </div>
                   </div>
-                </div>
-                <ChevronRight size={15} className="text-sky-400 group-hover:translate-x-0.5 transition" />
-              </button>
+                  <ChevronRight size={15} className="text-sky-400 group-hover:translate-x-0.5 transition" />
+                </button>
+              )}
 
               {/* 3. Cetak Label QR Stiker */}
               <button
@@ -627,7 +629,7 @@ export function FacilityDetailActionModal({
               <div className="p-4 bg-slate-50 border border-slate-200 rounded-lg text-center text-xs text-slate-500">
                 Belum ada riwayat monitoring fisik tercatat untuk tabung ini.
                 <p className="text-[11px] text-slate-400 mt-1">
-                  Gunakan tombol <strong>Form K3</strong> atau <strong>Checklist Inspeksi</strong> untuk mencatat audit pertama.
+                  Gunakan tombol aksi di atas untuk mencatat audit/pemeriksaan pertama.
                 </p>
               </div>
             ) : (
