@@ -270,6 +270,9 @@ export default function AparScanPage() {
         setPetugasSubmitted(true);
         await fetchAparData();
         setNotes("");
+        if (typeof window !== "undefined") {
+          window.scrollTo({ top: 0, behavior: "smooth" });
+        }
       } else {
         alert(res.message || "Gagal menyimpan hasil inspeksi.");
       }
@@ -567,6 +570,31 @@ export default function AparScanPage() {
                   <p className="text-xs text-slate-500">Pemeriksaan fisik 5 parameter standar APAR</p>
                 </div>
 
+                {/* Notifikasi Berhasil di Bagian Atas */}
+                {petugasSubmitted && (
+                  <div className="p-3.5 bg-emerald-50 border border-emerald-200 rounded-xl space-y-2 animate-in fade-in duration-200">
+                    <div className="text-emerald-800 font-bold text-xs flex items-center gap-2">
+                      <div className="w-5 h-5 rounded-full bg-emerald-600 text-white flex items-center justify-center shrink-0">
+                        <Check size={12} />
+                      </div>
+                      <span>Hasil Pemeriksaan Berhasil Disimpan!</span>
+                    </div>
+                    <p className="text-[11px] text-emerald-700 leading-relaxed">
+                      Laporan inspeksi fisik 5 parameter telah dicatat ke sistem dan siap diverifikasi oleh PIC K3.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setViewMode("CHOICE");
+                        setPetugasSubmitted(false);
+                      }}
+                      className="w-full py-2 px-3 bg-emerald-700 hover:bg-emerald-800 text-white rounded-lg text-xs font-bold text-center transition cursor-pointer flex items-center justify-center gap-1.5 shadow-xs"
+                    >
+                      <span>Lihat Riwayat & Kartu Kendali</span>
+                    </button>
+                  </div>
+                )}
+
                 <form onSubmit={handlePetugasSubmit} className="space-y-4 text-xs">
                   
                   {/* Nama Petugas */}
@@ -821,24 +849,19 @@ export default function AparScanPage() {
                     )}
                   </div>
 
-                  {/* Submit Button atau Status Menunggu Verifikasi */}
+                  {/* Submit Button atau Tombol Kembali */}
                   <div className="pt-2">
                     {petugasSubmitted ? (
-                      <div className="space-y-2">
-                        <div className="w-full py-3 px-4 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-lg text-xs font-bold text-center flex items-center justify-center gap-1.5">
-                          <Check size={14} /> Hasil Pemeriksaan Berhasil Disimpan!
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setViewMode("CHOICE");
-                            setPetugasSubmitted(false);
-                          }}
-                          className="w-full py-2.5 px-4 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-semibold text-center transition cursor-pointer"
-                        >
-                          Lihat Riwayat & Kartu Kendali
-                        </button>
-                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setViewMode("CHOICE");
+                          setPetugasSubmitted(false);
+                        }}
+                        className="w-full py-2.5 px-4 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-semibold text-center transition cursor-pointer"
+                      >
+                        Lihat Riwayat & Kartu Kendali
+                      </button>
                     ) : (
                       <button
                         type="submit"
