@@ -15,6 +15,7 @@ import { FacilityDetailActionModal } from "@/components/FacilityDetailActionModa
 import { FacilityQrStickerModal } from "@/components/FacilityQrStickerModal";
 import { QrScanFieldModal } from "@/components/QrScanFieldModal";
 import { EditFacilityModal } from "@/components/EditFacilityModal";
+import { RecordRefillModal } from "@/components/RecordRefillModal";
 import { api, SafetyFacility } from "@/services/api";
 
 export default function InspectionPage() {
@@ -28,6 +29,8 @@ export default function InspectionPage() {
   const [stickerModalOpen, setStickerModalOpen] = useState(false);
   const [scannerModalOpen, setScannerModalOpen] = useState(false);
   const [detailModalOpen, setDetailModalOpen] = useState(false);
+  const [refillModalOpen, setRefillModalOpen] = useState(false);
+  const [facilityToRefill, setFacilityToRefill] = useState<SafetyFacility | null>(null);
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [facilityToEdit, setFacilityToEdit] = useState<SafetyFacility | null>(null);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
@@ -73,6 +76,11 @@ export default function InspectionPage() {
   const handleOpenDetail = (facility: SafetyFacility) => {
     setSelectedFacility(facility);
     setDetailModalOpen(true);
+  };
+
+  const handleRefill = (facility: SafetyFacility) => {
+    setFacilityToRefill(facility);
+    setRefillModalOpen(true);
   };
 
   const handleOpenEdit = (facility: SafetyFacility) => {
@@ -211,7 +219,7 @@ export default function InspectionPage() {
         facility={selectedFacility}
         onInspect={(f) => handleInspect(f, getCategoryTitle(f.category))}
         onShowSticker={handleShowSticker}
-        onRefill={() => {}}
+        onRefill={handleRefill}
         onFacilityUpdated={handleRefresh}
         onEdit={(f) => {
           setDetailModalOpen(false);
@@ -222,6 +230,20 @@ export default function InspectionPage() {
           handleRequestDelete(f);
         }}
       />
+
+      {/* Modal Catat Refill Media Baru */}
+      <RecordRefillModal
+        isOpen={refillModalOpen}
+        onClose={() => {
+          setRefillModalOpen(false);
+          setFacilityToRefill(null);
+        }}
+        facility={facilityToRefill}
+        onSuccess={() => {
+          handleRefresh();
+        }}
+      />
+
 
       {/* 5. Modal Edit Data Fasilitas */}
       <EditFacilityModal
