@@ -31,7 +31,9 @@ import {
   Image as ImageIcon,
   UploadCloud,
   Lock,
-  Sparkles
+  Sparkles,
+  ChevronLeft,
+  ChevronRight
 } from "lucide-react";
 import { api } from "@/services/api";
 import { auth } from "@/lib/auth";
@@ -136,6 +138,38 @@ export default function MasterDataPage() {
     company_name: "PT WIDATRA BHAKTI",
   });
   const [isSavingSettings, setIsSavingSettings] = useState(false);
+
+  // Tab Bar Horizontal Scroll Controls & Visibility
+  const tabScrollRef = useRef<HTMLDivElement>(null);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(false);
+
+  const checkTabScroll = () => {
+    if (tabScrollRef.current) {
+      const { scrollLeft, scrollWidth, clientWidth } = tabScrollRef.current;
+      setCanScrollLeft(scrollLeft > 6);
+      setCanScrollRight(scrollLeft < scrollWidth - clientWidth - 6);
+    }
+  };
+
+  useEffect(() => {
+    checkTabScroll();
+    const handleResize = () => checkTabScroll();
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  useEffect(() => {
+    checkTabScroll();
+  }, [activeTab]);
+
+  const scrollTabs = (direction: "left" | "right") => {
+    if (tabScrollRef.current) {
+      const amount = direction === "left" ? -280 : 280;
+      tabScrollRef.current.scrollBy({ left: amount, behavior: "smooth" });
+      setTimeout(checkTabScroll, 320);
+    }
+  };
 
   const [loading, setLoading] = useState(false);
   const [feedbackMsg, setFeedbackMsg] = useState<{ type: "success" | "error"; text: string } | null>(null);
@@ -729,64 +763,123 @@ export default function MasterDataPage() {
             </div>
           </div>
 
-          {/* 5 Navigation Tabs Utama */}
-          <div className="flex border-b border-slate-200 bg-white rounded-xl p-1.5 shadow-sm overflow-x-auto gap-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
-            <button
-              onClick={() => setActiveTab("users_roles")}
-              className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-bold transition-all whitespace-nowrap ${
-                activeTab === "users_roles" ? "bg-blue-50 text-blue-700 shadow-sm ring-1 ring-blue-200" : "text-slate-600 hover:bg-slate-100"
-              }`}
+          {/* Navigation Tabs Utama dengan Scrollbar Horizontal Jelas & Tombol Geser */}
+          <div className="relative group bg-white border border-slate-200 rounded-2xl p-2 shadow-xs space-y-1.5">
+            {/* Tombol Geser Kiri (Muncul jika ada tab di sisi kiri) */}
+            {canScrollLeft && (
+              <button
+                type="button"
+                onClick={() => scrollTabs("left")}
+                className="absolute left-2.5 top-1/2 -translate-y-1/2 z-20 w-8 h-8 rounded-full bg-white/95 hover:bg-white text-slate-700 shadow-lg border border-slate-200/90 flex items-center justify-center transition-all hover:scale-110 active:scale-95 cursor-pointer backdrop-blur-xs"
+                title="Geser tab ke kiri"
+              >
+                <ChevronLeft size={18} />
+              </button>
+            )}
+
+            {/* Tombol Geser Kanan (Muncul jika ada tab di sisi kanan) */}
+            {canScrollRight && (
+              <button
+                type="button"
+                onClick={() => scrollTabs("right")}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 z-20 w-8 h-8 rounded-full bg-blue-600 hover:bg-blue-700 text-white shadow-lg border border-blue-500 flex items-center justify-center transition-all hover:scale-110 active:scale-95 cursor-pointer animate-pulse"
+                title="Geser tab ke kanan"
+              >
+                <ChevronRight size={18} />
+              </button>
+            )}
+
+            {/* Container List Tab dengan Garis Scrollbar Terlihat & Roda Mouse Support */}
+            <div
+              ref={tabScrollRef}
+              onScroll={checkTabScroll}
+              onWheel={(e) => {
+                if (e.deltaY !== 0) {
+                  e.currentTarget.scrollLeft += e.deltaY;
+                }
+              }}
+              className="flex overflow-x-auto gap-1.5 pb-2.5 pt-0.5 px-1 scroll-smooth select-none
+                [scrollbar-width:thin] [scrollbar-color:#94a3b8_#f1f5f9]
+                [&::-webkit-scrollbar]:h-2
+                [&::-webkit-scrollbar-track]:bg-slate-100
+                [&::-webkit-scrollbar-track]:rounded-full
+                [&::-webkit-scrollbar-thumb]:bg-slate-300
+                hover:[&::-webkit-scrollbar-thumb]:bg-blue-500
+                [&::-webkit-scrollbar-thumb]:rounded-full"
             >
-              <ShieldCheck size={18} /> Hak Akses & Pengguna (RBAC)
-            </button>
-            <button
-              onClick={() => setActiveTab("permit_types")}
-              className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-bold transition-all whitespace-nowrap ${
-                activeTab === "permit_types" ? "bg-blue-50 text-blue-700 shadow-sm ring-1 ring-blue-200" : "text-slate-600 hover:bg-slate-100"
-              }`}
-            >
-              <FileText size={18} /> Jenis Izin Kerja (Permit Types)
-            </button>
-            <button
-              onClick={() => setActiveTab("ppe")}
-              className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-bold transition-all whitespace-nowrap ${
-                activeTab === "ppe" ? "bg-blue-50 text-blue-700 shadow-sm ring-1 ring-blue-200" : "text-slate-600 hover:bg-slate-100"
-              }`}
-            >
-              <HardHat size={18} /> Alat Pelindung Diri (PPE / APD)
-            </button>
-            <button
-              onClick={() => setActiveTab("workflow")}
-              className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-bold transition-all whitespace-nowrap ${
-                activeTab === "workflow" ? "bg-blue-50 text-blue-700 shadow-sm ring-1 ring-blue-200" : "text-slate-600 hover:bg-slate-100"
-              }`}
-            >
-              <GitFork size={18} /> Status Workflow & Approval
-            </button>
-            <button
-              onClick={() => setActiveTab("locations_vendors")}
-              className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-bold transition-all whitespace-nowrap ${
-                activeTab === "locations_vendors" ? "bg-blue-50 text-blue-700 shadow-sm ring-1 ring-blue-200" : "text-slate-600 hover:bg-slate-100"
-              }`}
-            >
-              <Building size={18} /> Lokasi Pabrik & Rekanan Vendor
-            </button>
-            <button
-              onClick={() => setActiveTab("policy_settings")}
-              className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-bold transition-all whitespace-nowrap ${
-                activeTab === "policy_settings" ? "bg-blue-50 text-blue-700 shadow-sm ring-1 ring-blue-200" : "text-slate-600 hover:bg-slate-100"
-              }`}
-            >
-              <SlidersHorizontal size={18} /> Kebijakan SIKA & Geofence K3
-            </button>
-            <button
-              onClick={() => setActiveTab("branding")}
-              className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-bold transition-all whitespace-nowrap ${
-                activeTab === "branding" ? "bg-blue-50 text-blue-700 shadow-sm ring-1 ring-blue-200" : "text-slate-600 hover:bg-slate-100"
-              }`}
-            >
-              <Sparkles size={18} className="text-amber-500" /> Branding & Tampilan Login
-            </button>
+              <button
+                onClick={() => setActiveTab("users_roles")}
+                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold transition-all whitespace-nowrap cursor-pointer shrink-0 ${
+                  activeTab === "users_roles" ? "bg-blue-600 text-white shadow-sm ring-2 ring-blue-600/20" : "text-slate-600 hover:bg-slate-100"
+                }`}
+              >
+                <ShieldCheck size={18} /> Hak Akses & Pengguna (RBAC)
+              </button>
+              <button
+                onClick={() => setActiveTab("permit_types")}
+                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold transition-all whitespace-nowrap cursor-pointer shrink-0 ${
+                  activeTab === "permit_types" ? "bg-blue-600 text-white shadow-sm ring-2 ring-blue-600/20" : "text-slate-600 hover:bg-slate-100"
+                }`}
+              >
+                <FileText size={18} /> Jenis Izin Kerja (Permit Types)
+              </button>
+              <button
+                onClick={() => setActiveTab("ppe")}
+                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold transition-all whitespace-nowrap cursor-pointer shrink-0 ${
+                  activeTab === "ppe" ? "bg-blue-600 text-white shadow-sm ring-2 ring-blue-600/20" : "text-slate-600 hover:bg-slate-100"
+                }`}
+              >
+                <HardHat size={18} /> Alat Pelindung Diri (PPE / APD)
+              </button>
+              <button
+                onClick={() => setActiveTab("workflow")}
+                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold transition-all whitespace-nowrap cursor-pointer shrink-0 ${
+                  activeTab === "workflow" ? "bg-blue-600 text-white shadow-sm ring-2 ring-blue-600/20" : "text-slate-600 hover:bg-slate-100"
+                }`}
+              >
+                <GitFork size={18} /> Status Workflow & Approval
+              </button>
+              <button
+                onClick={() => setActiveTab("locations_vendors")}
+                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold transition-all whitespace-nowrap cursor-pointer shrink-0 ${
+                  activeTab === "locations_vendors" ? "bg-blue-600 text-white shadow-sm ring-2 ring-blue-600/20" : "text-slate-600 hover:bg-slate-100"
+                }`}
+              >
+                <Building size={18} /> Lokasi Pabrik & Rekanan Vendor
+              </button>
+              <button
+                onClick={() => setActiveTab("policy_settings")}
+                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold transition-all whitespace-nowrap cursor-pointer shrink-0 ${
+                  activeTab === "policy_settings" ? "bg-blue-600 text-white shadow-sm ring-2 ring-blue-600/20" : "text-slate-600 hover:bg-slate-100"
+                }`}
+              >
+                <SlidersHorizontal size={18} /> Kebijakan SIKA & Geofence K3
+              </button>
+              <button
+                onClick={() => setActiveTab("branding")}
+                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold transition-all whitespace-nowrap cursor-pointer shrink-0 ${
+                  activeTab === "branding" ? "bg-blue-600 text-white shadow-sm ring-2 ring-blue-600/20" : "text-slate-600 hover:bg-slate-100"
+                }`}
+              >
+                <Sparkles size={18} className={activeTab === "branding" ? "text-amber-300" : "text-amber-500"} /> Branding & Tampilan Login
+              </button>
+            </div>
+
+            {/* Petunjuk Visual Scroll Bar Horizontal */}
+            <div className="flex items-center justify-between px-2 pt-1 border-t border-slate-100 text-[10px] text-slate-400">
+              <span className="flex items-center gap-1 font-medium text-slate-500">
+                ↔ Geser garis scroll di atas atau gunakan roda scroll mouse untuk melihat semua tab
+              </span>
+              {canScrollRight && (
+                <button 
+                  type="button" 
+                  onClick={() => scrollTabs("right")}
+                  className="text-blue-600 hover:text-blue-700 font-bold flex items-center gap-0.5 cursor-pointer"
+                >
+                  Tab berikutnya <ChevronRight size={12} />
+                </button>
+              )}
+            </div>
           </div>
 
           {/* ========================================================================= */}
