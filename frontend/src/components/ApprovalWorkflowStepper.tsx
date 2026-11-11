@@ -94,7 +94,7 @@ export function ApprovalWorkflowStepper({
   const getApprovalForStep = (roleCode: string) => {
     if (!approvals || approvals.length === 0) return null;
     return approvals.find(
-      (a) => a.role_at_action === roleCode && a.action === "Approve"
+      (a) => (a.role_at_action === roleCode || (roleCode === "hse" && a.role_at_action === "pic_k3")) && a.action === "Approve"
     );
   };
 
@@ -153,7 +153,7 @@ export function ApprovalWorkflowStepper({
           const isPassed = !isRejected && (activeStep > step.stepNumber || isApproved);
           const isCurrent = !isRejected && activeStep === step.stepNumber;
           const isLocked = !isApproved && !isPassed && !isCurrent;
-          const isAuthorizedUser = currentRole === "admin" || currentRole === step.roleCode;
+          const isAuthorizedUser = currentRole === "admin" || currentRole === step.roleCode || (step.roleCode === "hse" && currentRole === "pic_k3");
           const audit = getApprovalForStep(step.roleCode);
 
           return (

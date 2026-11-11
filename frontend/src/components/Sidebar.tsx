@@ -79,7 +79,7 @@ export const NAVIGATION_CONFIG: NavItem[] = [
         name: "Izin Kerja Baru",
         href: "/create-request",
         icon: FilePlus2,
-        roles: ["admin", "hse", "kontraktor", "contractor", "pemohon", "vendor"],
+        roles: ["admin", "hse", "pic_k3", "kontraktor", "contractor", "pemohon", "vendor"],
       },
       {
         name: "Izin Saya",
@@ -91,7 +91,7 @@ export const NAVIGATION_CONFIG: NavItem[] = [
         name: "Review Izin",
         href: "/review",
         icon: CheckSquare,
-        roles: ["admin", "hse", "ga_dept_head", "ga_div_head", "pic_vendor"],
+        roles: ["admin", "hse", "pic_k3", "ga_dept_head", "ga_div_head", "pic_vendor"],
       },
       {
         name: "Riwayat",

@@ -111,6 +111,7 @@ class WorkPermitController extends Controller
                 $query->whereIn('status', ['Menunggu PIC Widatra', 'Menunggu PIC Vendor']);
                 break;
             case 'hse':
+            case 'pic_k3':
                 $query->where('status', 'Menunggu HSE');
                 break;
             case 'ga_dept_head':
@@ -529,7 +530,11 @@ class WorkPermitController extends Controller
         }
 
         // Strict sequential enforcement: only the designated role for the active stage (or admin) can approve!
-        if ($roleCode !== 'admin' && $roleCode !== $requiredRole) {
+        $isAuthorized = ($roleCode === 'admin') ||
+            ($requiredRole === 'hse' && in_array($roleCode, ['hse', 'pic_k3'])) ||
+            ($roleCode === $requiredRole);
+
+        if (!$isAuthorized) {
             return response()->json([
                 'success' => false,
                 'message' => 'Wewenang terkunci: Tahap ' . $permit->status . ' hanya dapat disetujui oleh role ' . $requiredRole . '. Role Anda saat ini: ' . ($roleCode ?: 'unauthorized') . '.',
@@ -603,7 +608,11 @@ class WorkPermitController extends Controller
         }
 
         // Strict sequential enforcement for rejection as well
-        if ($roleCode !== 'admin' && $roleCode !== $requiredRole) {
+        $isAuthorized = ($roleCode === 'admin') ||
+            ($requiredRole === 'hse' && in_array($roleCode, ['hse', 'pic_k3'])) ||
+            ($roleCode === $requiredRole);
+
+        if (!$isAuthorized) {
             return response()->json([
                 'success' => false,
                 'message' => 'Wewenang terkunci: Penolakan pada tahap ' . $permit->status . ' hanya dapat dilakukan oleh role ' . $requiredRole . '. Role Anda saat ini: ' . ($roleCode ?: 'unauthorized') . '.',
