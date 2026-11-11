@@ -6,13 +6,36 @@ import {
   Check,
   RotateCcw,
   X,
-  ExternalLink
+  Calendar,
+  Clock,
+  User,
+  ShieldCheck,
+  CheckCircle2,
+  ClipboardCheck,
+  History,
+  Inbox
 } from "lucide-react";
 import { api, SafetyFacility } from "@/services/api";
-import { auth } from "@/lib/auth";
 import { PLANT_CENTER, syncGeofenceFromSettingsMap } from "@/utils/facilityCoordinates";
 
-type ViewMode = "CHOICE" | "PENGECEKAN" | "MONITORING_LOGIN" | "MONITORING_DASHBOARD";
+type ViewMode = "CHOICE" | "PENGECEKAN";
+
+const formatDateTime = (dateStr?: string | null) => {
+  if (!dateStr) return "-";
+  try {
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return dateStr;
+    return d.toLocaleDateString("id-ID", {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    }) + " WIB";
+  } catch {
+    return dateStr;
+  }
+};
 
 export default function AparScanPage() {
   const { code } = useParams<{ code: string }>();
@@ -20,17 +43,11 @@ export default function AparScanPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [facility, setFacility] = useState<SafetyFacility | null>(null);
-  const [latestInspection, setLatestInspection] = useState<any>(null);
-  const [latestInspectorName, setLatestInspectorName] = useState<string>("");
   const [inspectionStatusLabel, setInspectionStatusLabel] = useState<string>("");
   const [isRefillQueue, setIsRefillQueue] = useState<boolean>(false);
-  const [stats, setStats] = useState<{ total_apar: number; monitored_count: number; unmonitored_count: number }>({
-    total_apar: 266,
-    monitored_count: 0,
-    unmonitored_count: 266,
-  });
+  const [totalInspections, setTotalInspections] = useState<number>(0);
 
-  // Current View Mode
+  // Current View Mode (CHOICE = Kartu & Riwayat Utama, PENGECEKAN = Form Lapangan)
   const [viewMode, setViewMode] = useState<ViewMode>("CHOICE");
 
   // --- FORM 1: Petugas HSE State ---
@@ -44,19 +61,6 @@ export default function AparScanPage() {
   const [capturedPhoto, setCapturedPhoto] = useState<string | null>(null);
   const [submittingPetugas, setSubmittingPetugas] = useState<boolean>(false);
   const [petugasSubmitted, setPetugasSubmitted] = useState<boolean>(false);
-
-  // --- LOGIN PIC HSE State ---
-  const [loginEmail, setLoginEmail] = useState<string>("");
-  const [loginPassword, setLoginPassword] = useState<string>("");
-  const [loginLoading, setLoginLoading] = useState<boolean>(false);
-  const [loginError, setLoginError] = useState<string | null>(null);
-
-  // --- FORM 2: PIC HSE State ---
-  const [picName, setPicName] = useState<string>("");
-  const [verificationStatus, setVerificationStatus] = useState<"VERIFIED" | "REVISE" | "REFILL_REQUESTED">("VERIFIED");
-  const [picNotes, setPicNotes] = useState<string>("");
-  const [submittingPic, setSubmittingPic] = useState<boolean>(false);
-  const [picSuccessMsg, setPicSuccessMsg] = useState<string | null>(null);
 
   // --- Live Camera Elements (Realtime Only - No Gallery Upload) ---
   const [isLiveCameraOpen, setIsLiveCameraOpen] = useState(false);
@@ -78,16 +82,9 @@ export default function AparScanPage() {
       const res = await api.getAparByScanCode(code);
       if (res.success && res.data) {
         setFacility(res.data.facility);
-        setLatestInspection(res.data.latest_inspection);
-        setLatestInspectorName(res.data.latest_inspector_name || "");
-        if (res.data.latest_pic_name && !picName) {
-          setPicName(res.data.latest_pic_name);
-        }
         setInspectionStatusLabel(res.data.inspection_status_label || "");
         setIsRefillQueue(!!res.data.is_refill_queue);
-        if (res.data.stats) {
-          setStats(res.data.stats);
-        }
+        setTotalInspections(res.data.total_inspections ?? res.data.facility?.inspections_count ?? (res.data.facility?.inspections?.length || 0));
 
         // If inspection was already submitted by petugas
         if (res.data.inspection_stage === "PETUGAS" || res.data.inspection_stage === "PETUGAS_SUBMITTED") {
@@ -120,76 +117,16 @@ export default function AparScanPage() {
     };
   }, []);
 
-  // Pre-fill PIC name if logged in
-  useEffect(() => {
-    if (auth.isAuthenticated()) {
-      const user = auth.getUser();
-      if (user?.name && !picName) {
-        setPicName(user.name);
-      }
-    }
-  }, [viewMode]);
-
   // --- BUTTON CLICKS FROM CHOICE MENU ---
   const handleSelectPengecekan = () => {
     setViewMode("PENGECEKAN");
-  };
-
-  const handleSelectMonitoring = () => {
-    if (auth.isAuthenticated()) {
-      const role = auth.getRole();
-      const user = auth.getUser();
-      const perms = user?.permissions || [];
-      const isAuthorized = role === 'pic_k3' || role === 'hse' || role === 'admin' || perms.includes('monitoring.view');
-      if (isAuthorized) {
-        setViewMode("MONITORING_DASHBOARD");
-      } else {
-        setViewMode("MONITORING_LOGIN");
-        setLoginError("Akun aktif Anda saat ini bukan PIC K3 / Tim HSE. Silakan login dengan akun PIC K3 yang berwenang.");
-      }
-    } else {
-      setViewMode("MONITORING_LOGIN");
-    }
-  };
-
-  // --- PIC LOGIN SUBMISSION ---
-  const handlePicLogin = async (e: FormEvent) => {
-    e.preventDefault();
-    setLoginError(null);
-    setLoginLoading(true);
-
-    try {
-      const res = await api.login(loginEmail.trim(), loginPassword);
-      if (res.success && res.data) {
-        const roleCode = res.data.user?.role?.code;
-        const perms = res.data.user?.permissions || [];
-        const isAuthorized = roleCode === 'pic_k3' || roleCode === 'hse' || roleCode === 'admin' || perms.includes('monitoring.view') || perms.includes('inspections.create');
-
-        if (!isAuthorized) {
-          setLoginError("Akun ini bukan PIC K3 / Tim HSE. Silakan login menggunakan akun PIC K3 yang memiliki akses monitoring.");
-          return;
-        }
-
-        auth.setSession(res.data.token, res.data.user);
-        if (res.data.user?.name) {
-          setPicName(res.data.user.name);
-        }
-        setViewMode("MONITORING_DASHBOARD");
-      } else {
-        setLoginError(res.message || "Email atau password PIC salah.");
-      }
-    } catch (err: any) {
-      setLoginError(err.message || "Gagal login sebagai PIC K3 / HSE.");
-    } finally {
-      setLoginLoading(false);
-    }
   };
 
   // --- CAMERA HANDLERS (STRICT REALTIME ONLY - NO GALLERY UPLOAD) ---
   const startLiveCamera = async () => {
     setCameraError(null);
 
-    // Request GPS location for digital watermark
+    // Ambil koordinat GPS saat kamera mulai dibuka
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (pos) => {
@@ -199,39 +136,35 @@ export default function AparScanPage() {
             accuracy: pos.coords.accuracy,
           });
         },
-        (err) => {
-          console.warn("GPS lookup warning:", err.message);
+        () => {
+          // Fallback ke koordinat default pabrik jika GPS browser ditolak
+          setCurrentGps({
+            lat: PLANT_CENTER.lat,
+            lng: PLANT_CENTER.lng,
+            accuracy: 5.0,
+          });
         },
-        { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 }
+        { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
       );
     }
 
     try {
-      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        setCameraError("Kamera realtime tidak didukung pada browser ini. Pastikan Anda mengakses via HTTPS di smartphone.");
-        alert("Kamera realtime wajib diaktifkan langsung. Pengunggahan foto dari galeri tidak diperkenankan demi kepatuhan audit K3 PT Widatra Bhakti.");
-        return;
-      }
-
       setIsLiveCameraOpen(true);
-      const constraints: MediaStreamConstraints = {
+      const stream = await navigator.mediaDevices.getUserMedia({
         video: {
           facingMode: { ideal: "environment" },
           width: { ideal: 1280 },
           height: { ideal: 720 },
         },
-      };
-
-      const stream = await navigator.mediaDevices.getUserMedia(constraints);
+        audio: false,
+      });
       streamRef.current = stream;
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
-        videoRef.current.play();
       }
     } catch (err: any) {
+      setCameraError("Tidak dapat mengakses kamera. Pastikan izin kamera aktif pada browser.");
       setIsLiveCameraOpen(false);
-      setCameraError("Izin kamera ditolak atau kamera tidak dapat diakses.");
-      alert("Akses kamera ditolak. Silakan izinkan akses kamera di browser Anda agar dapat mengambil foto realtime.");
     }
   };
 
@@ -245,19 +178,21 @@ export default function AparScanPage() {
 
   const takeSnapshotFromVideo = () => {
     if (!videoRef.current) return;
+
     const video = videoRef.current;
     const canvas = document.createElement("canvas");
-    const width = video.videoWidth || 1280;
-    const height = video.videoHeight || 720;
-    canvas.width = width;
-    canvas.height = height;
+    canvas.width = video.videoWidth || 640;
+    canvas.height = video.videoHeight || 480;
     const ctx = canvas.getContext("2d");
-    if (ctx) {
-      // 1. Gambar frame video live kamera
-      ctx.drawImage(video, 0, 0, width, height);
 
-      // 2. Gambar overlay banner watermark semi-transparan di bagian bawah
-      const bannerHeight = Math.max(90, Math.floor(height * 0.18));
+    if (ctx) {
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+      const width = canvas.width;
+      const height = canvas.height;
+      const bannerHeight = Math.max(90, Math.floor(height * 0.22));
+
+      // 2. Render Gradient Background hitam transparan di bagian bawah
       const gradient = ctx.createLinearGradient(0, height - bannerHeight, 0, height);
       gradient.addColorStop(0, "rgba(0, 0, 0, 0)");
       gradient.addColorStop(0.3, "rgba(0, 0, 0, 0.75)");
@@ -338,6 +273,7 @@ export default function AparScanPage() {
       if (res.success) {
         setPetugasSubmitted(true);
         await fetchAparData();
+        setNotes("");
       } else {
         alert(res.message || "Gagal menyimpan hasil inspeksi.");
       }
@@ -348,85 +284,52 @@ export default function AparScanPage() {
     }
   };
 
-  // --- SUBMIT FORM 2 (PIC HSE) ---
-  const handlePicSubmit = async (e: FormEvent) => {
-    e.preventDefault();
-    if (!code) return;
-
-    if (!picName.trim()) {
-      alert("Silakan ketik nama PIC HSE.");
-      return;
-    }
-
-    setSubmittingPic(true);
-    setPicSuccessMsg(null);
-    try {
-      const payload = {
-        pic_name: picName.trim(),
-        verification_status: verificationStatus,
-        verification_notes: picNotes.trim() ? picNotes.trim() : null,
-        pic_plant_geofence_valid: true,
-      };
-
-      const res = await api.submitPicVerification(code, payload);
-      if (res.success) {
-        setPicSuccessMsg(res.data.status_label || "Verifikasi berhasil disimpan.");
-        await fetchAparData();
-      } else {
-        alert(res.message || "Gagal menyimpan verifikasi PIC.");
-      }
-    } catch (err: any) {
-      alert(err.message || "Terjadi kesalahan saat menyimpan verifikasi.");
-    } finally {
-      setSubmittingPic(false);
-    }
-  };
-
-  const referencedInspector = latestInspectorName || petugasName || "Petugas Lapangan";
-
+  // --- RENDER ---
   return (
-    <div className="min-h-screen bg-slate-100 flex flex-col items-center justify-start p-3 sm:p-6 font-sans text-slate-800 antialiased">
+    <div className="min-h-screen bg-slate-100 flex flex-col justify-between p-4 sm:p-6 font-sans">
       
-      {/* Top Header - Sederhana */}
-      <div className="w-full max-w-md mb-3 flex items-center justify-between">
-        <div>
-          <span className="text-xs font-bold uppercase tracking-wider text-slate-500">PT Widatra Bhakti</span>
-          <h1 className="text-sm font-bold text-slate-900 leading-tight">Pemeriksaan APAR</h1>
+      {/* Container Utama */}
+      <div className="max-w-md w-full mx-auto bg-white rounded-2xl shadow-xl border border-slate-200 overflow-hidden flex-1 flex flex-col">
+        
+        {/* Header Bersih */}
+        <div className="p-4 border-b border-slate-200 flex items-center justify-between bg-white">
+          <div>
+            <div className="text-[10px] uppercase font-bold tracking-wider text-slate-400">PT WIDATRA BHAKTI</div>
+            <h1 className="text-sm font-bold text-slate-800">Pemeriksaan APAR</h1>
+          </div>
+          <Link
+            to="/monitoring"
+            className="text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 px-2.5 py-1 rounded transition border border-slate-200"
+          >
+            Dashboard K3
+          </Link>
         </div>
-        <Link 
-          to="/monitoring" 
-          className="text-xs text-slate-600 hover:text-slate-900 border border-slate-300 bg-white px-2.5 py-1 rounded-md transition"
-        >
-          Dashboard K3
-        </Link>
-      </div>
-
-      {/* Main Container Card */}
-      <div className="w-full max-w-md bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
 
         {/* Loading State */}
         {loading && (
-          <div className="p-8 text-center text-xs text-slate-500 font-medium">
-            Memuat data tabung APAR...
+          <div className="p-12 text-center text-xs text-slate-500">
+            <div className="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-slate-800 mb-2"></div>
+            <div>Memuat data APAR {code}...</div>
           </div>
         )}
 
         {/* Error State */}
         {error && !loading && (
-          <div className="p-6 text-center space-y-3">
-            <div className="text-sm font-bold text-slate-800">Tabung APAR Tidak Ditemukan</div>
-            <p className="text-xs text-slate-500">{error}</p>
-            <button
-              onClick={fetchAparData}
-              className="text-xs text-blue-600 underline font-medium cursor-pointer"
+          <div className="p-6 text-center text-xs space-y-4">
+            <div className="p-3 bg-red-50 text-red-700 border border-red-200 rounded">
+              {error}
+            </div>
+            <Link
+              to="/monitoring"
+              className="inline-block text-xs font-semibold text-slate-900 underline"
             >
-              Coba lagi
-            </button>
+              Kembali ke Halaman Monitoring
+            </Link>
           </div>
         )}
 
-        {/* Facility Loaded Card */}
-        {facility && !loading && (
+        {/* Konten Utama */}
+        {!loading && !error && facility && (
           <div>
             
             {/* Kartu Identitas APAR Sederhana */}
@@ -473,38 +376,179 @@ export default function AparScanPage() {
             </div>
 
             {/* ======================================================== */}
-            {/* VIEW 1: LAYAR PILIHAN UTAMA (HANYA 2 TOMBOL)              */}
+            {/* VIEW 1: RINGKASAN FASILITAS, AKSI PEMERIKSAAN & RIWAYAT   */}
             {/* ======================================================== */}
             {viewMode === "CHOICE" && (
-              <div className="p-5 space-y-4">
-                <div className="text-xs text-slate-600 leading-relaxed text-center pb-1">
-                  Pilih jenis tindakan yang akan dilakukan pada tabung ini:
-                </div>
-
-                <div className="space-y-3">
-                  {/* Tombol 1: Pengecekan */}
+              <div className="p-4 sm:p-5 space-y-5">
+                
+                {/* 1. Tombol Tindakan Tunggal: Pemeriksaan Fisik Lapangan */}
+                <div>
                   <button
                     type="button"
                     onClick={handleSelectPengecekan}
-                    className="w-full py-3.5 px-4 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-sm font-semibold text-center transition cursor-pointer"
+                    className="w-full py-3.5 px-4 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-sm font-bold text-center transition shadow-md cursor-pointer active:scale-98 flex items-center justify-center gap-3"
                   >
-                    1. Pengecekan
-                    <span className="block text-[11px] font-normal text-slate-300 mt-0.5">
-                      Pemeriksaan fisik keliling lapangan oleh Petugas HSE
-                    </span>
+                    <div className="w-9 h-9 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0">
+                      <ClipboardCheck size={20} />
+                    </div>
+                    <div className="text-left flex-1">
+                      <div className="text-sm font-bold text-white">Mulai Pemeriksaan Lapangan</div>
+                      <div className="text-[11px] font-normal text-slate-300">
+                        Pemeriksaan fisik 5 parameter standar APAR oleh Petugas HSE
+                      </div>
+                    </div>
                   </button>
+                </div>
 
-                  {/* Tombol 2: Monitoring */}
-                  <button
-                    type="button"
-                    onClick={handleSelectMonitoring}
-                    className="w-full py-3.5 px-4 bg-white hover:bg-slate-50 text-slate-800 border border-slate-300 rounded-lg text-sm font-semibold text-center transition cursor-pointer"
-                  >
-                    2. Monitoring
-                    <span className="block text-[11px] font-normal text-slate-500 mt-0.5">
-                      Verifikasi audit & rekapitulasi data oleh PIC HSE
+                {/* 2. Informasi & Riwayat Inspeksi Objek Tersebut */}
+                <div className="space-y-3 pt-1 border-t border-slate-200">
+                  <div className="flex items-center justify-between pt-1">
+                    <div className="flex items-center gap-2">
+                      <History size={16} className="text-slate-600" />
+                      <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wide">
+                        Riwayat & Kartu Kendali Inspeksi
+                      </h3>
+                    </div>
+                    <span className="text-[11px] font-bold text-slate-600 bg-slate-100 px-2.5 py-0.5 rounded-full border border-slate-200">
+                      {totalInspections} Riwayat
                     </span>
-                  </button>
+                  </div>
+
+                  {(!facility.inspections || facility.inspections.length === 0) ? (
+                    <div className="p-6 bg-slate-50 rounded-xl border border-dashed border-slate-200 text-center">
+                      <Inbox size={28} className="mx-auto text-slate-300 mb-1.5" />
+                      <p className="text-xs font-semibold text-slate-700">Belum Ada Riwayat Inspeksi</p>
+                      <p className="text-[11px] text-slate-400 mt-0.5">
+                        Tabung ini belum memiliki catatan pemeriksaan. Silakan mulai pengecekan pertama melalui tombol di atas.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {facility.inspections.map((insp: any, idx: number) => {
+                        const inspector = insp.inspector_name || insp.inspector?.name || "Petugas Lapangan";
+                        const pic = insp.pic_name || null;
+                        const isVerified = insp.inspection_stage === "PIC_VERIFIED" || insp.verification_status === "VERIFIED";
+                        const results = Array.isArray(insp.checklist_results) ? insp.checklist_results : [];
+                        const isLatest = idx === 0;
+
+                        return (
+                          <div 
+                            key={insp.id || idx}
+                            className={`p-3.5 bg-white rounded-xl border text-xs space-y-2.5 transition ${
+                              isLatest 
+                                ? "border-emerald-300 shadow-xs ring-1 ring-emerald-500/20" 
+                                : "border-slate-200 hover:border-slate-300"
+                            }`}
+                          >
+                            {/* Baris 1: Tanggal & Badge Verifikasi */}
+                            <div className="flex items-center justify-between flex-wrap gap-2 pb-2 border-b border-slate-100">
+                              <div className="flex items-center gap-1.5 text-slate-700 font-semibold">
+                                <Calendar size={13} className="text-slate-400" />
+                                <span>{formatDateTime(insp.created_at || insp.inspection_date)}</span>
+                                {isLatest && (
+                                  <span className="text-[9px] font-extrabold uppercase px-1.5 py-0.5 bg-emerald-100 text-emerald-800 rounded">
+                                    Inspeksi Terbaru
+                                  </span>
+                                )}
+                              </div>
+
+                              {isVerified ? (
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                  <CheckCircle2 size={11} />
+                                  Terverifikasi PIC
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-amber-50 text-amber-800 border border-amber-200">
+                                  <Clock size={11} />
+                                  Menunggu Verifikasi PIC
+                                </span>
+                              )}
+                            </div>
+
+                            {/* Baris 2: Pemeriksa & Verifikator */}
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px]">
+                              <div className="p-2 bg-slate-50 rounded-lg border border-slate-100">
+                                <span className="text-slate-400 block text-[10px]">Petugas Pemeriksa:</span>
+                                <span className="font-bold text-slate-800 flex items-center gap-1.5 mt-0.5">
+                                  <User size={12} className="text-slate-500 shrink-0" />
+                                  <span className="truncate">{inspector}</span>
+                                </span>
+                              </div>
+
+                              <div className={`p-2 rounded-lg border ${
+                                isVerified ? "bg-emerald-50/50 border-emerald-100" : "bg-amber-50/50 border-amber-100"
+                              }`}>
+                                <span className="text-slate-400 block text-[10px]">Diverifikasi Oleh:</span>
+                                <span className="font-bold text-slate-800 flex items-center gap-1.5 mt-0.5">
+                                  <ShieldCheck size={12} className={`shrink-0 ${isVerified ? "text-emerald-600" : "text-amber-600"}`} />
+                                  <span className="truncate">{pic || "Belum Diverifikasi"}</span>
+                                </span>
+                                {insp.verified_at && (
+                                  <span className="text-[10px] text-slate-400 block mt-0.5">
+                                    {formatDateTime(insp.verified_at)}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+
+                            {/* Baris 3: Parameter Fisik (5 Parameter) */}
+                            {results.length > 0 && (
+                              <div className="pt-0.5">
+                                <span className="text-[10px] font-semibold text-slate-500 block mb-1">
+                                  Kondisi 5 Parameter Fisik:
+                                </span>
+                                <div className="flex flex-wrap gap-1">
+                                  {results.map((r: any, rIdx: number) => {
+                                    const isPass = r.passed !== false && r.jawaban !== "Rusak" && r.jawaban !== "Karat / Rusak" && r.jawaban !== "Putus / Hilang";
+                                    return (
+                                      <span
+                                        key={rIdx}
+                                        className={`px-2 py-0.5 rounded text-[10px] font-semibold border ${
+                                          isPass 
+                                            ? "bg-slate-50 text-slate-700 border-slate-200" 
+                                            : "bg-red-50 text-red-700 border-red-200"
+                                        }`}
+                                        title={`${r.label || r.code || r.item}: ${r.jawaban || (isPass ? "Baik" : "Rusak")}`}
+                                      >
+                                        {r.code || r.label || r.item}: {r.jawaban || (isPass ? "OK" : "NOK")}
+                                      </span>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Baris 4: Catatan Petugas */}
+                            {insp.notes && (
+                              <div className="text-[11px] text-slate-600 pt-1 border-t border-slate-100">
+                                <span className="font-semibold text-slate-700">Catatan Petugas: </span>
+                                <span className="italic">"{insp.notes}"</span>
+                              </div>
+                            )}
+
+                            {/* Baris 5: Catatan Verifikasi PIC */}
+                            {insp.verification_notes && (
+                              <div className="text-[11px] text-emerald-800 pt-0.5">
+                                <span className="font-semibold">Catatan PIC: </span>
+                                <span className="italic">"{insp.verification_notes}"</span>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+
+                      {/* Footer Info Jumlah Riwayat sesuai permintaan pengguna */}
+                      {totalInspections > 5 ? (
+                        <div className="p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-center text-xs text-slate-600 font-medium">
+                          Menampilkan 1 - 5 dari {totalInspections} riwayat inspeksi
+                        </div>
+                      ) : totalInspections > 0 ? (
+                        <div className="p-2 bg-slate-50/60 border border-slate-100 rounded-lg text-center text-[11px] text-slate-500 font-medium">
+                          Menampilkan {totalInspections} riwayat inspeksi
+                        </div>
+                      ) : null}
+                    </div>
+                  )}
                 </div>
               </div>
             )}
@@ -518,10 +562,13 @@ export default function AparScanPage() {
                 {/* Back button */}
                 <button
                   type="button"
-                  onClick={() => setViewMode("CHOICE")}
+                  onClick={() => {
+                    setViewMode("CHOICE");
+                    setPetugasSubmitted(false);
+                  }}
                   className="inline-flex items-center gap-1 text-xs text-slate-600 hover:text-slate-900 cursor-pointer"
                 >
-                  <ArrowLeft size={14} /> Kembali ke pilihan
+                  <ArrowLeft size={14} /> Kembali ke kartu tabung & riwayat
                 </button>
 
                 <div className="border-b border-slate-200 pb-2">
@@ -540,166 +587,170 @@ export default function AparScanPage() {
                       type="text"
                       required
                       value={petugasName}
-                      disabled={petugasSubmitted}
                       onChange={(e) => setPetugasName(e.target.value)}
                       placeholder="Ketik nama lengkap pemeriksa..."
+                      disabled={petugasSubmitted}
                       className="w-full px-3 py-2 border border-slate-300 rounded-md text-xs focus:outline-none focus:border-slate-600 disabled:bg-slate-100"
                     />
                   </div>
 
-                  {/* 5 Parameter Fisik */}
-                  <div className="space-y-2 pt-1">
-                    <label className="block font-semibold text-slate-700">
-                      Pemeriksaan 5 Parameter Fisik
-                    </label>
-
-                    <div className="space-y-1.5 border border-slate-200 rounded-md p-2 bg-slate-50/50">
-                      
-                      {/* Tbg */}
-                      <div className="flex items-center justify-between py-1 border-b border-slate-200">
-                        <span>1. Kondisi Tabung (Tbg)</span>
-                        <div className="flex gap-1">
-                          <button
-                            type="button"
-                            disabled={petugasSubmitted}
-                            onClick={() => setTbg(true)}
-                            className={`px-2.5 py-1 rounded text-xs font-semibold ${tbg ? "bg-slate-800 text-white" : "bg-white text-slate-600 border border-slate-200"}`}
-                          >
-                            Baik
-                          </button>
-                          <button
-                            type="button"
-                            disabled={petugasSubmitted}
-                            onClick={() => setTbg(false)}
-                            className={`px-2.5 py-1 rounded text-xs font-semibold ${!tbg ? "bg-red-700 text-white" : "bg-white text-slate-600 border border-slate-200"}`}
-                          >
-                            Rusak
-                          </button>
-                        </div>
+                  {/* 5 Parameter Fisik APAR */}
+                  <div className="space-y-2 border-t border-slate-200 pt-3">
+                    <div className="font-semibold text-slate-700">Pemeriksaan Fisik 5 Parameter APAR:</div>
+                    
+                    {/* 1. Kondisi Tabung */}
+                    <div className="flex items-center justify-between p-2 rounded bg-slate-50 border border-slate-200">
+                      <div>
+                        <span className="font-semibold block">1. Fisik Tabung</span>
+                        <span className="text-[11px] text-slate-500">Bebas karat, penyok & keropos</span>
                       </div>
-
-                      {/* Slg */}
-                      <div className="flex items-center justify-between py-1 border-b border-slate-200">
-                        <span>2. Selang / Hose (Slg)</span>
-                        <div className="flex gap-1">
-                          <button
-                            type="button"
-                            disabled={petugasSubmitted}
-                            onClick={() => setSlg(true)}
-                            className={`px-2.5 py-1 rounded text-xs font-semibold ${slg ? "bg-slate-800 text-white" : "bg-white text-slate-600 border border-slate-200"}`}
-                          >
-                            Baik
-                          </button>
-                          <button
-                            type="button"
-                            disabled={petugasSubmitted}
-                            onClick={() => setSlg(false)}
-                            className={`px-2.5 py-1 rounded text-xs font-semibold ${!slg ? "bg-red-700 text-white" : "bg-white text-slate-600 border border-slate-200"}`}
-                          >
-                            Rusak
-                          </button>
-                        </div>
+                      <div className="flex gap-1.5">
+                        <button
+                          type="button"
+                          disabled={petugasSubmitted}
+                          onClick={() => setTbg(true)}
+                          className={`px-2.5 py-1 rounded text-xs font-bold transition ${tbg ? "bg-slate-900 text-white" : "bg-white border text-slate-600"}`}
+                        >
+                          Baik
+                        </button>
+                        <button
+                          type="button"
+                          disabled={petugasSubmitted}
+                          onClick={() => setTbg(false)}
+                          className={`px-2.5 py-1 rounded text-xs font-bold transition ${!tbg ? "bg-red-600 text-white" : "bg-white border text-slate-600"}`}
+                        >
+                          Rusak
+                        </button>
                       </div>
-
-                      {/* Nozz */}
-                      <div className="flex items-center justify-between py-1 border-b border-slate-200">
-                        <span>3. Nozzle / Corong (Nozz)</span>
-                        <div className="flex gap-1">
-                          <button
-                            type="button"
-                            disabled={petugasSubmitted}
-                            onClick={() => setNozz(true)}
-                            className={`px-2.5 py-1 rounded text-xs font-semibold ${nozz ? "bg-slate-800 text-white" : "bg-white text-slate-600 border border-slate-200"}`}
-                          >
-                            Baik
-                          </button>
-                          <button
-                            type="button"
-                            disabled={petugasSubmitted}
-                            onClick={() => setNozz(false)}
-                            className={`px-2.5 py-1 rounded text-xs font-semibold ${!nozz ? "bg-red-700 text-white" : "bg-white text-slate-600 border border-slate-200"}`}
-                          >
-                            Rusak
-                          </button>
-                        </div>
-                      </div>
-
-                      {/* Sgl */}
-                      <div className="flex items-center justify-between py-1 border-b border-slate-200">
-                        <span>4. Segel & Pin (Sgl)</span>
-                        <div className="flex gap-1">
-                          <button
-                            type="button"
-                            disabled={petugasSubmitted}
-                            onClick={() => setSgl(true)}
-                            className={`px-2.5 py-1 rounded text-xs font-semibold ${sgl ? "bg-slate-800 text-white" : "bg-white text-slate-600 border border-slate-200"}`}
-                          >
-                            Baik
-                          </button>
-                          <button
-                            type="button"
-                            disabled={petugasSubmitted}
-                            onClick={() => setSgl(false)}
-                            className={`px-2.5 py-1 rounded text-xs font-semibold ${!sgl ? "bg-red-700 text-white" : "bg-white text-slate-600 border border-slate-200"}`}
-                          >
-                            Rusak
-                          </button>
-                        </div>
-                      </div>
-
-                      {/* Lev */}
-                      <div className="flex items-center justify-between py-1">
-                        <span>5. Lever & Tekanan (Lev)</span>
-                        <div className="flex gap-1">
-                          <button
-                            type="button"
-                            disabled={petugasSubmitted}
-                            onClick={() => setLev(true)}
-                            className={`px-2.5 py-1 rounded text-xs font-semibold ${lev ? "bg-slate-800 text-white" : "bg-white text-slate-600 border border-slate-200"}`}
-                          >
-                            Baik
-                          </button>
-                          <button
-                            type="button"
-                            disabled={petugasSubmitted}
-                            onClick={() => setLev(false)}
-                            className={`px-2.5 py-1 rounded text-xs font-semibold ${!lev ? "bg-red-700 text-white" : "bg-white text-slate-600 border border-slate-200"}`}
-                          >
-                            Rusak
-                          </button>
-                        </div>
-                      </div>
-
                     </div>
+
+                    {/* 2. Selang (Hose) */}
+                    <div className="flex items-center justify-between p-2 rounded bg-slate-50 border border-slate-200">
+                      <div>
+                        <span className="font-semibold block">2. Selang (Hose)</span>
+                        <span className="text-[11px] text-slate-500">Fleksibel, tidak retak/getas</span>
+                      </div>
+                      <div className="flex gap-1.5">
+                        <button
+                          type="button"
+                          disabled={petugasSubmitted}
+                          onClick={() => setSlg(true)}
+                          className={`px-2.5 py-1 rounded text-xs font-bold transition ${slg ? "bg-slate-900 text-white" : "bg-white border text-slate-600"}`}
+                        >
+                          Baik
+                        </button>
+                        <button
+                          type="button"
+                          disabled={petugasSubmitted}
+                          onClick={() => setSlg(false)}
+                          className={`px-2.5 py-1 rounded text-xs font-bold transition ${!slg ? "bg-red-600 text-white" : "bg-white border text-slate-600"}`}
+                        >
+                          Rusak
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* 3. Nozzle */}
+                    <div className="flex items-center justify-between p-2 rounded bg-slate-50 border border-slate-200">
+                      <div>
+                        <span className="font-semibold block">3. Corong / Nozzle</span>
+                        <span className="text-[11px] text-slate-500">Bersih, tidak tersumbat/buntu</span>
+                      </div>
+                      <div className="flex gap-1.5">
+                        <button
+                          type="button"
+                          disabled={petugasSubmitted}
+                          onClick={() => setNozz(true)}
+                          className={`px-2.5 py-1 rounded text-xs font-bold transition ${nozz ? "bg-slate-900 text-white" : "bg-white border text-slate-600"}`}
+                        >
+                          Baik
+                        </button>
+                        <button
+                          type="button"
+                          disabled={petugasSubmitted}
+                          onClick={() => setNozz(false)}
+                          className={`px-2.5 py-1 rounded text-xs font-bold transition ${!nozz ? "bg-red-600 text-white" : "bg-white border text-slate-600"}`}
+                        >
+                          Rusak
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* 4. Segel & Pin */}
+                    <div className="flex items-center justify-between p-2 rounded bg-slate-50 border border-slate-200">
+                      <div>
+                        <span className="font-semibold block">4. Segel & Safety Pin</span>
+                        <span className="text-[11px] text-slate-500">Kawat/plastik segel masih utuh</span>
+                      </div>
+                      <div className="flex gap-1.5">
+                        <button
+                          type="button"
+                          disabled={petugasSubmitted}
+                          onClick={() => setSgl(true)}
+                          className={`px-2.5 py-1 rounded text-xs font-bold transition ${sgl ? "bg-slate-900 text-white" : "bg-white border text-slate-600"}`}
+                        >
+                          Utuh
+                        </button>
+                        <button
+                          type="button"
+                          disabled={petugasSubmitted}
+                          onClick={() => setSgl(false)}
+                          className={`px-2.5 py-1 rounded text-xs font-bold transition ${!sgl ? "bg-red-600 text-white" : "bg-white border text-slate-600"}`}
+                        >
+                          Putus
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* 5. Lever & Pressure Gauge */}
+                    <div className="flex items-center justify-between p-2 rounded bg-slate-50 border border-slate-200">
+                      <div>
+                        <span className="font-semibold block">5. Indikator Tekanan</span>
+                        <span className="text-[11px] text-slate-500">Jarum berada di zona hijau</span>
+                      </div>
+                      <div className="flex gap-1.5">
+                        <button
+                          type="button"
+                          disabled={petugasSubmitted}
+                          onClick={() => setLev(true)}
+                          className={`px-2.5 py-1 rounded text-xs font-bold transition ${lev ? "bg-slate-900 text-white" : "bg-white border text-slate-600"}`}
+                        >
+                          Hijau
+                        </button>
+                        <button
+                          type="button"
+                          disabled={petugasSubmitted}
+                          onClick={() => setLev(false)}
+                          className={`px-2.5 py-1 rounded text-xs font-bold transition ${!lev ? "bg-red-600 text-white" : "bg-white border text-slate-600"}`}
+                        >
+                          Merah
+                        </button>
+                      </div>
+                    </div>
+
                   </div>
 
-                  {/* Keterangan Temuan (Wajib) */}
-                  <div className="space-y-1">
+                  {/* Catatan / Keterangan Temuan Lapangan */}
+                  <div className="space-y-1 border-t border-slate-200 pt-3">
                     <label className="block font-semibold text-slate-700">
-                      Keterangan / Temuan Lapangan * (Wajib diisi)
+                      Catatan / Temuan Lapangan *
                     </label>
                     <textarea
-                      required
-                      minLength={3}
                       rows={2}
-                      disabled={petugasSubmitted}
+                      required
                       value={notes}
                       onChange={(e) => setNotes(e.target.value)}
-                      placeholder="Contoh: Kondisi tabung bersih, pin terkunci rapat, manometer normal."
+                      placeholder="Contoh: Kondisi fisik bersih, jarum tekanan hijau, siap digunakan..."
+                      disabled={petugasSubmitted}
                       className="w-full px-3 py-2 border border-slate-300 rounded-md text-xs focus:outline-none focus:border-slate-600 disabled:bg-slate-100"
                     />
                   </div>
 
-                  {/* Foto Dokumentasi (Strict Realtime Camera Only) */}
-                  <div className="space-y-1.5 pt-1">
-                    <div className="flex items-center justify-between">
-                      <label className="block font-semibold text-slate-700 text-xs">
-                        Foto Dokumentasi Realtime * (Wajib Kamera Langsung)
-                      </label>
-                      <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded">
-                        Anti-Upload Galeri
-                      </span>
-                    </div>
+                  {/* Foto Lapangan Menggunakan Kamera Realtime */}
+                  <div className="space-y-1.5 border-t border-slate-200 pt-3">
+                    <label className="block font-semibold text-slate-700">
+                      Foto Bukti Fisik Lapangan
+                    </label>
 
                     {!capturedPhoto ? (
                       <div className="space-y-1.5">
@@ -707,12 +758,12 @@ export default function AparScanPage() {
                           type="button"
                           disabled={petugasSubmitted}
                           onClick={startLiveCamera}
-                          className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-slate-900 hover:bg-slate-800 disabled:bg-slate-400 text-white rounded-md text-xs font-semibold transition cursor-pointer shadow-xs active:scale-95"
+                          className="w-full py-2.5 px-3 bg-slate-100 hover:bg-slate-200 border border-slate-300 rounded-md text-slate-800 text-xs font-semibold flex items-center justify-center gap-2 cursor-pointer transition"
                         >
-                          <Camera size={14} /> Buka Kamera Realtime
+                          <Camera size={15} /> Buka Kamera Realtime
                         </button>
-                        <span className="text-[11px] text-slate-500 block">
-                          Foto wajib diambil langsung di depan unit fisik alat. Watermark tanggal, jam, dan koordinat GPS disematkan otomatis ke foto.
+                        <span className="text-[10px] text-slate-500 block text-center">
+                          Otomatis menyematkan watermark resmi waktu & koordinat GPS
                         </span>
                         {cameraError && (
                           <div className="text-[11px] text-rose-600 bg-rose-50 border border-rose-200 p-2 rounded">
@@ -742,8 +793,20 @@ export default function AparScanPage() {
                   {/* Submit Button atau Status Menunggu Verifikasi */}
                   <div className="pt-2">
                     {petugasSubmitted ? (
-                      <div className="w-full py-3 px-4 bg-amber-50 border border-amber-200 text-amber-800 rounded-md text-xs font-bold text-center flex items-center justify-center gap-1.5">
-                        <Check size={14} /> Menunggu Verifikasi PIC
+                      <div className="space-y-2">
+                        <div className="w-full py-3 px-4 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-lg text-xs font-bold text-center flex items-center justify-center gap-1.5">
+                          <Check size={14} /> Hasil Pemeriksaan Berhasil Disimpan!
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setViewMode("CHOICE");
+                            setPetugasSubmitted(false);
+                          }}
+                          className="w-full py-2.5 px-4 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-semibold text-center transition cursor-pointer"
+                        >
+                          Lihat Riwayat & Kartu Kendali
+                        </button>
                       </div>
                     ) : (
                       <button
@@ -757,242 +820,6 @@ export default function AparScanPage() {
                   </div>
 
                 </form>
-              </div>
-            )}
-
-            {/* ======================================================== */}
-            {/* VIEW 3: FORM LOGIN PIC HSE (JIKA BELUM LOGIN)            */}
-            {/* ======================================================== */}
-            {viewMode === "MONITORING_LOGIN" && (
-              <div className="p-5 space-y-4">
-                
-                {/* Back button */}
-                <button
-                  type="button"
-                  onClick={() => setViewMode("CHOICE")}
-                  className="inline-flex items-center gap-1 text-xs text-slate-600 hover:text-slate-900 cursor-pointer"
-                >
-                  <ArrowLeft size={14} /> Kembali ke pilihan
-                </button>
-
-                <div className="border-b border-slate-200 pb-2">
-                  <h2 className="text-sm font-bold text-slate-900">Login PIC K3 / HSE</h2>
-                  <p className="text-xs text-slate-500">Masukkan akun PIC K3 untuk memverifikasi data dan memantau status monitoring.</p>
-                </div>
-
-                {loginError && (
-                  <div className="p-2.5 bg-red-50 border border-red-200 text-red-700 text-xs rounded">
-                    {loginError}
-                  </div>
-                )}
-
-                <form onSubmit={handlePicLogin} className="space-y-3 text-xs">
-                  <div className="space-y-1">
-                    <label className="block font-semibold text-slate-700">Email atau NIP PIC K3</label>
-                    <input
-                      type="text"
-                      required
-                      value={loginEmail}
-                      onChange={(e) => setLoginEmail(e.target.value)}
-                      placeholder="pick3@hse.com atau PK10006"
-                      className="w-full px-3 py-2 border border-slate-300 rounded-md text-xs focus:outline-none focus:border-slate-600"
-                    />
-                  </div>
-
-                  <div className="space-y-1">
-                    <label className="block font-semibold text-slate-700">Password</label>
-                    <input
-                      type="password"
-                      required
-                      value={loginPassword}
-                      onChange={(e) => setLoginPassword(e.target.value)}
-                      placeholder="••••••••"
-                      className="w-full px-3 py-2 border border-slate-300 rounded-md text-xs focus:outline-none focus:border-slate-600"
-                    />
-                  </div>
-
-                  <button
-                    type="submit"
-                    disabled={loginLoading}
-                    className="w-full py-2.5 px-4 bg-slate-900 hover:bg-slate-800 disabled:bg-slate-400 text-white rounded-md text-xs font-semibold text-center transition cursor-pointer"
-                  >
-                    {loginLoading ? "Memeriksa kredensial..." : "Masuk"}
-                  </button>
-
-                  <p className="text-[11px] text-slate-400 text-center pt-1">
-                    Akun PIC K3: <span className="font-mono text-slate-600">pick3@hse.com</span> / <span className="font-mono text-slate-600">password</span>
-                  </p>
-                </form>
-              </div>
-            )}
-
-            {/* ======================================================== */}
-            {/* VIEW 4: MONITORING PIC HSE (REKAP DATA + FORM VERIFIKASI) */}
-            {/* ======================================================== */}
-            {viewMode === "MONITORING_DASHBOARD" && (
-              <div className="p-5 space-y-4">
-                
-                {/* Back button */}
-                <button
-                  type="button"
-                  onClick={() => setViewMode("CHOICE")}
-                  className="inline-flex items-center gap-1 text-xs text-slate-600 hover:text-slate-900 cursor-pointer"
-                >
-                  <ArrowLeft size={14} /> Kembali ke pilihan
-                </button>
-
-                {/* 1. Rekap Data Monitoring Pabrik (Ringkas & Sederhana) */}
-                <div className="space-y-1.5">
-                  <div className="text-xs font-bold text-slate-700 uppercase tracking-wide">
-                    Rekapitulasi Monitoring APAR Pabrik
-                  </div>
-                  <div className="grid grid-cols-3 gap-2 text-center text-xs">
-                    <div className="p-2.5 rounded-md border border-slate-200 bg-slate-50">
-                      <span className="text-[10px] text-slate-500 block">Total APAR</span>
-                      <span className="text-base font-bold text-slate-900">{stats.total_apar}</span>
-                    </div>
-                    <div className="p-2.5 rounded-md border border-slate-200 bg-slate-50">
-                      <span className="text-[10px] text-slate-500 block">Sudah Dimonitoring</span>
-                      <span className="text-base font-bold text-slate-900">{stats.monitored_count}</span>
-                    </div>
-                    <div className="p-2.5 rounded-md border border-slate-200 bg-slate-50">
-                      <span className="text-[10px] text-slate-500 block">Belum Dimonitoring</span>
-                      <span className="text-base font-bold text-slate-900">{stats.unmonitored_count}</span>
-                    </div>
-                  </div>
-                </div>
-
-                {picSuccessMsg && (
-                  <div className="p-3 bg-emerald-50 border border-emerald-200 rounded text-xs text-emerald-800 font-medium">
-                    {picSuccessMsg}
-                  </div>
-                )}
-
-                {/* 2. Form Verifikasi APAR yang Sedang Discan */}
-                <div className="border-t border-slate-200 pt-3 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h2 className="text-sm font-bold text-slate-900">
-                        Verifikasi APAR {facility.code}
-                      </h2>
-                      <p className="text-xs text-slate-500">Cross-check temuan pemeriksaan petugas lapangan</p>
-                    </div>
-                  </div>
-
-                  {/* Ringkasan Data Petugas */}
-                  <div className="p-3 bg-slate-50 border border-slate-200 rounded-md text-xs space-y-2">
-                    <div className="flex justify-between border-b border-slate-200 pb-1.5">
-                      <span className="text-slate-500">Pemeriksa Lapangan:</span>
-                      <span className="font-semibold text-slate-900">{referencedInspector}</span>
-                    </div>
-
-                    <div className="flex justify-between border-b border-slate-200 pb-1.5">
-                      <span className="text-slate-500">Tanggal Cek:</span>
-                      <span className="font-semibold text-slate-900">
-                        {latestInspection?.inspection_date || facility.last_inspected_at || "Hari ini"}
-                      </span>
-                    </div>
-
-                    {latestInspection?.notes && (
-                      <div className="border-b border-slate-200 pb-1.5">
-                        <span className="text-slate-500 block text-[11px]">Catatan Petugas:</span>
-                        <span className="font-medium text-slate-800 italic">"{latestInspection.notes}"</span>
-                      </div>
-                    )}
-
-                    {/* Foto Bukti Petugas jika ada */}
-                    {latestInspection?.foto_bukti && latestInspection.foto_bukti.length > 0 && (
-                      <div>
-                        <span className="text-slate-500 block text-[11px] mb-1">Foto Bukti Lapangan:</span>
-                        <div className="rounded border border-slate-300 overflow-hidden aspect-video max-h-40 bg-black">
-                          <img src={latestInspection.foto_bukti[0]} alt="Foto Lapangan" className="w-full h-full object-contain" />
-                        </div>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Form Tindakan PIC */}
-                  <form onSubmit={handlePicSubmit} className="space-y-3 text-xs pt-1">
-                    <div className="space-y-1">
-                      <label className="block font-semibold text-slate-700">Nama PIC HSE *</label>
-                      <input
-                        type="text"
-                        required
-                        value={picName}
-                        onChange={(e) => setPicName(e.target.value)}
-                        placeholder="Ketik nama PIC HSE..."
-                        className="w-full px-3 py-2 border border-slate-300 rounded-md text-xs focus:outline-none focus:border-slate-600"
-                      />
-                    </div>
-
-                    <div className="space-y-1">
-                      <label className="block font-semibold text-slate-700">Keputusan Verifikasi *</label>
-                      <div className="space-y-1">
-                        <label className="flex items-center gap-2 p-2 border border-slate-200 rounded cursor-pointer hover:bg-slate-50">
-                          <input
-                            type="radio"
-                            name="vstatus"
-                            value="VERIFIED"
-                            checked={verificationStatus === "VERIFIED"}
-                            onChange={() => setVerificationStatus("VERIFIED")}
-                          />
-                          <span>Sesuai / Disetujui (VERIFIED)</span>
-                        </label>
-                        <label className="flex items-center gap-2 p-2 border border-slate-200 rounded cursor-pointer hover:bg-slate-50">
-                          <input
-                            type="radio"
-                            name="vstatus"
-                            value="REVISE"
-                            checked={verificationStatus === "REVISE"}
-                            onChange={() => setVerificationStatus("REVISE")}
-                          />
-                          <span>Ada Temuan (REVISE)</span>
-                        </label>
-                        <label className="flex items-center gap-2 p-2 border border-slate-200 rounded cursor-pointer hover:bg-slate-50">
-                          <input
-                            type="radio"
-                            name="vstatus"
-                            value="REFILL_REQUESTED"
-                            checked={verificationStatus === "REFILL_REQUESTED"}
-                            onChange={() => setVerificationStatus("REFILL_REQUESTED")}
-                          />
-                          <span>Perlu Refill Tabung (REFILL QUEUE)</span>
-                        </label>
-                      </div>
-                    </div>
-
-                    <div className="space-y-1">
-                      <label className="block font-semibold text-slate-700">Catatan PIC (Opsional)</label>
-                      <textarea
-                        rows={2}
-                        value={picNotes}
-                        onChange={(e) => setPicNotes(e.target.value)}
-                        placeholder="Catatan tambahan hasil supervisi jika ada..."
-                        className="w-full px-3 py-2 border border-slate-300 rounded-md text-xs focus:outline-none focus:border-slate-600"
-                      />
-                    </div>
-
-                    <button
-                      type="submit"
-                      disabled={submittingPic}
-                      className="w-full py-2.5 px-4 bg-slate-900 hover:bg-slate-800 disabled:bg-slate-400 text-white rounded-md text-xs font-semibold text-center transition cursor-pointer"
-                    >
-                      {submittingPic ? "Menyimpan verifikasi..." : `Simpan Verifikasi Pemeriksaan ${referencedInspector}`}
-                    </button>
-                  </form>
-
-                </div>
-
-                {/* Link ke Dashboard Lengkap */}
-                <div className="border-t border-slate-200 pt-3 text-center">
-                  <Link
-                    to="/monitoring"
-                    className="inline-flex items-center gap-1 text-xs text-blue-700 hover:underline font-semibold"
-                  >
-                    Buka Dashboard Monitoring Lengkap (266 Tabung) <ExternalLink size={12} />
-                  </Link>
-                </div>
-
               </div>
             )}
 

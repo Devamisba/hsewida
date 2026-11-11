@@ -1330,19 +1330,22 @@ class MonitoringController extends Controller
     public function getAparByScanCode($code)
     {
         $cleanCode = strtoupper(trim($code));
-        $facility = SafetyFacility::with([
-            'location',
-            'consumableCycle',
-            'inspections' => function ($q) {
-                $q->latest()->limit(5)->with('inspector:id,name');
-            },
-            'refillHistories' => function ($q) {
-                $q->latest()->limit(5);
-            }
-        ])->where('code', $cleanCode)
-          ->orWhere('qr_code_id', $cleanCode)
-          ->orWhere('qr_code_id', 'QR-APAR-' . $cleanCode)
-          ->first();
+        $facility = SafetyFacility::withCount('inspections')
+            ->with([
+                'location',
+                'consumableCycle',
+                'inspections' => function ($q) {
+                    $q->latest()->limit(5)->with('inspector:id,name');
+                },
+                'refillHistories' => function ($q) {
+                    $q->latest()->limit(5);
+                }
+            ])->where(function ($query) use ($cleanCode) {
+                $query->where('code', $cleanCode)
+                      ->orWhere('qr_code_id', $cleanCode)
+                      ->orWhere('qr_code_id', 'QR-APAR-' . $cleanCode);
+            })
+            ->first();
 
         if (!$facility) {
             return response()->json([
@@ -1372,6 +1375,7 @@ class MonitoringController extends Controller
                 'inspection_stage' => $latestInspection?->inspection_stage ?? ($specs['inspection_stage'] ?? 'INITIAL'),
                 'inspection_status_label' => $specs['inspection_status_label'] ?? null,
                 'is_refill_queue' => $specs['is_refill_queue'] ?? ($facility->calculated_status === 'KADALUARSA'),
+                'total_inspections' => $facility->inspections_count ?? count($facility->inspections ?? []),
                 'stats' => [
                     'total_apar' => $totalApar,
                     'monitored_count' => $monitoredCount,
