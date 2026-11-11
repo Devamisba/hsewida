@@ -176,7 +176,7 @@ export default function HistoryPage() {
   const [extensionWindowDays] = useState(3);
 
   const [historyTab, setHistoryTab] = useState<"permits" | "inspections">(
-    userRole === "pic_k3" ? "inspections" : "permits"
+    (location.state as any)?.tab === "inspections" ? "inspections" : "permits"
   );
 
   const handleExtend = (req: any) => {
