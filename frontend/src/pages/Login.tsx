@@ -279,7 +279,7 @@ export default function LoginPage() {
 
           {/* Footer Copyright */}
           <div className="text-center text-[10px] text-slate-400 pt-2 pb-1">
-            © 2026 PT Widatra Bhakti. All rights reserved.
+            © 2026 {companyName}. All rights reserved.
           </div>
         </div>
       </div>

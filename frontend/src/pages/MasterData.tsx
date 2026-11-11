@@ -105,7 +105,7 @@ const resolvePpeCategory = (category: string | null | undefined, name: string): 
   return "General PPE";
 };
 
-type MainTab = "users_roles" | "permit_types" | "ppe" | "workflow" | "locations_vendors" | "policy_settings";
+type MainTab = "users_roles" | "permit_types" | "ppe" | "workflow" | "locations_vendors" | "policy_settings" | "branding";
 
 export default function MasterDataPage() {
   const [activeTab, setActiveTab] = useState<MainTab>("users_roles");
@@ -270,6 +270,7 @@ export default function MasterDataPage() {
           company_logo: res.data.company_logo
         }));
         localStorage.setItem("hse_company_logo", res.data.company_logo);
+        window.dispatchEvent(new Event("hse_branding_updated"));
         showFeedback("success", "Logo resmi perusahaan berhasil diperbarui!");
       } else {
         showFeedback("error", res?.message || "Gagal mengunggah logo perusahaan.");
@@ -303,6 +304,7 @@ export default function MasterDataPage() {
           company_logo: "/logo-widatra.png"
         }));
         localStorage.setItem("hse_company_logo", "/logo-widatra.png");
+        window.dispatchEvent(new Event("hse_branding_updated"));
         showFeedback("success", "Logo perusahaan berhasil dikembalikan ke standar bawaan.");
       } else {
         showFeedback("error", res?.message || "Gagal mereset logo.");
@@ -332,6 +334,7 @@ export default function MasterDataPage() {
       ]);
       if (res?.success) {
         localStorage.setItem("hse_company_name", nameToSave);
+        window.dispatchEvent(new Event("hse_branding_updated"));
         showFeedback("success", "Nama perusahaan berhasil disimpan dan diperbarui di seluruh sistem!");
       } else {
         showFeedback("error", res?.message || "Gagal menyimpan nama perusahaan.");
@@ -385,7 +388,7 @@ export default function MasterDataPage() {
         if (lRes?.success) setLocations(lRes.data);
         if (vRes?.success) setVendors(vRes.data);
         if (uRes?.success) setUsers(uRes.data);
-      } else if (activeTab === "policy_settings") {
+      } else if (activeTab === "policy_settings" || activeTab === "branding") {
         const sRes = await api.getSettings();
         if (sRes?.success && sRes.data?.map) {
           setPolicySettingsMap(sRes.data.map);
@@ -775,6 +778,14 @@ export default function MasterDataPage() {
               }`}
             >
               <SlidersHorizontal size={18} /> Kebijakan SIKA & Geofence K3
+            </button>
+            <button
+              onClick={() => setActiveTab("branding")}
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-bold transition-all whitespace-nowrap ${
+                activeTab === "branding" ? "bg-blue-50 text-blue-700 shadow-sm ring-1 ring-blue-200" : "text-slate-600 hover:bg-slate-100"
+              }`}
+            >
+              <Sparkles size={18} className="text-amber-500" /> Branding & Tampilan Login
             </button>
           </div>
 
@@ -1886,8 +1897,75 @@ export default function MasterDataPage() {
               </div>
 
               {/* ========================================================================= */}
-              {/* SECTION: BRANDING LOGO & TEKS NAMA PERUSAHAAN (HALAMAN LOGIN & SISTEM) */}
+              {/* BANNER SHORTCUT: BRANDING & TAMPILAN HALAMAN LOGIN */}
               {/* ========================================================================= */}
+              <div className="p-5 bg-gradient-to-r from-blue-50 via-indigo-50/60 to-blue-50 border border-blue-200 rounded-2xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 shadow-xs">
+                <div className="flex items-center gap-3.5">
+                  <div className="p-3 bg-white text-blue-600 rounded-xl shadow-xs border border-blue-100 shrink-0">
+                    <Sparkles size={24} className="text-amber-500" />
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-bold text-slate-900">Pengaturan Logo Perusahaan, Teks & Foto Halaman Login</h4>
+                    <p className="text-xs text-slate-500 mt-0.5">
+                      Logo resmi PT Widatra Bhakti, teks nama perusahaan, dan foto background showcase telah dipindahkan ke tab khusus untuk kemudahan pengelolaan.
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab("branding")}
+                  className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white rounded-xl text-xs font-bold transition-all shadow-sm cursor-pointer shrink-0 flex items-center gap-2"
+                >
+                  <Sparkles size={15} className="text-amber-300" />
+                  <span>Buka Tab Branding & Tampilan Login</span>
+                </button>
+              </div>
+
+              {/* Compliance Info Strip */}
+              <div className="p-5 bg-blue-50/80 border border-blue-200 rounded-2xl flex items-start gap-3">
+                <Info size={20} className="text-blue-700 shrink-0 mt-0.5" />
+                <div className="text-xs text-blue-900 space-y-1">
+                  <p className="font-bold">Pedoman Regulasi Keselamatan Kerja PT Widatra Bhakti (SMK3 / ISO 45001):</p>
+                  <p className="leading-relaxed text-blue-800">
+                    Nilai konfigurasi pada halaman ini disimpan di database terpusat. Apabila sewaktu-waktu terjadi pergantian staf HSE atau perubahan kebijakan operasional pabrik, staf yang berwenang cukup memperbarui angka di atas dan menekan tombol simpan. Sistem akan langsung menyesuaikan batas kalender form pengajuan dan validasi izin tanpa memerlukan bantuan programmer.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ========================================================================= */}
+          {/* TAB 7: BRANDING SISTEM & TAMPILAN HALAMAN LOGIN */}
+          {/* ========================================================================= */}
+          {activeTab === "branding" && (
+            <div className="space-y-6">
+              {/* Header Branding Section */}
+              <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                <div className="flex items-center gap-3.5">
+                  <div className="p-3 bg-gradient-to-br from-blue-600 to-indigo-700 text-white rounded-2xl shadow-md">
+                    <Sparkles size={24} className="text-amber-300" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h3 className="text-lg font-bold text-slate-900">Master Branding & Tampilan Halaman Login</h3>
+                      {isAdmin ? (
+                        <span className="px-2.5 py-0.5 bg-blue-100 text-blue-800 text-xs font-bold rounded-full">
+                          Khusus Administrator
+                        </span>
+                      ) : (
+                        <span className="px-2.5 py-0.5 bg-amber-100 text-amber-800 text-xs font-bold rounded-full flex items-center gap-1">
+                          <Lock size={12} /> Terkunci (Hanya Admin)
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-xs text-slate-500 mt-1 max-w-2xl">
+                      Kelola identitas visual resmi: Logo perusahaan, teks nama instansi, serta foto background showcase yang tampil pada portal HSE PT Widatra Bhakti.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* CARD 1: LOGO & TEKS NAMA PERUSAHAAN */}
               <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-5">
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
                   <div className="flex items-center gap-3">
@@ -1897,7 +1975,7 @@ export default function MasterDataPage() {
                     <div>
                       <div className="flex items-center gap-2">
                         <h4 className="text-base font-bold text-slate-900">
-                          Logo & Teks Nama Perusahaan (Halaman Login)
+                          Logo & Teks Nama Perusahaan (Halaman Login & Sidebar)
                         </h4>
                         {isAdmin ? (
                           <span className="px-2.5 py-0.5 bg-blue-100 text-blue-800 text-[10px] font-bold rounded-full">
@@ -1917,13 +1995,13 @@ export default function MasterDataPage() {
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center pt-2">
-                  {/* Preview Logo & Teks Samping */}
+                  {/* Live Preview Box */}
                   <div className="lg:col-span-5">
                     <div className="p-6 bg-slate-50 border border-slate-200 rounded-2xl flex flex-col justify-center gap-3 shadow-inner relative group">
                       <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                        Live Preview Sudut Kiri Login
+                        Live Preview Sudut Kiri Login & Sidebar
                       </div>
-                      <div className="flex items-center gap-3 p-3 bg-white rounded-xl border border-slate-200/80 shadow-xs">
+                      <div className="flex items-center gap-3 p-3.5 bg-white rounded-xl border border-slate-200/80 shadow-xs">
                         <img
                           src={resolveImageUrl(policySettingsMap.company_logo || "/logo-widatra.png")}
                           alt={policySettingsMap.company_name || "PT WIDATRA BHAKTI"}
@@ -1936,10 +2014,13 @@ export default function MasterDataPage() {
                           {policySettingsMap.company_name || "PT WIDATRA BHAKTI"}
                         </span>
                       </div>
+                      <p className="text-[10px] text-slate-400 text-center">
+                        Tampilan aktual pada form kartu login dan pojok kiri navigasi portal.
+                      </p>
                     </div>
                   </div>
 
-                  {/* Kontrol & Form Nama Perusahaan */}
+                  {/* Kontrol & Form */}
                   <div className="lg:col-span-7 space-y-4">
                     <div>
                       <label className="block text-xs font-bold text-slate-700 uppercase mb-1">
@@ -1966,14 +2047,14 @@ export default function MasterDataPage() {
                         )}
                       </div>
                       <p className="text-[11px] text-slate-400 mt-1">
-                        Teks ini ditampilkan dalam huruf kapital tebal (bold uppercase) di samping logo login.
+                        Teks ini ditampilkan dalam huruf kapital tebal (bold uppercase) di samping logo login dan footer hak cipta.
                       </p>
                     </div>
 
                     {isAdmin ? (
                       <div className="space-y-2 pt-2 border-t border-slate-100">
                         <label className="block text-xs font-bold text-slate-700 uppercase mb-1">
-                          File Logo Perusahaan
+                          File Logo Resmi Perusahaan
                         </label>
                         <div className="flex flex-wrap items-center gap-2.5">
                           <input
@@ -2032,9 +2113,7 @@ export default function MasterDataPage() {
                 </div>
               </div>
 
-              {/* ========================================================================= */}
-              {/* SECTION: BRANDING & TAMPILAN SHOWCASE HALAMAN LOGIN (MASTER FOTO) */}
-              {/* ========================================================================= */}
+              {/* CARD 2: FOTO SHOWCASE HALAMAN LOGIN (KANAN) */}
               <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-5">
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
                   <div className="flex items-center gap-3">
@@ -2077,7 +2156,7 @@ export default function MasterDataPage() {
                       />
                       <div className="absolute top-2.5 left-2.5 bg-slate-900/75 backdrop-blur-sm text-white px-2.5 py-1 rounded-lg text-[10px] font-semibold flex items-center gap-1.5 shadow">
                         <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
-                        <span>Preview Tampilan Login</span>
+                        <span>Preview Foto Gedung Showcase</span>
                       </div>
                     </div>
                   </div>
@@ -2088,12 +2167,12 @@ export default function MasterDataPage() {
                       <div className="flex items-center justify-between text-xs">
                         <span className="text-slate-500 font-medium">Status Foto Aktif:</span>
                         {(!policySettingsMap.login_background_image || policySettingsMap.login_background_image === "/widatra-building.jpg") ? (
-                          <span className="font-semibold text-slate-700 bg-slate-200/70 px-2 py-0.5 rounded-md">
-                            Standar Bawaan Pabrik
+                          <span className="px-2.5 py-0.5 bg-slate-200 text-slate-700 font-bold rounded-md text-[11px]">
+                            Standar Default Pabrik
                           </span>
                         ) : (
-                          <span className="font-semibold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-md border border-blue-200">
-                            Foto Kustom Aktif
+                          <span className="px-2.5 py-0.5 bg-emerald-100 text-emerald-800 font-bold rounded-md text-[11px]">
+                            Foto Kustom Terpasang
                           </span>
                         )}
                       </div>
@@ -2103,9 +2182,8 @@ export default function MasterDataPage() {
                     </div>
 
                     {isAdmin ? (
-                      <div className="space-y-3">
+                      <div className="space-y-2">
                         <div className="flex flex-wrap items-center gap-2.5">
-                          {/* Input File Tersembunyi */}
                           <input
                             type="file"
                             ref={loginImageInputRef}
@@ -2157,7 +2235,7 @@ export default function MasterDataPage() {
                         <div className="space-y-0.5">
                           <p className="font-bold">Akses Penggantian Terkunci</p>
                           <p className="text-[11px] text-amber-800 leading-relaxed">
-                            Akun Anda terdaftar dengan peran selain Administrator. Sesuai kebijakan keamanan, penggantian master foto showcase halaman login hanya dapat dilakukan oleh akun dengan role <strong>Admin</strong>.
+                            Penggantian master foto showcase halaman login hanya dapat dilakukan oleh akun dengan role <strong>Admin</strong>.
                           </p>
                         </div>
                       </div>
@@ -2166,14 +2244,96 @@ export default function MasterDataPage() {
                 </div>
               </div>
 
-              {/* Compliance Info Strip */}
-              <div className="p-5 bg-blue-50/80 border border-blue-200 rounded-2xl flex items-start gap-3">
-                <Info size={20} className="text-blue-700 shrink-0 mt-0.5" />
-                <div className="text-xs text-blue-900 space-y-1">
-                  <p className="font-bold">Pedoman Regulasi Keselamatan Kerja PT Widatra Bhakti (SMK3 / ISO 45001):</p>
-                  <p className="leading-relaxed text-blue-800">
-                    Nilai konfigurasi pada halaman ini disimpan di database terpusat. Apabila sewaktu-waktu terjadi pergantian staf HSE atau perubahan kebijakan operasional pabrik, staf yang berwenang cukup memperbarui angka di atas dan menekan tombol simpan. Sistem akan langsung menyesuaikan batas kalender form pengajuan dan validasi izin tanpa memerlukan bantuan programmer.
-                  </p>
+              {/* CARD 3: SIMULASI LENGKAP HALAMAN LOGIN (INTERACTIVE MOCKUP) */}
+              <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
+                    <h4 className="text-sm font-bold text-slate-900">Simulasi Tampilan Penuh Halaman Login</h4>
+                  </div>
+                  <span className="text-[11px] font-medium text-slate-400">
+                    Preview tampilan yang dilihat pengguna saat membuka {window.location.host || "hse.widatra.com"}
+                  </span>
+                </div>
+
+                <div className="border border-slate-200 rounded-2xl overflow-hidden bg-slate-950 p-2 sm:p-3 shadow-inner">
+                  {/* Browser Mockup Chrome Bar */}
+                  <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-900 rounded-t-xl border-b border-slate-800 text-[11px] text-slate-400">
+                    <div className="flex items-center gap-1.5">
+                      <span className="w-2.5 h-2.5 rounded-full bg-rose-500/80 inline-block" />
+                      <span className="w-2.5 h-2.5 rounded-full bg-amber-500/80 inline-block" />
+                      <span className="w-2.5 h-2.5 rounded-full bg-emerald-500/80 inline-block" />
+                    </div>
+                    <div className="mx-auto bg-slate-800/80 px-4 py-0.5 rounded-md text-[10px] font-mono text-slate-300">
+                      https://hse.widatra.com/login
+                    </div>
+                  </div>
+
+                  {/* Mockup Body */}
+                  <div className="bg-white rounded-b-xl overflow-hidden grid grid-cols-1 md:grid-cols-12 min-h-[300px]">
+                    {/* Mockup Left Card */}
+                    <div className="md:col-span-5 p-5 flex flex-col justify-between bg-white border-r border-slate-100">
+                      <div>
+                        {/* Mockup Top Brand */}
+                        <div className="flex items-center gap-2.5 mb-6">
+                          <img
+                            src={resolveImageUrl(policySettingsMap.company_logo || "/logo-widatra.png")}
+                            alt="Logo"
+                            className="h-8 w-auto object-contain"
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).src = "/logo-widatra.png";
+                            }}
+                          />
+                          <span className="font-extrabold text-[13px] text-[#22247b] tracking-tight leading-none uppercase truncate">
+                            {policySettingsMap.company_name || "PT WIDATRA BHAKTI"}
+                          </span>
+                        </div>
+
+                        <div className="space-y-1 mb-4">
+                          <div className="text-xs text-slate-500 font-medium">Hallo</div>
+                          <div className="text-base font-extrabold text-slate-900 tracking-tight">Welcome Back</div>
+                          <div className="text-[10px] text-slate-400">Hey, welcome back to your special place</div>
+                        </div>
+
+                        {/* Dummy Input Fields */}
+                        <div className="space-y-2">
+                          <div className="p-2 bg-slate-50 rounded-lg border border-slate-200 text-[10px] text-slate-400 font-mono">
+                            NIP: SA12345
+                          </div>
+                          <div className="p-2 bg-slate-50 rounded-lg border border-slate-200 text-[10px] text-slate-400 font-mono">
+                            ••••••••
+                          </div>
+                          <div className="p-2 bg-blue-600 rounded-lg text-center text-white text-[11px] font-bold shadow-xs">
+                            Sign In
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Mockup Footer */}
+                      <div className="text-center text-[9px] text-slate-400 pt-3 border-t border-slate-100 mt-4">
+                        © 2026 {policySettingsMap.company_name || "PT Widatra Bhakti"}. All rights reserved.
+                      </div>
+                    </div>
+
+                    {/* Mockup Right Showcase */}
+                    <div className="md:col-span-7 bg-slate-100 p-3 flex items-center justify-center">
+                      <div className="relative w-full h-full min-h-[220px] rounded-xl overflow-hidden border border-slate-200/80 shadow-xs">
+                        <img
+                          src={resolveImageUrl(policySettingsMap.login_background_image || "/widatra-building.jpg")}
+                          alt="Showcase"
+                          className="w-full h-full object-cover object-center"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).src = "/widatra-building.jpg";
+                          }}
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent flex items-end p-3">
+                          <span className="text-[10px] font-bold text-white drop-shadow">
+                            Kawasan Pabrik &amp; Fasilitas K3
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>

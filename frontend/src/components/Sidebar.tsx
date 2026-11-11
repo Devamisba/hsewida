@@ -23,6 +23,7 @@ import { cn } from "@/lib/utils";
 import { auth } from "@/lib/auth";
 import { api } from "@/services/api";
 import { useSidebar } from "@/context/SidebarContext";
+import { resolveImageUrl } from "@/utils/imageUrl";
 
 // ---------------------------------------------------------------------------
 // NAVIGATION SCHEMA TYPES
@@ -174,6 +175,40 @@ export function Sidebar() {
   const pathname = location.pathname;
   const role = auth.getRole();
 
+  // Dynamic branding dari Master Data
+  const [companyLogo, setCompanyLogo] = useState<string>(() => localStorage.getItem("hse_company_logo") || "/logo-widatra.png");
+  const [companyName, setCompanyName] = useState<string>(() => localStorage.getItem("hse_company_name") || "PT Widatra Bhakti");
+
+  useEffect(() => {
+    const syncBranding = () => {
+      const savedLogo = localStorage.getItem("hse_company_logo");
+      const savedName = localStorage.getItem("hse_company_name");
+      if (savedLogo) setCompanyLogo(savedLogo);
+      if (savedName) setCompanyName(savedName);
+    };
+
+    window.addEventListener("storage", syncBranding);
+    window.addEventListener("hse_branding_updated", syncBranding);
+
+    api.getSettings().then((res) => {
+      if (res?.success && res.data?.map) {
+        if (res.data.map.company_logo) {
+          setCompanyLogo(res.data.map.company_logo);
+          localStorage.setItem("hse_company_logo", res.data.map.company_logo);
+        }
+        if (res.data.map.company_name) {
+          setCompanyName(res.data.map.company_name);
+          localStorage.setItem("hse_company_name", res.data.map.company_name);
+        }
+      }
+    }).catch(() => {});
+
+    return () => {
+      window.removeEventListener("storage", syncBranding);
+      window.removeEventListener("hse_branding_updated", syncBranding);
+    };
+  }, []);
+
   // Filter daftar menu berdasarkan izin role pengguna
   const filteredNavItems = useMemo(() => {
     return NAVIGATION_CONFIG.map((item) => {
@@ -261,10 +296,17 @@ export function Sidebar() {
       {/* Header Area */}
       <div className="h-16 flex items-center justify-between px-4 border-b border-gray-200 gap-2 shrink-0">
         <Link to="/dashboard" onClick={handleNavClick} className="flex items-center gap-3 overflow-hidden">
-          <img src="/logo.png" alt="HSE Portal Logo" className="h-10 w-auto object-contain scale-125 origin-left ml-1" />
+          <img 
+            src={resolveImageUrl(companyLogo)} 
+            alt="HSE Portal Logo" 
+            className="h-10 w-auto max-w-[42px] object-contain shrink-0 ml-0.5" 
+            onError={(e) => {
+              (e.target as HTMLImageElement).src = "/logo-widatra.png";
+            }}
+          />
           <div className="truncate">
             <h1 className="text-sm font-bold text-gray-900 leading-tight">HSE Portal</h1>
-            <p className="text-[10px] text-gray-500 font-medium">PT Widatra Bhakti</p>
+            <p className="text-[10px] text-gray-500 font-medium truncate" title={companyName}>{companyName}</p>
           </div>
         </Link>
 
