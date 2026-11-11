@@ -43,7 +43,6 @@ export default function AparScanPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [facility, setFacility] = useState<SafetyFacility | null>(null);
-  const [inspectionStatusLabel, setInspectionStatusLabel] = useState<string>("");
   const [isRefillQueue, setIsRefillQueue] = useState<boolean>(false);
   const [totalInspections, setTotalInspections] = useState<number>(0);
 
@@ -82,7 +81,6 @@ export default function AparScanPage() {
       const res = await api.getAparByScanCode(code);
       if (res.success && res.data) {
         setFacility(res.data.facility);
-        setInspectionStatusLabel(res.data.inspection_status_label || "");
         setIsRefillQueue(!!res.data.is_refill_queue);
         setTotalInspections(res.data.total_inspections ?? res.data.facility?.inspections_count ?? (res.data.facility?.inspections?.length || 0));
 
@@ -365,24 +363,7 @@ export default function AparScanPage() {
                 {isRefillQueue && <span className="text-amber-700 font-semibold">Antrean Refill</span>}
               </div>
 
-              {/* Status Pemantauan Terkini */}
-              {inspectionStatusLabel && (
-                <div className={`mt-2.5 p-2.5 rounded-lg border text-xs ${
-                  inspectionStatusLabel.toLowerCase().includes("aman") || inspectionStatusLabel.toLowerCase().includes("terverifikasi")
-                    ? "bg-emerald-50/80 border-emerald-200 text-emerald-900"
-                    : "bg-white border-slate-200 text-slate-800"
-                }`}>
-                  <span className="text-slate-500 text-[10px] block font-bold uppercase tracking-wider">Status Saat Ini:</span>
-                  <span className="font-bold flex items-center gap-1.5 mt-0.5">
-                    {inspectionStatusLabel.toLowerCase().includes("aman") || inspectionStatusLabel.toLowerCase().includes("terverifikasi") ? (
-                      <CheckCircle2 size={13} className="text-emerald-600 shrink-0" />
-                    ) : (
-                      <Clock size={13} className="text-amber-500 shrink-0" />
-                    )}
-                    <span>{inspectionStatusLabel}</span>
-                  </span>
-                </div>
-              )}
+
             </div>
 
             {/* ======================================================== */}
