@@ -86,10 +86,7 @@ export default function AparScanPage() {
         setIsRefillQueue(!!res.data.is_refill_queue);
         setTotalInspections(res.data.total_inspections ?? res.data.facility?.inspections_count ?? (res.data.facility?.inspections?.length || 0));
 
-        // If inspection was already submitted by petugas
-        if (res.data.inspection_stage === "PETUGAS" || res.data.inspection_stage === "PETUGAS_SUBMITTED") {
-          setPetugasSubmitted(true);
-        }
+
       } else {
         setError(res.message || "Data APAR tidak ditemukan.");
       }
@@ -119,6 +116,7 @@ export default function AparScanPage() {
 
   // --- BUTTON CLICKS FROM CHOICE MENU ---
   const handleSelectPengecekan = () => {
+    setPetugasSubmitted(false);
     setViewMode("PENGECEKAN");
   };
 
@@ -601,7 +599,7 @@ export default function AparScanPage() {
                       value={petugasName}
                       onChange={(e) => setPetugasName(e.target.value)}
                       placeholder="Ketik nama lengkap pemeriksa..."
-                      disabled={petugasSubmitted}
+                      disabled={submittingPetugas}
                       className="w-full px-3 py-2 border border-slate-300 rounded-md text-xs focus:outline-none focus:border-slate-600 disabled:bg-slate-100"
                     />
                   </div>
@@ -619,7 +617,7 @@ export default function AparScanPage() {
                       <div className="flex gap-1.5">
                         <button
                           type="button"
-                          disabled={petugasSubmitted}
+                          disabled={submittingPetugas}
                           onClick={() => setTbg(true)}
                           className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                             tbg 
@@ -631,7 +629,7 @@ export default function AparScanPage() {
                         </button>
                         <button
                           type="button"
-                          disabled={petugasSubmitted}
+                          disabled={submittingPetugas}
                           onClick={() => setTbg(false)}
                           className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                             !tbg 
@@ -653,7 +651,7 @@ export default function AparScanPage() {
                       <div className="flex gap-1.5">
                         <button
                           type="button"
-                          disabled={petugasSubmitted}
+                          disabled={submittingPetugas}
                           onClick={() => setSlg(true)}
                           className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                             slg 
@@ -665,7 +663,7 @@ export default function AparScanPage() {
                         </button>
                         <button
                           type="button"
-                          disabled={petugasSubmitted}
+                          disabled={submittingPetugas}
                           onClick={() => setSlg(false)}
                           className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                             !slg 
@@ -687,7 +685,7 @@ export default function AparScanPage() {
                       <div className="flex gap-1.5">
                         <button
                           type="button"
-                          disabled={petugasSubmitted}
+                          disabled={submittingPetugas}
                           onClick={() => setNozz(true)}
                           className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                             nozz 
@@ -699,7 +697,7 @@ export default function AparScanPage() {
                         </button>
                         <button
                           type="button"
-                          disabled={petugasSubmitted}
+                          disabled={submittingPetugas}
                           onClick={() => setNozz(false)}
                           className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                             !nozz 
@@ -721,7 +719,7 @@ export default function AparScanPage() {
                       <div className="flex gap-1.5">
                         <button
                           type="button"
-                          disabled={petugasSubmitted}
+                          disabled={submittingPetugas}
                           onClick={() => setSgl(true)}
                           className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                             sgl 
@@ -733,7 +731,7 @@ export default function AparScanPage() {
                         </button>
                         <button
                           type="button"
-                          disabled={petugasSubmitted}
+                          disabled={submittingPetugas}
                           onClick={() => setSgl(false)}
                           className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                             !sgl 
@@ -755,7 +753,7 @@ export default function AparScanPage() {
                       <div className="flex gap-1.5">
                         <button
                           type="button"
-                          disabled={petugasSubmitted}
+                          disabled={submittingPetugas}
                           onClick={() => setLev(true)}
                           className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                             lev 
@@ -767,7 +765,7 @@ export default function AparScanPage() {
                         </button>
                         <button
                           type="button"
-                          disabled={petugasSubmitted}
+                          disabled={submittingPetugas}
                           onClick={() => setLev(false)}
                           className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                             !lev 
@@ -793,7 +791,7 @@ export default function AparScanPage() {
                       value={notes}
                       onChange={(e) => setNotes(e.target.value)}
                       placeholder="Contoh: Kondisi fisik bersih, jarum tekanan hijau, siap digunakan..."
-                      disabled={petugasSubmitted}
+                      disabled={submittingPetugas}
                       className="w-full px-3 py-2 border border-slate-300 rounded-md text-xs focus:outline-none focus:border-slate-600 disabled:bg-slate-100"
                     />
                   </div>
@@ -808,7 +806,7 @@ export default function AparScanPage() {
                       <div className="space-y-1.5">
                         <button
                           type="button"
-                          disabled={petugasSubmitted}
+                          disabled={submittingPetugas}
                           onClick={startLiveCamera}
                           className="w-full py-2.5 px-3 bg-slate-100 hover:bg-slate-200 border border-slate-300 rounded-md text-slate-800 text-xs font-semibold flex items-center justify-center gap-2 cursor-pointer transition"
                         >
@@ -826,7 +824,7 @@ export default function AparScanPage() {
                     ) : (
                       <div className="relative border border-slate-300 rounded-md overflow-hidden aspect-video max-h-52 bg-black shadow-inner">
                         <img src={capturedPhoto} alt="Bukti Pengecekan Realtime" className="w-full h-full object-contain" />
-                        {!petugasSubmitted && (
+                        {!submittingPetugas && (
                           <button
                             type="button"
                             onClick={() => {
