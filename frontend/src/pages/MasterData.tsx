@@ -198,7 +198,6 @@ export default function MasterDataPage() {
   const isAdmin = currentRole === "admin";
 
   const [isUploadingLoginImage, setIsUploadingLoginImage] = useState(false);
-  const [isResettingLoginImage, setIsResettingLoginImage] = useState(false);
   const loginImageInputRef = useRef<HTMLInputElement>(null);
 
   const handleUploadLoginImage = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -239,35 +238,6 @@ export default function MasterDataPage() {
       if (loginImageInputRef.current) {
         loginImageInputRef.current.value = "";
       }
-    }
-  };
-
-  const handleResetLoginImage = async () => {
-    if (!isAdmin) {
-      showFeedback("error", "Hanya Administrator yang memiliki wewenang untuk mereset foto login.");
-      return;
-    }
-
-    if (!confirm("Kembalikan foto login ke standar default gedung PT Widatra Bhakti?")) {
-      return;
-    }
-
-    setIsResettingLoginImage(true);
-    try {
-      const res = await api.resetLoginImage();
-      if (res?.success) {
-        setPolicySettingsMap(prev => ({
-          ...prev,
-          login_background_image: "/widatra-building.jpg"
-        }));
-        showFeedback("success", "Foto login berhasil dikembalikan ke standar bawaan pabrik.");
-      } else {
-        showFeedback("error", res?.message || "Gagal mereset foto login.");
-      }
-    } catch (err: any) {
-      showFeedback("error", err.message || "Gagal mereset foto login.");
-    } finally {
-      setIsResettingLoginImage(false);
     }
   };
 
@@ -2303,18 +2273,7 @@ export default function MasterDataPage() {
                             )}
                           </button>
 
-                          {policySettingsMap.login_background_image && policySettingsMap.login_background_image !== "/widatra-building.jpg" && (
-                            <button
-                              type="button"
-                              disabled={isResettingLoginImage}
-                              onClick={handleResetLoginImage}
-                              className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-slate-100 hover:bg-slate-200 active:bg-slate-300 text-slate-700 rounded-xl text-xs font-semibold transition-all cursor-pointer"
-                              title="Kembalikan ke foto gedung resmi awal"
-                            >
-                              <RefreshCw size={14} className={isResettingLoginImage ? "animate-spin" : ""} />
-                              <span>Reset ke Standar Pabrik</span>
-                            </button>
-                          )}
+
                         </div>
 
                         <p className="text-[11px] text-slate-500 leading-relaxed">
