@@ -734,7 +734,7 @@ export default function MasterDataPage() {
           </div>
 
           {/* Navigation Tabs Utama dengan Scrollbar Horizontal Jelas & Tombol Geser */}
-          <div className="relative group bg-white border border-slate-200 rounded-2xl p-2 shadow-xs space-y-1.5">
+          <div className="relative group bg-white border border-slate-200 rounded-2xl p-2 shadow-xs">
             {/* Tombol Geser Kiri (Muncul jika ada tab di sisi kiri) */}
             {canScrollLeft && (
               <button
@@ -833,22 +833,6 @@ export default function MasterDataPage() {
               >
                 <Sparkles size={18} className={activeTab === "branding" ? "text-amber-300" : "text-amber-500"} /> Branding & Tampilan Login
               </button>
-            </div>
-
-            {/* Petunjuk Visual Scroll Bar Horizontal */}
-            <div className="flex items-center justify-between px-2 pt-1 border-t border-slate-100 text-[10px] text-slate-400">
-              <span className="flex items-center gap-1 font-medium text-slate-500">
-                ↔ Geser garis scroll di atas atau gunakan roda scroll mouse untuk melihat semua tab
-              </span>
-              {canScrollRight && (
-                <button 
-                  type="button" 
-                  onClick={() => scrollTabs("right")}
-                  className="text-blue-600 hover:text-blue-700 font-bold flex items-center gap-0.5 cursor-pointer"
-                >
-                  Tab berikutnya <ChevronRight size={12} />
-                </button>
-              )}
             </div>
           </div>
 
