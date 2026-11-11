@@ -348,11 +348,12 @@ export default function AparScanPage() {
                 </div>
                 
                 <div className="text-right text-xs">
-                  <span className={`inline-block px-2 py-0.5 rounded text-[11px] font-semibold border ${
+                  <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold border ${
                     facility.calculated_status === "AMAN" 
-                      ? "bg-slate-100 text-slate-800 border-slate-300" 
-                      : "bg-amber-50 text-amber-800 border-amber-300"
+                      ? "bg-emerald-50 text-emerald-700 border-emerald-300" 
+                      : "bg-rose-50 text-rose-700 border-rose-300"
                   }`}>
+                    <span className={`w-1.5 h-1.5 rounded-full ${facility.calculated_status === "AMAN" ? "bg-emerald-500" : "bg-rose-500"}`} />
                     {facility.calculated_status === "AMAN" ? "Media Aman" : "Perlu Refill"}
                   </span>
                   <div className="text-[11px] text-slate-500 mt-1 font-mono">
@@ -368,9 +369,20 @@ export default function AparScanPage() {
 
               {/* Status Pemantauan Terkini */}
               {inspectionStatusLabel && (
-                <div className="mt-2.5 p-2 bg-white rounded border border-slate-200 text-xs">
-                  <span className="text-slate-500 text-[10px] block font-semibold uppercase">Status Saat Ini:</span>
-                  <span className="font-semibold text-slate-800">{inspectionStatusLabel}</span>
+                <div className={`mt-2.5 p-2.5 rounded-lg border text-xs ${
+                  inspectionStatusLabel.toLowerCase().includes("aman") || inspectionStatusLabel.toLowerCase().includes("terverifikasi")
+                    ? "bg-emerald-50/80 border-emerald-200 text-emerald-900"
+                    : "bg-white border-slate-200 text-slate-800"
+                }`}>
+                  <span className="text-slate-500 text-[10px] block font-bold uppercase tracking-wider">Status Saat Ini:</span>
+                  <span className="font-bold flex items-center gap-1.5 mt-0.5">
+                    {inspectionStatusLabel.toLowerCase().includes("aman") || inspectionStatusLabel.toLowerCase().includes("terverifikasi") ? (
+                      <CheckCircle2 size={13} className="text-emerald-600 shrink-0" />
+                    ) : (
+                      <Clock size={13} className="text-amber-500 shrink-0" />
+                    )}
+                    <span>{inspectionStatusLabel}</span>
+                  </span>
                 </div>
               )}
             </div>
@@ -505,8 +517,8 @@ export default function AparScanPage() {
                                         key={rIdx}
                                         className={`px-2 py-0.5 rounded text-[10px] font-semibold border ${
                                           isPass 
-                                            ? "bg-slate-50 text-slate-700 border-slate-200" 
-                                            : "bg-red-50 text-red-700 border-red-200"
+                                            ? "bg-emerald-50 text-emerald-700 border-emerald-200" 
+                                            : "bg-rose-50 text-rose-700 border-rose-200"
                                         }`}
                                         title={`${r.label || r.code || r.item}: ${r.jawaban || (isPass ? "Baik" : "Rusak")}`}
                                       >
@@ -599,9 +611,9 @@ export default function AparScanPage() {
                     <div className="font-semibold text-slate-700">Pemeriksaan Fisik 5 Parameter APAR:</div>
                     
                     {/* 1. Kondisi Tabung */}
-                    <div className="flex items-center justify-between p-2 rounded bg-slate-50 border border-slate-200">
+                    <div className="flex items-center justify-between p-2.5 rounded-lg bg-slate-50 border border-slate-200">
                       <div>
-                        <span className="font-semibold block">1. Fisik Tabung</span>
+                        <span className="font-bold text-slate-800 block text-xs">1. Fisik Tabung</span>
                         <span className="text-[11px] text-slate-500">Bebas karat, penyok & keropos</span>
                       </div>
                       <div className="flex gap-1.5">
@@ -609,7 +621,11 @@ export default function AparScanPage() {
                           type="button"
                           disabled={petugasSubmitted}
                           onClick={() => setTbg(true)}
-                          className={`px-2.5 py-1 rounded text-xs font-bold transition ${tbg ? "bg-slate-900 text-white" : "bg-white border text-slate-600"}`}
+                          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                            tbg 
+                              ? "bg-emerald-600 text-white shadow-xs" 
+                              : "bg-white border border-slate-200 text-slate-600 hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-300 font-medium"
+                          }`}
                         >
                           Baik
                         </button>
@@ -617,7 +633,11 @@ export default function AparScanPage() {
                           type="button"
                           disabled={petugasSubmitted}
                           onClick={() => setTbg(false)}
-                          className={`px-2.5 py-1 rounded text-xs font-bold transition ${!tbg ? "bg-red-600 text-white" : "bg-white border text-slate-600"}`}
+                          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                            !tbg 
+                              ? "bg-rose-600 text-white shadow-xs" 
+                              : "bg-white border border-slate-200 text-slate-600 hover:bg-rose-50 hover:text-rose-700 hover:border-rose-300 font-medium"
+                          }`}
                         >
                           Rusak
                         </button>
@@ -625,9 +645,9 @@ export default function AparScanPage() {
                     </div>
 
                     {/* 2. Selang (Hose) */}
-                    <div className="flex items-center justify-between p-2 rounded bg-slate-50 border border-slate-200">
+                    <div className="flex items-center justify-between p-2.5 rounded-lg bg-slate-50 border border-slate-200">
                       <div>
-                        <span className="font-semibold block">2. Selang (Hose)</span>
+                        <span className="font-bold text-slate-800 block text-xs">2. Selang (Hose)</span>
                         <span className="text-[11px] text-slate-500">Fleksibel, tidak retak/getas</span>
                       </div>
                       <div className="flex gap-1.5">
@@ -635,7 +655,11 @@ export default function AparScanPage() {
                           type="button"
                           disabled={petugasSubmitted}
                           onClick={() => setSlg(true)}
-                          className={`px-2.5 py-1 rounded text-xs font-bold transition ${slg ? "bg-slate-900 text-white" : "bg-white border text-slate-600"}`}
+                          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                            slg 
+                              ? "bg-emerald-600 text-white shadow-xs" 
+                              : "bg-white border border-slate-200 text-slate-600 hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-300 font-medium"
+                          }`}
                         >
                           Baik
                         </button>
@@ -643,7 +667,11 @@ export default function AparScanPage() {
                           type="button"
                           disabled={petugasSubmitted}
                           onClick={() => setSlg(false)}
-                          className={`px-2.5 py-1 rounded text-xs font-bold transition ${!slg ? "bg-red-600 text-white" : "bg-white border text-slate-600"}`}
+                          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                            !slg 
+                              ? "bg-rose-600 text-white shadow-xs" 
+                              : "bg-white border border-slate-200 text-slate-600 hover:bg-rose-50 hover:text-rose-700 hover:border-rose-300 font-medium"
+                          }`}
                         >
                           Rusak
                         </button>
@@ -651,9 +679,9 @@ export default function AparScanPage() {
                     </div>
 
                     {/* 3. Nozzle */}
-                    <div className="flex items-center justify-between p-2 rounded bg-slate-50 border border-slate-200">
+                    <div className="flex items-center justify-between p-2.5 rounded-lg bg-slate-50 border border-slate-200">
                       <div>
-                        <span className="font-semibold block">3. Corong / Nozzle</span>
+                        <span className="font-bold text-slate-800 block text-xs">3. Corong / Nozzle</span>
                         <span className="text-[11px] text-slate-500">Bersih, tidak tersumbat/buntu</span>
                       </div>
                       <div className="flex gap-1.5">
@@ -661,7 +689,11 @@ export default function AparScanPage() {
                           type="button"
                           disabled={petugasSubmitted}
                           onClick={() => setNozz(true)}
-                          className={`px-2.5 py-1 rounded text-xs font-bold transition ${nozz ? "bg-slate-900 text-white" : "bg-white border text-slate-600"}`}
+                          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                            nozz 
+                              ? "bg-emerald-600 text-white shadow-xs" 
+                              : "bg-white border border-slate-200 text-slate-600 hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-300 font-medium"
+                          }`}
                         >
                           Baik
                         </button>
@@ -669,7 +701,11 @@ export default function AparScanPage() {
                           type="button"
                           disabled={petugasSubmitted}
                           onClick={() => setNozz(false)}
-                          className={`px-2.5 py-1 rounded text-xs font-bold transition ${!nozz ? "bg-red-600 text-white" : "bg-white border text-slate-600"}`}
+                          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                            !nozz 
+                              ? "bg-rose-600 text-white shadow-xs" 
+                              : "bg-white border border-slate-200 text-slate-600 hover:bg-rose-50 hover:text-rose-700 hover:border-rose-300 font-medium"
+                          }`}
                         >
                           Rusak
                         </button>
@@ -677,9 +713,9 @@ export default function AparScanPage() {
                     </div>
 
                     {/* 4. Segel & Pin */}
-                    <div className="flex items-center justify-between p-2 rounded bg-slate-50 border border-slate-200">
+                    <div className="flex items-center justify-between p-2.5 rounded-lg bg-slate-50 border border-slate-200">
                       <div>
-                        <span className="font-semibold block">4. Segel & Safety Pin</span>
+                        <span className="font-bold text-slate-800 block text-xs">4. Segel & Safety Pin</span>
                         <span className="text-[11px] text-slate-500">Kawat/plastik segel masih utuh</span>
                       </div>
                       <div className="flex gap-1.5">
@@ -687,7 +723,11 @@ export default function AparScanPage() {
                           type="button"
                           disabled={petugasSubmitted}
                           onClick={() => setSgl(true)}
-                          className={`px-2.5 py-1 rounded text-xs font-bold transition ${sgl ? "bg-slate-900 text-white" : "bg-white border text-slate-600"}`}
+                          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                            sgl 
+                              ? "bg-emerald-600 text-white shadow-xs" 
+                              : "bg-white border border-slate-200 text-slate-600 hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-300 font-medium"
+                          }`}
                         >
                           Utuh
                         </button>
@@ -695,7 +735,11 @@ export default function AparScanPage() {
                           type="button"
                           disabled={petugasSubmitted}
                           onClick={() => setSgl(false)}
-                          className={`px-2.5 py-1 rounded text-xs font-bold transition ${!sgl ? "bg-red-600 text-white" : "bg-white border text-slate-600"}`}
+                          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                            !sgl 
+                              ? "bg-rose-600 text-white shadow-xs" 
+                              : "bg-white border border-slate-200 text-slate-600 hover:bg-rose-50 hover:text-rose-700 hover:border-rose-300 font-medium"
+                          }`}
                         >
                           Putus
                         </button>
@@ -703,9 +747,9 @@ export default function AparScanPage() {
                     </div>
 
                     {/* 5. Lever & Pressure Gauge */}
-                    <div className="flex items-center justify-between p-2 rounded bg-slate-50 border border-slate-200">
+                    <div className="flex items-center justify-between p-2.5 rounded-lg bg-slate-50 border border-slate-200">
                       <div>
-                        <span className="font-semibold block">5. Indikator Tekanan</span>
+                        <span className="font-bold text-slate-800 block text-xs">5. Indikator Tekanan</span>
                         <span className="text-[11px] text-slate-500">Jarum berada di zona hijau</span>
                       </div>
                       <div className="flex gap-1.5">
@@ -713,7 +757,11 @@ export default function AparScanPage() {
                           type="button"
                           disabled={petugasSubmitted}
                           onClick={() => setLev(true)}
-                          className={`px-2.5 py-1 rounded text-xs font-bold transition ${lev ? "bg-slate-900 text-white" : "bg-white border text-slate-600"}`}
+                          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                            lev 
+                              ? "bg-emerald-600 text-white shadow-xs" 
+                              : "bg-white border border-slate-200 text-slate-600 hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-300 font-medium"
+                          }`}
                         >
                           Hijau
                         </button>
@@ -721,7 +769,11 @@ export default function AparScanPage() {
                           type="button"
                           disabled={petugasSubmitted}
                           onClick={() => setLev(false)}
-                          className={`px-2.5 py-1 rounded text-xs font-bold transition ${!lev ? "bg-red-600 text-white" : "bg-white border text-slate-600"}`}
+                          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                            !lev 
+                              ? "bg-rose-600 text-white shadow-xs" 
+                              : "bg-white border border-slate-200 text-slate-600 hover:bg-rose-50 hover:text-rose-700 hover:border-rose-300 font-medium"
+                          }`}
                         >
                           Merah
                         </button>
