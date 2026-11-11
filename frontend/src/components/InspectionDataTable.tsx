@@ -79,10 +79,10 @@ export function InspectionDataTable({
 
   // Pagination
   const [currentPage, setCurrentPage] = useState<number>(1);
-  const [perPage, setPerPage] = useState<number>(50);
+  const [perPage, setPerPage] = useState<number>(15);
   const [pagination, setPagination] = useState<any>({
     total: 0,
-    per_page: 50,
+    per_page: 15,
     current_page: 1,
     last_page: 1,
   });
@@ -1133,6 +1133,7 @@ export function InspectionDataTable({
                 }}
                 className="py-1 px-2 text-xs border border-slate-300 rounded bg-white font-medium focus:outline-none"
               >
+                <option value={15}>15 Unit</option>
                 <option value={25}>25 Unit</option>
                 <option value={50}>50 Unit</option>
                 <option value={100}>100 Unit</option>

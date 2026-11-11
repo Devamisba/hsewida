@@ -422,7 +422,7 @@ class MonitoringController extends Controller
         }
 
         // Pagination
-        $perPage = (int) $request->input('per_page', 50);
+        $perPage = (int) $request->input('per_page', 15);
         $page = max(1, (int) $request->input('page', 1));
 
         $totalFiltered = (clone $query)->count();
