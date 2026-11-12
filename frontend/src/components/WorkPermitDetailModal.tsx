@@ -11,7 +11,8 @@ import {
   CheckCircle2, 
   Lock, 
   CalendarPlus,
-  RotateCcw
+  RotateCcw,
+  XCircle
 } from "lucide-react";
 import { cn, calculateInclusiveDays, formatPermitStatus, formatDateDDMMYY } from "@/lib/utils";
 import { ApprovalWorkflowStepper } from "./ApprovalWorkflowStepper";
@@ -456,9 +457,29 @@ export function WorkPermitDetailModal({
           <div className="p-4 sm:p-6 border-t border-gray-200 bg-white flex flex-col sm:flex-row justify-between items-center gap-3 shrink-0">
             <div className="w-full sm:w-auto">
               {!canPrintPermit(permit.status) && (
-                <div className="flex items-center gap-2 text-xs text-amber-800 bg-amber-50 border border-amber-200 px-3 py-1.5 rounded-lg">
-                  <Lock size={14} className="shrink-0 text-amber-600" />
-                  <span>Dokumen resmi baru dapat dicetak setelah disetujui penuh oleh <strong>Head Division HRD&GA</strong>.</span>
+                <div
+                  className={cn(
+                    "flex items-center gap-2 text-xs px-3 py-1.5 rounded-lg border",
+                    permit.status === "Ditolak"
+                      ? "text-rose-800 bg-rose-50 border-rose-200"
+                      : "text-amber-800 bg-amber-50 border-amber-200"
+                  )}
+                >
+                  {permit.status === "Ditolak" ? (
+                    <>
+                      <XCircle size={14} className="shrink-0 text-rose-600" />
+                      <span>
+                        Izin kerja ini <strong>ditolak</strong> dan tidak dapat diterbitkan sebagai dokumen resmi.
+                      </span>
+                    </>
+                  ) : (
+                    <>
+                      <Lock size={14} className="shrink-0 text-amber-600" />
+                      <span>
+                        Dokumen resmi baru dapat dicetak setelah disetujui penuh oleh <strong>Head Division HRD&GA</strong>.
+                      </span>
+                    </>
+                  )}
                 </div>
               )}
             </div>
@@ -511,9 +532,9 @@ export function WorkPermitDetailModal({
                   type="button"
                   disabled
                   className="px-5 py-2.5 text-sm font-medium text-gray-400 bg-gray-100 border border-gray-200 rounded-lg flex items-center gap-2 cursor-not-allowed opacity-75 whitespace-nowrap"
-                  title="Izin kerja belum dapat dicetak karena belum disetujui penuh oleh Head Division HRD&GA"
+                  title={permit.status === "Ditolak" ? "Izin kerja ditolak dan tidak dapat dicetak" : "Izin kerja belum dapat dicetak karena belum disetujui penuh oleh Head Division HRD&GA"}
                 >
-                  <Lock size={16} /> Menunggu Approval Akhir (Terkunci)
+                  <Lock size={16} /> {permit.status === "Ditolak" ? "Izin Ditolak (Tidak Dapat Dicetak)" : "Menunggu Approval Akhir (Terkunci)"}
                 </button>
               )}
             </div>

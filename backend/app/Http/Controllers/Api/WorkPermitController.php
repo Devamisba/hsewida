@@ -228,8 +228,61 @@ class WorkPermitController extends Controller
                     $sub->orWhere('vendor_id', $user->vendor_id);
                 }
             })->whereIn('status', ['Disetujui', 'Selesai', 'Ditolak']);
+        } elseif ($roleCode === 'pic_vendor') {
+            // PIC Widatra: Menangani Tahap 1. Melihat seluruh izin yang disetujui, selesai, atau ditolak
+            // (termasuk izin yang ditolak di level PIC Widatra agar dapat dipantau di arsip PIC Widatra)
+            $query->whereIn('status', ['Disetujui', 'Selesai', 'Ditolak']);
+        } elseif (in_array($roleCode, ['hse', 'pic_k3'])) {
+            // Tim K3 / HSE Officer: Menangani Tahap 2.
+            // Izin yang ditolak oleh PIC Widatra pada Tahap 1 BERHENTI di PIC Widatra dan TIDAK PERNAH sampai ke Tim K3.
+            // Tim K3 hanya melihat izin yang disetujui/selesai, ATAU izin ditolak yang pernah lolos masuk ke tahap HSE ke atas.
+            $query->where(function ($q) {
+                $q->whereIn('status', ['Disetujui', 'Selesai'])
+                  ->orWhere(function ($rejectQ) {
+                      $rejectQ->where('status', 'Ditolak')
+                          ->whereHas('approvals', function ($aq) {
+                              $aq->where(function ($subAq) {
+                                  // Pernah disetujui oleh PIC Widatra sehingga lolos ke tahap HSE
+                                  $subAq->where('role_at_action', 'pic_vendor')->where('action', 'Approve');
+                              })->orWhere(function ($subAq) {
+                                  // ATAU ditolak langsung oleh Tim K3 / HSE
+                                  $subAq->whereIn('role_at_action', ['hse', 'pic_k3']);
+                              });
+                          });
+                  });
+            });
+        } elseif ($roleCode === 'ga_dept_head') {
+            // Head Dept HRD&GA: Menangani Tahap 3.
+            // Hanya melihat izin yang lolos sampai ke tahap GA Dept Head
+            $query->where(function ($q) {
+                $q->whereIn('status', ['Disetujui', 'Selesai'])
+                  ->orWhere(function ($rejectQ) {
+                      $rejectQ->where('status', 'Ditolak')
+                          ->whereHas('approvals', function ($aq) {
+                              $aq->where(function ($subAq) {
+                                  $subAq->whereIn('role_at_action', ['hse', 'pic_k3'])->where('action', 'Approve');
+                              })->orWhere(function ($subAq) {
+                                  $subAq->where('role_at_action', 'ga_dept_head');
+                              });
+                          });
+                  });
+            });
+        } elseif ($roleCode === 'ga_div_head') {
+            // Head Division HRD&GA: Menangani Tahap 4.
+            // Hanya melihat izin yang lolos sampai ke tahap GA Div Head
+            $query->where(function ($q) {
+                $q->whereIn('status', ['Disetujui', 'Selesai'])
+                  ->orWhere(function ($rejectQ) {
+                      $rejectQ->where('status', 'Ditolak')
+                          ->whereHas('approvals', function ($aq) {
+                              $aq->where('role_at_action', 'ga_dept_head')->where('action', 'Approve');
+                          })->orWhere(function ($subAq) {
+                              $subAq->where('role_at_action', 'ga_div_head');
+                          });
+                  });
+            });
         } else {
-            // Untuk Admin / HSE / Reviewer Internal:
+            // Untuk Admin / Master Oversight:
             // Menampilkan seluruh izin kerja final/arsip (Disetujui, Selesai, Ditolak)
             $query->whereIn('status', ['Disetujui', 'Selesai', 'Ditolak']);
         }
