@@ -24,9 +24,11 @@ export default function DashboardPage() {
   const [loadingPermitId, setLoadingPermitId] = useState<string | number | null>(null);
   const [extensionWindowDays, setExtensionWindowDays] = useState(3);
   const navigate = useNavigate();
-  const userName = auth.getUser()?.name || "Mitra Rekanan PT Widatra Bhakti";
-  const userRole = auth.getRole();
-  const isVendorRole = ["pemohon", "vendor", "kontraktor", "contractor"].includes((userRole || "").toLowerCase().trim());
+  const user = auth.getUser();
+  const userName = user?.name || "Mitra Rekanan PT Widatra Bhakti";
+  const userRole = (auth.getRole() || user?.role?.code || "").toLowerCase().trim();
+  const isVendorRole = ["pemohon", "vendor", "kontraktor", "contractor"].includes(userRole);
+  const canCreatePermit = isVendorRole || ["admin", "hse", "pic_k3"].includes(userRole);
 
   useEffect(() => {
     api.getSettings().then(sRes => {
@@ -185,40 +187,42 @@ export default function DashboardPage() {
             {/* Kiri: Quick Actions & Pekerjaan Aktif */}
             <div className="lg:col-span-2 space-y-6">
               
-              {/* Section 2: Quick Actions */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <button 
-                  onClick={() => navigate('/create-request')}
-                  className="group bg-slate-900 hover:bg-slate-800 text-white p-4 sm:p-5 rounded-xl shadow-xs transition-all flex items-center justify-between text-left cursor-pointer border border-slate-800 active:scale-[0.99]"
-                >
-                  <div className="flex items-center gap-3.5">
-                    <div className="w-11 h-11 rounded-xl bg-white/10 flex items-center justify-center text-white shrink-0 group-hover:scale-105 transition-transform">
-                      <PlusCircle size={22} />
+              {/* Section 2: Quick Actions (Khusus Role Pemohon / Pembuat Permit) */}
+              {canCreatePermit && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <button 
+                    onClick={() => navigate('/create-request')}
+                    className="group bg-slate-900 hover:bg-slate-800 text-white p-4 sm:p-5 rounded-xl shadow-xs transition-all flex items-center justify-between text-left cursor-pointer border border-slate-800 active:scale-[0.99]"
+                  >
+                    <div className="flex items-center gap-3.5">
+                      <div className="w-11 h-11 rounded-xl bg-white/10 flex items-center justify-center text-white shrink-0 group-hover:scale-105 transition-transform">
+                        <PlusCircle size={22} />
+                      </div>
+                      <div>
+                        <h3 className="font-bold text-sm sm:text-base text-white">Buat Izin Baru</h3>
+                        <p className="text-slate-400 text-xs mt-0.5">Ajukan Work Permit keselamatan baru</p>
+                      </div>
                     </div>
-                    <div>
-                      <h3 className="font-bold text-sm sm:text-base text-white">Buat Izin Baru</h3>
-                      <p className="text-slate-400 text-xs mt-0.5">Ajukan Work Permit keselamatan baru</p>
-                    </div>
-                  </div>
-                  <ArrowRight size={18} className="text-slate-400 group-hover:text-white group-hover:translate-x-1 transition-all shrink-0" />
-                </button>
+                    <ArrowRight size={18} className="text-slate-400 group-hover:text-white group-hover:translate-x-1 transition-all shrink-0" />
+                  </button>
 
-                <button 
-                  onClick={() => navigate(isVendorRole ? '/my-requests' : '/history')}
-                  className="group bg-white border border-gray-200 text-gray-800 p-4 sm:p-5 rounded-xl shadow-xs hover:border-gray-300 hover:bg-gray-50/70 transition-all flex items-center justify-between text-left cursor-pointer active:scale-[0.99]"
-                >
-                  <div className="flex items-center gap-3.5">
-                    <div className="w-11 h-11 rounded-xl bg-amber-50 border border-amber-200/60 flex items-center justify-center text-amber-700 shrink-0 group-hover:scale-105 transition-transform">
-                      <CalendarPlus size={22} />
+                  <button 
+                    onClick={() => navigate(isVendorRole ? '/my-requests' : '/history')}
+                    className="group bg-white border border-gray-200 text-gray-800 p-4 sm:p-5 rounded-xl shadow-xs hover:border-gray-300 hover:bg-gray-50/70 transition-all flex items-center justify-between text-left cursor-pointer active:scale-[0.99]"
+                  >
+                    <div className="flex items-center gap-3.5">
+                      <div className="w-11 h-11 rounded-xl bg-amber-50 border border-amber-200/60 flex items-center justify-center text-amber-700 shrink-0 group-hover:scale-105 transition-transform">
+                        <CalendarPlus size={22} />
+                      </div>
+                      <div>
+                        <h3 className="font-bold text-sm sm:text-base text-gray-900">Perpanjang Izin</h3>
+                        <p className="text-gray-500 text-xs mt-0.5">Cek izin aktif & ajukan perpanjangan</p>
+                      </div>
                     </div>
-                    <div>
-                      <h3 className="font-bold text-sm sm:text-base text-gray-900">Perpanjang Izin</h3>
-                      <p className="text-gray-500 text-xs mt-0.5">Cek izin aktif & ajukan perpanjangan</p>
-                    </div>
-                  </div>
-                  <ArrowRight size={18} className="text-gray-400 group-hover:text-gray-700 group-hover:translate-x-1 transition-all shrink-0" />
-                </button>
-              </div>
+                    <ArrowRight size={18} className="text-gray-400 group-hover:text-gray-700 group-hover:translate-x-1 transition-all shrink-0" />
+                  </button>
+                </div>
+              )}
 
               {/* Section 3: Today's Active Permits Mini-table */}
               <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden flex flex-col">
@@ -227,7 +231,7 @@ export default function DashboardPage() {
                     <CheckCircle2 size={18} className="text-success" />
                     Pekerjaan Aktif Hari Ini
                   </h3>
-                  <button onClick={() => navigate('/my-requests')} className="text-xs font-semibold text-primary hover:underline flex items-center gap-1">
+                  <button onClick={() => navigate(isVendorRole ? '/my-requests' : '/history')} className="text-xs font-semibold text-primary hover:underline flex items-center gap-1 cursor-pointer">
                     Lihat Semua <ArrowRight size={14} />
                   </button>
                 </div>
@@ -331,8 +335,8 @@ export default function DashboardPage() {
       <WorkPermitDetailModal
         permit={selectedPermit}
         onClose={() => setSelectedPermit(null)}
-        onExtend={handleExtend}
-        onResubmit={handleResubmit}
+        onExtend={canCreatePermit ? handleExtend : undefined}
+        onResubmit={canCreatePermit ? handleResubmit : undefined}
         extensionWindowDays={extensionWindowDays}
       />
     </div>
