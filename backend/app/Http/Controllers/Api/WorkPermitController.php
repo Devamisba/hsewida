@@ -541,7 +541,7 @@ class WorkPermitController extends Controller
     {
         WorkPermitService::syncExpiredPermits();
 
-        $permit = WorkPermit::with([
+        $query = WorkPermit::with([
             'user:id,name,email,company_name',
             'vendor',
             'location',
@@ -554,7 +554,11 @@ class WorkPermitController extends Controller
             'parentPermit:id,permit_number,start_date,end_date,job_title,request_type,extension_phase',
             'rootPermit:id,permit_number,start_date,end_date,job_title,status',
             'childPermits:id,parent_permit_id,permit_number,status,request_type,extension_phase'
-        ])->findOrFail($id);
+        ]);
+
+        $permit = is_numeric($id) 
+            ? $query->findOrFail($id) 
+            : $query->where('permit_number', $id)->firstOrFail();
 
         return response()->json([
             'success' => true,

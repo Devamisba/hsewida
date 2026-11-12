@@ -201,6 +201,8 @@ class DashboardController extends Controller
                 'activeCount' => $activeToday->count(),
                 'activeToday' => $activeToday->map(fn($p) => [
                     'id' => $p->permit_number,
+                    'permit_id' => $p->id,
+                    'permit_number' => $p->permit_number,
                     'jobName' => $p->job_title,
                     'location' => $p->location ? $p->location->name : '-',
                     'shift' => $p->daily_start_time . ' - ' . $p->daily_end_time,

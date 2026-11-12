@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Header } from "@/components/Header";
-import { Activity, ShieldCheck, AlertTriangle, PlusCircle, CalendarPlus, Clock, CheckCircle2, FileText, ArrowRight } from "lucide-react";
+import { Activity, ShieldCheck, AlertTriangle, PlusCircle, CalendarPlus, Clock, CheckCircle2, FileText, ArrowRight, Loader2 } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { cn } from "@/lib/utils";
 import { api } from "@/services/api";
 import { auth } from "@/lib/auth";
+import { WorkPermitDetailModal, mapApiToPermitDetail } from "@/components/WorkPermitDetailModal";
 
 export default function DashboardPage() {
   const [initialLoading, setInitialLoading] = useState(true);
@@ -19,10 +20,73 @@ export default function DashboardPage() {
     safeManHours: 0,
     chartData: [],
   });
+  const [selectedPermit, setSelectedPermit] = useState<any | null>(null);
+  const [loadingPermitId, setLoadingPermitId] = useState<string | number | null>(null);
+  const [extensionWindowDays, setExtensionWindowDays] = useState(3);
   const navigate = useNavigate();
   const userName = auth.getUser()?.name || "Mitra Rekanan PT Widatra Bhakti";
   const userRole = auth.getRole();
   const isVendorRole = ["pemohon", "vendor", "kontraktor", "contractor"].includes((userRole || "").toLowerCase().trim());
+
+  useEffect(() => {
+    api.getSettings().then(sRes => {
+      if (sRes?.success && sRes.data?.map?.extension_window_days) {
+        setExtensionWindowDays(Number(sRes.data.map.extension_window_days) || 3);
+      }
+    }).catch(() => {});
+  }, []);
+
+  const handleOpenPermit = async (job: any) => {
+    const permitIdentifier = job.permit_id || job.id;
+    if (!permitIdentifier) return;
+
+    setLoadingPermitId(job.id);
+    try {
+      const res = await api.getPermitDetail(permitIdentifier);
+      if (res?.success && res.data) {
+        const mapped = mapApiToPermitDetail(res.data);
+        setSelectedPermit(mapped);
+      } else {
+        alert("Gagal memuat rincian izin kerja.");
+      }
+    } catch (err: any) {
+      console.error("Error opening permit detail:", err);
+      alert("Gagal memuat rincian izin kerja: " + (err.message || "Terjadi kesalahan server"));
+    } finally {
+      setLoadingPermitId(null);
+    }
+  };
+
+  const handleExtend = (req: any) => {
+    if (req.hasActiveChild) {
+      alert("Izin kerja ini sudah pernah diajukan perpanjangan ke fase berikutnya. Silakan lanjutkan dari dokumen perpanjangan terbaru.");
+      return;
+    }
+    navigate("/create-request", { 
+      state: { 
+        extendMode: true, 
+        originalId: req.rawId || req.id, 
+        rootPermitId: req.rootPermitId || req.rawId,
+        rootPermitNumber: req.rootPermit?.permitNumber || req.id,
+        rootStartDate: req.cumulativeStartDate || req.rootPermit?.startDate || req.mulaiKerja,
+        parentPermitId: req.rawId,
+        parentPermitNumber: req.id,
+        ...req 
+      } 
+    });
+  };
+
+  const handleResubmit = (req: any) => {
+    navigate("/create-request", { 
+      state: { 
+        resubmitMode: true, 
+        originalId: req.rawId || req.id, 
+        permitNumber: req.id,
+        rejectReason: req.rejectReason || req.alasanPenolakan,
+        ...req 
+      } 
+    });
+  };
 
   useEffect(() => {
     let isMounted = true;
@@ -179,10 +243,18 @@ export default function DashboardPage() {
                           <div className="text-right">
                             <span className="block text-xs font-medium text-gray-500">{job.shift}</span>
                             <button 
-                              onClick={() => navigate('/my-requests')}
-                              className="mt-2 text-xs font-semibold text-primary hover:text-primary/80 bg-primary-container/20 px-3 py-1.5 rounded cursor-pointer"
+                              type="button"
+                              disabled={loadingPermitId === job.id}
+                              onClick={() => handleOpenPermit(job)}
+                              className="mt-2 text-xs font-semibold text-primary hover:text-primary/80 bg-primary-container/20 hover:bg-primary-container/30 px-3 py-1.5 rounded cursor-pointer transition-colors inline-flex items-center gap-1.5 disabled:opacity-60"
                             >
-                              Buka Permit
+                              {loadingPermitId === job.id ? (
+                                <>
+                                  <Loader2 size={12} className="animate-spin" /> Memuat...
+                                </>
+                              ) : (
+                                "Buka Permit"
+                              )}
                             </button>
                           </div>
                         </li>
@@ -247,6 +319,15 @@ export default function DashboardPage() {
           </div>
         </div>
       </main>
+
+      {/* Modal Detail Izin Kerja Aktif */}
+      <WorkPermitDetailModal
+        permit={selectedPermit}
+        onClose={() => setSelectedPermit(null)}
+        onExtend={handleExtend}
+        onResubmit={handleResubmit}
+        extensionWindowDays={extensionWindowDays}
+      />
     </div>
   );
 }
