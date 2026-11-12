@@ -50,6 +50,9 @@ class WorkPermitController extends Controller
 
         $user = $request->user();
         $twentyFourHoursAgo = now()->subHours(24);
+        $jakartaNow = Carbon::now('Asia/Jakarta');
+        $today = $jakartaNow->toDateString();
+        $currentTime = $jakartaNow->format('H:i');
 
         $permits = WorkPermit::with([
             'location', 
@@ -63,7 +66,12 @@ class WorkPermitController extends Controller
             'rootPermit:id,permit_number,start_date,end_date,job_title,status',
             'childPermits:id,parent_permit_id,permit_number,status,request_type,extension_phase'
         ])
-            ->where('user_id', $user->id)
+            ->where(function ($sub) use ($user) {
+                $sub->where('user_id', $user->id);
+                if (!empty($user->vendor_id)) {
+                    $sub->orWhere('vendor_id', $user->vendor_id);
+                }
+            })
             ->where(function ($q) use ($twentyFourHoursAgo) {
                 // Permit aktif/dalam proses (Draft, Menunggu..., Disetujui yang masih berlaku)
                 $q->whereNotIn('status', ['Ditolak', 'Selesai'])
@@ -78,9 +86,48 @@ class WorkPermitController extends Controller
             ->orderBy('id', 'desc')
             ->get();
 
+        // INLINE AUDIT & REMEDIATION (Khusus Role Pemohon/Vendor):
+        // Memastikan izin kerja yang periode kerjanya sudah berakhir tidak muncul di Izin Saya
+        $activePermits = $permits->filter(function ($p) use ($today, $currentTime) {
+            $endDate = $p->end_date ? Carbon::parse($p->end_date)->toDateString() : null;
+            $endTime = $p->daily_end_time ?: '23:59';
+
+            $isPeriodEnded = false;
+            if ($endDate) {
+                if ($endDate < $today) {
+                    $isPeriodEnded = true;
+                } elseif ($endDate === $today && $endTime <= $currentTime) {
+                    $isPeriodEnded = true;
+                }
+            }
+
+            // Jika status Disetujui tapi periode sudah lewat -> update jadi Selesai & jangan tampilkan di Izin Saya
+            if ($p->status === 'Disetujui' && $isPeriodEnded) {
+                $p->status = 'Selesai';
+                $p->updated_at = now();
+                $p->save();
+                return false;
+            }
+
+            // Jika status dalam antrean review tapi periode sudah lewat -> update jadi Ditolak
+            if (!in_array($p->status, ['Disetujui', 'Selesai', 'Ditolak']) && $isPeriodEnded) {
+                $p->status = 'Ditolak';
+                $p->reject_reason = 'Ditolak Otomatis oleh Sistem: Periode izin kerja telah berakhir sebelum proses persetujuan (approval) selesai disetujui.';
+                $p->updated_at = now();
+                $p->save();
+                return true; // tetap tampil selama 24 jam untuk notifikasi penolakan
+            }
+
+            if ($p->status === 'Selesai') {
+                return false;
+            }
+
+            return true;
+        })->values();
+
         return response()->json([
             'success' => true,
-            'data' => $permits,
+            'data' => $activePermits,
         ]);
     }
 
@@ -175,8 +222,12 @@ class WorkPermitController extends Controller
         // Untuk role Pemohon / Kontraktor / Vendor luar:
         // Riwayat menampilkan seluruh arsip izin kerja milik mereka (Disetujui/Habis Kontrak, Selesai, Ditolak).
         if (in_array($roleCode, ['pemohon', 'kontraktor', 'vendor', 'contractor'])) {
-            $query->where('user_id', $user->id)
-                  ->whereIn('status', ['Disetujui', 'Selesai', 'Ditolak']);
+            $query->where(function ($sub) use ($user) {
+                $sub->where('user_id', $user->id);
+                if (!empty($user->vendor_id)) {
+                    $sub->orWhere('vendor_id', $user->vendor_id);
+                }
+            })->whereIn('status', ['Disetujui', 'Selesai', 'Ditolak']);
         } else {
             // Untuk Admin / HSE / Reviewer Internal:
             // Menampilkan seluruh izin kerja final/arsip (Disetujui, Selesai, Ditolak)

@@ -124,7 +124,7 @@ const getRemainingHours = (updatedAt: string, maxHours: number = 24) => {
   const expireTime = updateTime + maxHours * 60 * 60 * 1000;
   const diffMs = expireTime - Date.now();
   if (diffMs <= 0) return 0;
-  const hours = Math.ceil(diffMs / (1000 * 60 * 60));
+  const hours = Math.min(maxHours, Math.ceil(diffMs / (1000 * 60 * 60)));
   return hours;
 };
 
@@ -176,6 +176,8 @@ export default function MyRequestsPage() {
   const [searchQuery, setSearchQuery] = useState<string>("");
 
   const statusCounts = useMemo(() => {
+    const todayStr = new Date().toLocaleDateString('en-CA');
+    let activeTotal = 0;
     let pending = 0;
     let disetujui = 0;
     let selesai = 0;
@@ -183,19 +185,23 @@ export default function MyRequestsPage() {
 
     requests.forEach((r) => {
       const st = r.status || "";
+      const isPast = (st === "Disetujui" || !st) && r.selesaiKerja && r.selesaiKerja < todayStr;
+      if (st === "Selesai" || isPast) {
+        return; // Selesai / expired masuk ke Riwayat
+      }
+
+      activeTotal++;
       if (st.startsWith("Menunggu") || st === "Review PIC" || st === "Review HSE") {
         pending++;
       } else if (st === "Disetujui") {
         disetujui++;
-      } else if (st === "Selesai") {
-        selesai++;
       } else if (st === "Ditolak") {
         ditolak++;
       }
     });
 
     return {
-      all: requests.length,
+      all: activeTotal,
       pending,
       disetujui,
       selesai,
@@ -204,7 +210,15 @@ export default function MyRequestsPage() {
   }, [requests]);
 
   const filteredRequests = useMemo(() => {
+    const todayStr = new Date().toLocaleDateString('en-CA');
+
     return requests.filter((req) => {
+      // Safety filter: Izin Selesai dan Izin yang masa kerjanya telah berakhir langsung masuk ke menu Riwayat
+      const isPast = (req.status === "Disetujui" || !req.status) && req.selesaiKerja && req.selesaiKerja < todayStr;
+      if (req.status === "Selesai" || isPast) {
+        return false;
+      }
+
       if (statusFilter !== "ALL") {
         if (statusFilter === "PENDING") {
           const st = req.status || "";
