@@ -161,7 +161,8 @@ const isEligibleForExtension = (selesaiKerja: string, status: string, windowDays
 export default function HistoryPage() {
   const location = useLocation();
   const navigate = useNavigate();
-  const userRole = auth.getRole();
+  const user = auth.getUser();
+  const userRole = (auth.getRole() || user?.role?.code || "").toLowerCase().trim();
   const isVendorRole = ["pemohon", "vendor", "kontraktor", "contractor"].includes((userRole || "").toLowerCase().trim());
 
   // Vendor role now has access to History for viewing completed/expired permits
@@ -818,7 +819,7 @@ export default function HistoryPage() {
                         </td>
                         <td className="px-5 py-4 text-right whitespace-nowrap">
                           <div className="flex items-center justify-end gap-2">
-                            {req.status === "Ditolak" && (
+                            {isVendorRole && req.status === "Ditolak" && (
                               <button
                                 onClick={() => handleResubmit(req)}
                                 className="p-2 text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors cursor-pointer"
@@ -827,7 +828,7 @@ export default function HistoryPage() {
                                 <RotateCcw size={18} />
                               </button>
                             )}
-                            {isEligibleForExtension(req.selesaiKerja, req.status, extensionWindowDays) && !req.hasActiveChild && (
+                            {isVendorRole && isEligibleForExtension(req.selesaiKerja, req.status, extensionWindowDays) && !req.hasActiveChild && (
                               <button
                                 onClick={() => handleExtend(req)}
                                 className="p-2 text-amber-600 hover:text-amber-700 hover:bg-amber-50 rounded-lg transition-colors cursor-pointer"
@@ -952,7 +953,7 @@ export default function HistoryPage() {
                       )}
                     </div>
                     <div className="flex gap-2">
-                      {req.status === "Ditolak" && (
+                      {isVendorRole && req.status === "Ditolak" && (
                       <button
                         onClick={() => handleResubmit(req)}
                         className="p-2 text-blue-600 hover:text-blue-700 bg-blue-50 rounded-lg transition-colors cursor-pointer"
@@ -961,7 +962,7 @@ export default function HistoryPage() {
                         <RotateCcw size={18} />
                       </button>
                     )}
-                    {isEligibleForExtension(req.selesaiKerja, req.status, extensionWindowDays) && !req.hasActiveChild && (
+                      {isVendorRole && isEligibleForExtension(req.selesaiKerja, req.status, extensionWindowDays) && !req.hasActiveChild && (
                         <button
                           onClick={() => handleExtend(req)}
                           className="p-2 text-amber-600 hover:text-amber-700 bg-amber-50 rounded-lg transition-colors cursor-pointer"
@@ -1311,7 +1312,7 @@ export default function HistoryPage() {
                 )}
               </div>
               <div className="flex items-center gap-3 w-full sm:w-auto justify-end">
-                {selectedRequest.status === "Ditolak" && (
+                {isVendorRole && selectedRequest.status === "Ditolak" && (
                   <button 
                     onClick={() => {
                       const req = selectedRequest;
