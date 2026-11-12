@@ -123,11 +123,16 @@ class DashboardController extends Controller
                     ->whereBetween('created_at', [$start, $end])
                     ->whereIn('status', ['Disetujui', 'Selesai'])
                     ->count();
+                $ditolak = $basePermitQuery()
+                    ->whereBetween('created_at', [$start, $end])
+                    ->where('status', 'Ditolak')
+                    ->count();
 
                 $chartData[] = [
                     'name' => $label,
                     'pengajuan' => $pengajuan,
                     'disetujui' => $disetujui,
+                    'ditolak' => $ditolak,
                 ];
             }
         } elseif ($period === 'weekly') {
@@ -142,11 +147,16 @@ class DashboardController extends Controller
                     ->whereBetween('created_at', [$start, $end])
                     ->whereIn('status', ['Disetujui', 'Selesai'])
                     ->count();
+                $ditolak = $basePermitQuery()
+                    ->whereBetween('created_at', [$start, $end])
+                    ->where('status', 'Ditolak')
+                    ->count();
 
                 $chartData[] = [
                     'name' => $label,
                     'pengajuan' => $pengajuan,
                     'disetujui' => $disetujui,
+                    'ditolak' => $ditolak,
                 ];
             }
         } elseif ($period === 'yearly') {
@@ -162,11 +172,16 @@ class DashboardController extends Controller
                     ->whereBetween('created_at', [$start, $end])
                     ->whereIn('status', ['Disetujui', 'Selesai'])
                     ->count();
+                $ditolak = $basePermitQuery()
+                    ->whereBetween('created_at', [$start, $end])
+                    ->where('status', 'Ditolak')
+                    ->count();
 
                 $chartData[] = [
                     'name' => (string) $y,
                     'pengajuan' => $pengajuan,
                     'disetujui' => $disetujui,
+                    'ditolak' => $ditolak,
                 ];
             }
         } else {
@@ -185,11 +200,16 @@ class DashboardController extends Controller
                     ->whereBetween('created_at', [$start, $end])
                     ->whereIn('status', ['Disetujui', 'Selesai'])
                     ->count();
+                $ditolak = $basePermitQuery()
+                    ->whereBetween('created_at', [$start, $end])
+                    ->where('status', 'Ditolak')
+                    ->count();
 
                 $chartData[] = [
                     'name' => $name,
                     'pengajuan' => $pengajuan,
                     'disetujui' => $disetujui,
+                    'ditolak' => $ditolak,
                 ];
             }
         }

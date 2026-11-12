@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Header } from "@/components/Header";
 import { Activity, ShieldCheck, AlertTriangle, PlusCircle, CalendarPlus, Clock, CheckCircle2, FileText, ArrowRight, Loader2 } from "lucide-react";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
 import { cn } from "@/lib/utils";
 import { api } from "@/services/api";
 import { auth } from "@/lib/auth";
@@ -292,7 +292,7 @@ export default function DashboardPage() {
         key={p}
         onClick={() => setChartPeriod(p)}
         className={cn(
-          "px-3 py-1 rounded text-sm font-medium",
+          "px-3 py-1 rounded text-sm font-medium cursor-pointer transition-colors",
           p === chartPeriod ? "bg-primary text-on-primary" : "bg-gray-100 text-gray-700 hover:bg-gray-200"
         )}
       >
@@ -309,8 +309,15 @@ export default function DashboardPage() {
                       cursor={{fill: '#f3f4f6'}}
                       contentStyle={{ borderRadius: '8px', border: '1px solid #e5e7eb', fontSize: '12px' }}
                     />
+                    <Legend 
+                      verticalAlign="top" 
+                      align="right" 
+                      iconType="circle" 
+                      wrapperStyle={{ fontSize: '11px', paddingBottom: '12px' }} 
+                    />
                     <Bar dataKey="pengajuan" name="Total Pengajuan" fill="#cbd5e1" radius={[4, 4, 0, 0]} />
                     <Bar dataKey="disetujui" name="Disetujui" fill="#2563eb" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="ditolak" name="Ditolak" fill="#ef4444" radius={[4, 4, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
