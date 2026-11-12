@@ -155,7 +155,7 @@ const isEligibleForExtension = (selesaiKerja: string, status: string, windowDays
   const windowDate = new Date(endDate);
   windowDate.setDate(windowDate.getDate() - windowDays);
   windowDate.setHours(0, 0, 0, 0);
-  return today >= windowDate;
+  return today >= windowDate && today <= endDate;
 };
 
 export default function HistoryPage() {
@@ -178,6 +178,18 @@ export default function HistoryPage() {
   const [historyTab, setHistoryTab] = useState<"permits" | "inspections">(
     (location.state as any)?.tab === "inspections" ? "inspections" : "permits"
   );
+
+  const handleResubmit = (req: any) => {
+    navigate("/create-request", { 
+      state: { 
+        resubmitMode: true, 
+        originalId: req.rawId || req.id, 
+        permitNumber: req.id,
+        rejectReason: req.alasanPenolakan || req.rejectReason,
+        ...req 
+      } 
+    });
+  };
 
   const handleExtend = (req: any) => {
     if (req.hasActiveChild) {
@@ -806,6 +818,15 @@ export default function HistoryPage() {
                         </td>
                         <td className="px-5 py-4 text-right whitespace-nowrap">
                           <div className="flex items-center justify-end gap-2">
+                            {req.status === "Ditolak" && (
+                              <button
+                                onClick={() => handleResubmit(req)}
+                                className="p-2 text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors cursor-pointer"
+                                title="Ajukan Kembali Izin Kerja Ini (Koreksi Tanggal & Kirim Ulang)"
+                              >
+                                <RotateCcw size={18} />
+                              </button>
+                            )}
                             {isEligibleForExtension(req.selesaiKerja, req.status, extensionWindowDays) && !req.hasActiveChild && (
                               <button
                                 onClick={() => handleExtend(req)}
@@ -931,7 +952,16 @@ export default function HistoryPage() {
                       )}
                     </div>
                     <div className="flex gap-2">
-                      {isEligibleForExtension(req.selesaiKerja, req.status, extensionWindowDays) && !req.hasActiveChild && (
+                      {req.status === "Ditolak" && (
+                      <button
+                        onClick={() => handleResubmit(req)}
+                        className="p-2 text-blue-600 hover:text-blue-700 bg-blue-50 rounded-lg transition-colors cursor-pointer"
+                        title="Ajukan Kembali Izin Kerja Ini"
+                      >
+                        <RotateCcw size={18} />
+                      </button>
+                    )}
+                    {isEligibleForExtension(req.selesaiKerja, req.status, extensionWindowDays) && !req.hasActiveChild && (
                         <button
                           onClick={() => handleExtend(req)}
                           className="p-2 text-amber-600 hover:text-amber-700 bg-amber-50 rounded-lg transition-colors cursor-pointer"
@@ -1281,6 +1311,19 @@ export default function HistoryPage() {
                 )}
               </div>
               <div className="flex items-center gap-3 w-full sm:w-auto justify-end">
+                {selectedRequest.status === "Ditolak" && (
+                  <button 
+                    onClick={() => {
+                      const req = selectedRequest;
+                      setSelectedRequest(null);
+                      handleResubmit(req);
+                    }}
+                    className="px-5 py-2.5 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg flex items-center gap-2 transition-colors cursor-pointer shadow-sm"
+                    title="Ajukan kembali izin kerja ini dengan mengisi periode tanggal baru"
+                  >
+                    <RotateCcw size={18} /> Ajukan Kembali Izin Ini
+                  </button>
+                )}
                 <button 
                   onClick={() => setSelectedRequest(null)} 
                   className="px-6 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer"

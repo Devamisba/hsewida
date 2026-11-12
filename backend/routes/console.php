@@ -81,3 +81,10 @@ Artisan::command('hse:clean-history {--force : Force cleanup without confirmatio
         return 1;
     }
 })->purpose('Clean all dummy/test work permits, inspections, and test vendor data while preserving master data');
+
+Artisan::command('hse:sync-permit-status', function () {
+    $this->info("Menjalankan sinkronisasi siklus hidup izin kerja...");
+    $count = \App\Services\WorkPermitService::syncExpiredPermits();
+    $this->info("Sukses! Sebanyak {$count} izin kerja kedaluwarsa telah diperbarui statusnya (Selesai/Ditolak Sistem).");
+    return 0;
+})->purpose('Sinkronisasi status izin kerja yang tanggal akhirnya telah berakhir (Selesai jika sudah disetujui, Ditolak jika belum disetujui)');

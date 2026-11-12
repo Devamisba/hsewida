@@ -14,6 +14,7 @@ use App\Models\PermitTypeOption;
 use App\Models\PpeOption;
 use App\Models\Notification;
 use App\Models\SystemSetting;
+use App\Services\WorkPermitService;
 
 class WorkPermitController extends Controller
 {
@@ -39,13 +40,16 @@ class WorkPermitController extends Controller
 
     /**
      * Get permits submitted by the current authenticated contractor/vendor.
-     * Rule: Ditolak & Selesai hanya tampil di Izin Saya selama 12 jam sejak status diubah (updated_at).
-     * Setelah 12 jam, dokumen otomatis hanya tampil di menu Riwayat.
+     * Rule: 
+     * - Ditolak (oleh human/sistem) tampil di Izin Saya selama 24 jam sejak diubah (updated_at).
+     * - Selesai langsung seketika pindah ke menu Riwayat (non-toleransi).
      */
     public function myRequests(Request $request)
     {
+        WorkPermitService::syncExpiredPermits();
+
         $user = $request->user();
-        $twelveHoursAgo = now()->subHours(12);
+        $twentyFourHoursAgo = now()->subHours(24);
 
         $permits = WorkPermit::with([
             'location', 
@@ -60,19 +64,15 @@ class WorkPermitController extends Controller
             'childPermits:id,parent_permit_id,permit_number,status,request_type,extension_phase'
         ])
             ->where('user_id', $user->id)
-            ->where(function ($q) use ($twelveHoursAgo) {
-                // Permit aktif/dalam proses (Draft, Menunggu..., Disetujui)
+            ->where(function ($q) use ($twentyFourHoursAgo) {
+                // Permit aktif/dalam proses (Draft, Menunggu..., Disetujui yang masih berlaku)
                 $q->whereNotIn('status', ['Ditolak', 'Selesai'])
-                  // Permit Ditolak: HANYA tampil jika belum lewat 12 jam sejak ditolak
-                  ->orWhere(function ($sub) use ($twelveHoursAgo) {
+                  // Permit Ditolak: HANYA tampil jika belum lewat 24 jam sejak ditolak
+                  ->orWhere(function ($sub) use ($twentyFourHoursAgo) {
                       $sub->where('status', 'Ditolak')
-                          ->where('updated_at', '>=', $twelveHoursAgo);
-                  })
-                  // Permit Selesai: HANYA tampil jika belum lewat 12 jam sejak diselesaikan
-                  ->orWhere(function ($sub) use ($twelveHoursAgo) {
-                      $sub->where('status', 'Selesai')
-                          ->where('updated_at', '>=', $twelveHoursAgo);
+                          ->where('updated_at', '>=', $twentyFourHoursAgo);
                   });
+                // Note: Izin 'Selesai' langsung pindah ke menu Riwayat tanpa jeda
             })
             ->orderBy('created_at', 'desc')
             ->orderBy('id', 'desc')
@@ -89,6 +89,8 @@ class WorkPermitController extends Controller
      */
     public function reviewQueue(Request $request)
     {
+        WorkPermitService::syncExpiredPermits();
+
         $user = $request->user();
         $roleCode = $user->role ? $user->role->code : '';
 
@@ -150,6 +152,8 @@ class WorkPermitController extends Controller
      */
     public function history(Request $request)
     {
+        WorkPermitService::syncExpiredPermits();
+
         $user = $request->user();
         $roleCode = strtolower($user->role ? $user->role->code : '');
 
@@ -484,6 +488,8 @@ class WorkPermitController extends Controller
      */
     public function show($id)
     {
+        WorkPermitService::syncExpiredPermits();
+
         $permit = WorkPermit::with([
             'user:id,name,email,company_name',
             'vendor',
@@ -513,6 +519,15 @@ class WorkPermitController extends Controller
         $user = $request->user();
         $roleCode = $user->role ? $user->role->code : '';
         $permit = WorkPermit::findOrFail($id);
+
+        // Jika izin kerja telah melewati tanggal masa berlaku, tolak otomatis
+        if ($permit->end_date && Carbon::parse($permit->end_date)->startOfDay()->lt(Carbon::today())) {
+            WorkPermitService::syncExpiredPermits();
+            return response()->json([
+                'success' => false,
+                'message' => 'Masa kerja izin ini telah berakhir dan otomatis ditolak oleh sistem. Izin tidak dapat disetujui lagi.',
+            ], 422);
+        }
 
         $requiredRole = match ($permit->status) {
             'Menunggu PIC Widatra', 'Menunggu PIC Vendor' => 'pic_vendor',
@@ -591,6 +606,15 @@ class WorkPermitController extends Controller
         $user = $request->user();
         $roleCode = $user->role ? $user->role->code : '';
         $permit = WorkPermit::findOrFail($id);
+
+        // Jika izin kerja telah melewati tanggal masa berlaku, tolak otomatis
+        if ($permit->end_date && Carbon::parse($permit->end_date)->startOfDay()->lt(Carbon::today())) {
+            WorkPermitService::syncExpiredPermits();
+            return response()->json([
+                'success' => false,
+                'message' => 'Masa kerja izin ini telah berakhir dan otomatis ditolak oleh sistem. Izin tidak dapat disetujui lagi.',
+            ], 422);
+        }
 
         $requiredRole = match ($permit->status) {
             'Menunggu PIC Widatra', 'Menunggu PIC Vendor' => 'pic_vendor',
@@ -718,6 +742,15 @@ class WorkPermitController extends Controller
         $user = $request->user();
         $roleCode = $user->role ? $user->role->code : '';
         $permit = WorkPermit::findOrFail($id);
+
+        // Jika izin kerja telah melewati tanggal masa berlaku, tolak otomatis
+        if ($permit->end_date && Carbon::parse($permit->end_date)->startOfDay()->lt(Carbon::today())) {
+            WorkPermitService::syncExpiredPermits();
+            return response()->json([
+                'success' => false,
+                'message' => 'Masa kerja izin ini telah berakhir dan otomatis ditolak oleh sistem. Izin tidak dapat disetujui lagi.',
+            ], 422);
+        }
 
         if ($permit->status !== 'Disetujui') {
             return response()->json([

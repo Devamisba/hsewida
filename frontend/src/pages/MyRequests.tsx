@@ -18,7 +18,8 @@ import {
   Hourglass,
   XCircle,
   CheckCircle,
-  Layers
+  Layers,
+  RotateCcw
 } from "lucide-react";
 import { cn, calculateInclusiveDays, formatPermitStatus, formatDateDDMMYY } from "@/lib/utils";
 import { api } from "@/services/api";
@@ -116,7 +117,7 @@ function mapApiToRequest(item: any) {
   };
 }
 
-const getRemainingHours = (updatedAt: string, maxHours: number = 12) => {
+const getRemainingHours = (updatedAt: string, maxHours: number = 24) => {
   if (!updatedAt) return null;
   const updateTime = new Date(updatedAt).getTime();
   if (isNaN(updateTime)) return null;
@@ -160,7 +161,7 @@ const isEligibleForExtension = (selesaiKerja: string, status: string, windowDays
   windowDate.setDate(windowDate.getDate() - windowDays);
   windowDate.setHours(0, 0, 0, 0);
   
-  return today >= windowDate;
+  return today >= windowDate && today <= endDate;
 };
 
 export default function MyRequestsPage() {
@@ -226,6 +227,18 @@ export default function MyRequestsPage() {
       return true;
     });
   }, [requests, statusFilter, searchQuery]);
+
+  const handleResubmit = (req: any) => {
+    navigate("/create-request", { 
+      state: { 
+        resubmitMode: true, 
+        originalId: req.rawId || req.id, 
+        permitNumber: req.id,
+        rejectReason: req.rejectReason || req.alasanPenolakan,
+        ...req 
+      } 
+    });
+  };
 
   const handleExtend = (req: any) => {
     if (req.hasActiveChild) {
@@ -498,10 +511,10 @@ export default function MyRequestsPage() {
                             <span className={cn("inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold", getStatusBadge(req.status))}>
                               {formatPermitStatus(req.status)}
                             </span>
-                            {(req.status === "Ditolak" || req.status === "Selesai") && req.updatedAt && (
+                            {req.status === "Ditolak" && req.updatedAt && (
                               <span className="text-[10px] text-slate-500 font-medium">
                                 {(() => {
-                                  const hours = getRemainingHours(req.updatedAt, 12);
+                                  const hours = getRemainingHours(req.updatedAt, 24);
                                   return hours && hours > 0 ? `Arsip dlm ${hours}j` : "Segera diarsipkan";
                                 })()}
                               </span>
@@ -510,6 +523,15 @@ export default function MyRequestsPage() {
                         </td>
                         <td className="px-5 py-3.5 text-right whitespace-nowrap">
                           <div className="flex items-center justify-end gap-1.5">
+                            {req.status === "Ditolak" && (
+                              <button 
+                                onClick={() => handleResubmit(req)}
+                                className="p-1.5 text-blue-700 hover:text-blue-800 hover:bg-blue-50 bg-white border border-blue-200 rounded-lg transition-colors cursor-pointer" 
+                                title="Ajukan Kembali Izin Kerja Ini (Koreksi Tanggal & Kirim Ulang)"
+                              >
+                                <RotateCcw size={15} />
+                              </button>
+                            )}
                             {isEligibleForExtension(req.selesaiKerja, req.status, extensionWindowDays) && !req.hasActiveChild && (
                               <button 
                                 onClick={() => handleExtend(req)}
@@ -625,6 +647,15 @@ export default function MyRequestsPage() {
                     )}
                   </div>
                   <div className="flex gap-2">
+                    {req.status === "Ditolak" && (
+                      <button 
+                        onClick={() => handleResubmit(req)}
+                        className="p-2 text-blue-700 hover:text-blue-800 bg-blue-50 rounded-lg transition-colors cursor-pointer" 
+                        title="Ajukan Kembali Izin Kerja Ini"
+                      >
+                        <RotateCcw size={16} />
+                      </button>
+                    )}
                     {isEligibleForExtension(req.selesaiKerja, req.status, extensionWindowDays) && !req.hasActiveChild && (
                       <button 
                         onClick={() => handleExtend(req)}
@@ -969,6 +1000,19 @@ export default function MyRequestsPage() {
                 )}
               </div>
               <div className="flex items-center gap-3 w-full sm:w-auto justify-end">
+                {selectedRequest.status === "Ditolak" && (
+                  <button 
+                    onClick={() => {
+                      const req = selectedRequest;
+                      setSelectedRequest(null);
+                      handleResubmit(req);
+                    }}
+                    className="px-5 py-2.5 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg flex items-center gap-2 transition-colors cursor-pointer shadow-sm"
+                    title="Ajukan kembali izin kerja ini dengan mengisi periode tanggal baru"
+                  >
+                    <RotateCcw size={16} /> Ajukan Kembali Izin Ini
+                  </button>
+                )}
                 {isEligibleForExtension(selectedRequest.selesaiKerja, selectedRequest.status, extensionWindowDays) && (
                   <button 
                     onClick={() => {

@@ -10,6 +10,7 @@ use App\Models\PermitWorker;
 use App\Models\Vendor;
 use App\Models\SafetyFacility;
 use App\Models\FacilityInspection;
+use App\Services\WorkPermitService;
 
 class DashboardController extends Controller
 {
@@ -18,6 +19,7 @@ class DashboardController extends Controller
      */
     public function contractorDashboard(Request $request)
     {
+        WorkPermitService::syncExpiredPermits();
         $user = $request->user();
         $today = Carbon::today()->toDateString();
         $threeDaysLater = Carbon::today()->addDays(3)->toDateString();
@@ -217,6 +219,7 @@ class DashboardController extends Controller
      */
     public function hseDashboard()
     {
+        WorkPermitService::syncExpiredPermits();
         $today = Carbon::today()->toDateString();
 
         $pendingReview = WorkPermit::with(['location', 'vendor'])

@@ -5,7 +5,7 @@ import { Step2PermitType } from "@/components/wizard/Step2PermitType";
 import { Step3TenagaKerja } from "@/components/wizard/Step3TenagaKerja";
 import { Step4JSA } from "@/components/wizard/Step4JSA";
 import { api } from "@/services/api";
-import { CheckCircle, AlertCircle, CalendarPlus } from "lucide-react";
+import { CheckCircle, AlertCircle, CalendarPlus, RotateCcw } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useNavigate, useLocation } from "react-router-dom";
 import { format, addDays } from "date-fns";
@@ -51,6 +51,49 @@ export default function CreateRequestPage() {
 
   // Global Form State - Auto prefill if launched from Extension action
   const [formData, setFormData] = useState(() => {
+    if (extendState?.resubmitMode) {
+      return {
+        // Step 1
+        requestType: "Baru",
+        extensionPhase: 0,
+        rootPermitId: null,
+        rootPermitNumber: "",
+        rootStartDate: "",
+        parentPermitId: null,
+        parentPermitNumber: "",
+        parentStartDate: "",
+        parentEndDate: "",
+        namaKontraktor: extendState.namaKontraktor || "",
+        jenisPekerjaan: extendState.jenisPekerjaan || "",
+        mulaiKerja: "",
+        selesaiKerja: "",
+        penanggungJawab: extendState.penanggungJawab || "",
+        noHpPJ: extendState.noHpPJ || "",
+        pengawasPekerjaan: extendState.pengawasPekerjaan || "",
+        noHpPengawas: extendState.noHpPengawas || "",
+        pengawasHse: extendState.pengawasHse || "Tim K3 / HSE Lapangan",
+        noHpHse: extendState.noHpHse || "085566778899",
+        totalTenagaKerja: String(extendState.pekerja?.length || extendState.totalTenagaKerja || "1"),
+        jamKerjaMulai: extendState.jamKerjaMulai || "08:00",
+        jamKerjaAkhir: extendState.jamKerjaAkhir || "17:00",
+        lokasi: extendState.lokasi || "",
+
+        // Step 2
+        permitTypes: Array.isArray(extendState.permitTypes) ? extendState.permitTypes : [],
+        otherPermitType: extendState.otherPermitType || "",
+        ppe: Array.isArray(extendState.ppe) ? extendState.ppe : [],
+        otherPpe: extendState.otherPpe || "",
+        workEquipment: extendState.workEquipment?.length ? extendState.workEquipment : ["", "", ""],
+
+        // Step 3
+        pekerja: extendState.pekerja?.length ? extendState.pekerja : [createEmptyWorker(1)],
+
+        // Step 4
+        jsa: extendState.jsa?.length ? extendState.jsa : [],
+        disclaimerAccepted: false,
+      };
+    }
+
     if (extendState?.extendMode) {
       let nextStart = "";
       let nextEnd = "";
@@ -434,6 +477,23 @@ export default function CreateRequestPage() {
                 : "Formulir digital Izin Kerja, Safety Induction & JSA untuk vendor eksternal."}
             </p>
           </div>
+
+          {extendState?.resubmitMode && (
+            <div className="mb-6 p-4 bg-blue-50/90 border border-blue-200 rounded-xl space-y-2 text-blue-900 text-sm shadow-sm animate-in fade-in">
+              <div className="flex items-center gap-2.5 font-bold">
+                <RotateCcw size={18} className="text-blue-600 shrink-0" />
+                <span>Mode Pengajuan Kembali (Re-Submit) Izin Kerja #{extendState.permitNumber || extendState.id}</span>
+              </div>
+              <p className="text-xs text-blue-700 leading-relaxed">
+                Seluruh data pekerjaan, vendor, rincian {formData.pekerja?.length || 0} tenaga kerja, dan tabel JSA keselamatan telah dimuat secara otomatis. Silakan tentukan periode tanggal kerja baru Anda di bawah ini lalu lanjutkan ke langkah berikutnya.
+              </p>
+              {extendState.rejectReason && (
+                <div className="p-2.5 bg-white/80 rounded-lg border border-blue-200/60 text-xs text-rose-700">
+                  <span className="font-bold">Catatan Penolakan Sebelumnya:</span> {extendState.rejectReason}
+                </div>
+              )}
+            </div>
+          )}
 
           {extendState?.extendMode && (
             <div className="mb-6 p-4 bg-amber-50/90 border border-amber-200 rounded-xl flex items-center justify-between gap-3 text-amber-900 text-sm shadow-sm animate-in fade-in">
