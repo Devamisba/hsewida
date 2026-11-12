@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { api, SafetyFacility } from "@/services/api";
 import { PLANT_CENTER, syncGeofenceFromSettingsMap } from "@/utils/facilityCoordinates";
+import { auth } from "@/lib/auth";
 
 type ViewMode = "CHOICE" | "PENGECEKAN";
 
@@ -39,6 +40,13 @@ const formatDateTime = (dateStr?: string | null) => {
 
 export default function AparScanPage() {
   const { code } = useParams<{ code: string }>();
+
+  const isAuthenticated = auth.isAuthenticated();
+  const user = auth.getUser();
+  const userRole = (auth.getRole() || user?.role?.code || "").toLowerCase().trim();
+  const targetDashboard = !isAuthenticated 
+    ? "/login" 
+    : (["admin", "hse", "pic_k3"].includes(userRole) ? "/monitoring" : "/dashboard");
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -297,8 +305,9 @@ export default function AparScanPage() {
             <h1 className="text-sm font-bold text-slate-800">Pemeriksaan APAR</h1>
           </div>
           <Link
-            to="/monitoring"
-            className="text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 px-2.5 py-1 rounded transition border border-slate-200"
+            to={targetDashboard}
+            className="text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 px-2.5 py-1 rounded transition border border-slate-200 cursor-pointer"
+            title={isAuthenticated ? "Kembali ke Dashboard K3" : "Masuk ke Akun Portal HSE"}
           >
             Dashboard K3
           </Link>
@@ -319,10 +328,10 @@ export default function AparScanPage() {
               {error}
             </div>
             <Link
-              to="/monitoring"
-              className="inline-block text-xs font-semibold text-slate-900 underline"
+              to={targetDashboard}
+              className="inline-block text-xs font-semibold text-slate-900 underline cursor-pointer"
             >
-              Kembali ke Halaman Monitoring
+              {isAuthenticated ? "Kembali ke Halaman Monitoring" : "Masuk ke Portal HSE"}
             </Link>
           </div>
         )}

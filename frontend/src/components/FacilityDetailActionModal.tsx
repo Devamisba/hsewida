@@ -365,7 +365,7 @@ export function FacilityDetailActionModal({
                 {isApar && (
                   <Link
                     to={`/scan/apar/${facility.code}`}
-                    target="_blank"
+                    onClick={onClose}
                     className="inline-flex items-center gap-1.5 px-3 py-2 bg-white border border-purple-300 hover:bg-purple-100/60 text-purple-900 rounded-lg text-xs font-semibold transition cursor-pointer"
                   >
                     <ExternalLink size={13} />
@@ -504,7 +504,7 @@ export function FacilityDetailActionModal({
               {isApar && (
                 <Link
                   to={`/scan/apar/${facility.code}`}
-                  target="_blank"
+                  onClick={onClose}
                   className="flex items-center justify-between p-3 rounded-lg border border-rose-200 bg-rose-50/50 hover:bg-rose-100/70 hover:border-rose-300 transition text-left group"
                 >
                   <div className="flex items-center gap-2.5 min-w-0">
