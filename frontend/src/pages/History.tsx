@@ -1318,15 +1318,15 @@ export default function HistoryPage() {
                       setSelectedRequest(null);
                       handleResubmit(req);
                     }}
-                    className="px-5 py-2.5 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg flex items-center gap-2 transition-colors cursor-pointer shadow-sm"
+                    className="px-5 py-2.5 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg flex items-center gap-2 transition-colors cursor-pointer shadow-sm whitespace-nowrap"
                     title="Ajukan kembali izin kerja ini dengan mengisi periode tanggal baru"
                   >
-                    <RotateCcw size={18} /> Ajukan Kembali Izin Ini
+                    <RotateCcw size={18} /> Ajukan Kembali
                   </button>
                 )}
                 <button 
                   onClick={() => setSelectedRequest(null)} 
-                  className="px-6 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer"
+                  className="px-6 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer whitespace-nowrap"
                 >
                   Tutup
                 </button>
@@ -1340,7 +1340,7 @@ export default function HistoryPage() {
                 ) : (
                   <button 
                     disabled
-                    className="px-5 py-2.5 text-sm font-medium text-gray-400 bg-gray-100 border border-gray-200 rounded-lg flex items-center gap-2 cursor-not-allowed opacity-75"
+                    className="px-5 py-2.5 text-sm font-medium text-gray-400 bg-gray-100 border border-gray-200 rounded-lg flex items-center gap-2 cursor-not-allowed opacity-75 whitespace-nowrap"
                     title="Izin kerja belum dapat dicetak karena belum disetujui penuh oleh Head Division HRD&GA"
                   >
                     <Lock size={16} /> Menunggu Approval Akhir (Terkunci)
