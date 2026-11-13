@@ -85,7 +85,7 @@ export const NAVIGATION_CONFIG: NavItem[] = [
         name: "Izin Saya",
         href: "/my-requests",
         icon: Files,
-        roles: ["admin", "kontraktor", "contractor", "pemohon", "vendor"],
+        roles: ["admin", "hse", "pic_k3", "kontraktor", "contractor", "pemohon", "vendor"],
       },
       {
         name: "Review Izin",
