@@ -1,7 +1,26 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Header } from "@/components/Header";
-import { Activity, ShieldCheck, AlertTriangle, PlusCircle, CalendarPlus, Clock, CheckCircle2, FileText, ArrowRight, Loader2 } from "lucide-react";
+import { 
+  Activity, 
+  ShieldCheck, 
+  AlertTriangle, 
+  PlusCircle, 
+  CalendarPlus, 
+  Clock, 
+  CheckCircle2, 
+  FileText, 
+  ArrowRight, 
+  Loader2,
+  MapPin,
+  Flame,
+  Droplet,
+  Cross,
+  DoorOpen,
+  ClipboardCheck,
+  ChevronRight,
+  Layers
+} from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
 import { cn } from "@/lib/utils";
 import { api } from "@/services/api";
@@ -19,6 +38,23 @@ export default function DashboardPage() {
     expiringSoonCount: 0,
     safeManHours: 0,
     chartData: [],
+    monitoring: {
+      totalFacilities: 0,
+      aparCount: 0,
+      hydrantCount: 0,
+      p3kCount: 0,
+      emergencyDoorCount: 0,
+      safetyMirrorCount: 0,
+      assemblyPointCount: 0,
+      otherCount: 0,
+      checkedThisMonth: 0,
+      uncheckedThisMonth: 0,
+      inspectionPercentage: 0,
+      daysLeftInMonth: 0,
+      expiredCount: 0,
+      refillQueueCount: 0,
+      findingsCount: 0,
+    },
   });
   const [selectedPermit, setSelectedPermit] = useState<any | null>(null);
   const [loadingPermitId, setLoadingPermitId] = useState<string | number | null>(null);
@@ -29,6 +65,7 @@ export default function DashboardPage() {
   const userRole = (auth.getRole() || user?.role?.code || "").toLowerCase().trim();
   const isVendorRole = ["pemohon", "vendor", "kontraktor", "contractor"].includes(userRole);
   const canCreatePermit = isVendorRole || ["admin", "hse", "pic_k3"].includes(userRole);
+  const canViewMonitoring = ["admin", "hse", "pic_k3"].includes(userRole) || !isVendorRole;
 
   useEffect(() => {
     api.getSettings().then(sRes => {
@@ -99,7 +136,17 @@ export default function DashboardPage() {
       try {
         const res = await api.getContractorDashboard({ period: chartPeriod });
         if (isMounted && res.success && res.data) {
-          setDashboardData(res.data);
+          let data = res.data;
+          // Fallback / Pengayaan jika monitoring belum ada
+          if (canViewMonitoring && (!data.monitoring || data.monitoring.totalFacilities === 0)) {
+            try {
+              const hseRes = await api.getHseDashboard();
+              if (hseRes.success && hseRes.data?.monitoring) {
+                data.monitoring = hseRes.data.monitoring;
+              }
+            } catch {}
+          }
+          setDashboardData(data);
         }
       } catch (err: any) {
         console.warn("Could not fetch contractor dashboard:", err.message);
@@ -181,6 +228,146 @@ export default function DashboardPage() {
               color="success"
             />
           </div>
+
+          {/* Section 2: MONITORING & INSPEKSI FASILITAS K3 (Tampil untuk Admin / Tim K3 / Internal) */}
+          {canViewMonitoring && (
+            <div className="bg-white rounded-xl shadow-xs border border-gray-200 p-5 space-y-4">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 pb-3 border-b border-gray-100">
+                <div className="flex items-center gap-2.5">
+                  <div className="p-2 bg-blue-50 text-blue-600 rounded-lg">
+                    <Activity size={20} />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-bold text-gray-900">Kesiapan Fasilitas & Kepatuhan Inspeksi K3</h3>
+                    <p className="text-xs text-gray-500">Pemantauan 6 fasilitas keselamatan dan progress checklist lapangan bulan ini</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button 
+                    onClick={() => navigate('/gis-map')}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-gray-100 hover:bg-gray-200 text-gray-700 transition-colors cursor-pointer"
+                  >
+                    <MapPin size={14} className="text-blue-600" />
+                    Peta GIS
+                  </button>
+                  <button 
+                    onClick={() => navigate('/monitoring')}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-primary/10 hover:bg-primary/20 text-primary transition-colors cursor-pointer"
+                  >
+                    Kelola Fasilitas
+                    <ArrowRight size={14} />
+                  </button>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                
+                {/* Card 1: Total Fasilitas */}
+                <div 
+                  onClick={() => navigate('/monitoring')}
+                  className="p-4 rounded-xl bg-gradient-to-br from-blue-50/60 to-indigo-50/40 border border-blue-100 hover:border-blue-200 transition-all cursor-pointer group"
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-xs font-semibold text-blue-800">Total Fasilitas K3</span>
+                    <Layers size={18} className="text-blue-600 group-hover:scale-110 transition-transform" />
+                  </div>
+                  <div className="text-2xl font-black text-gray-900">
+                    {((dashboardData.monitoring || {}).totalFacilities || 0).toLocaleString()} <span className="text-xs font-normal text-gray-500">Unit</span>
+                  </div>
+                  <div className="flex items-center gap-2 mt-2 text-xs font-semibold text-gray-600 flex-wrap">
+                    <span className="inline-flex items-center gap-1 hover:text-red-600 transition-colors" title={`APAR: ${(dashboardData.monitoring || {}).aparCount || 0} Unit`}>
+                      <Flame size={13} className="text-red-500" />
+                      <span>{(dashboardData.monitoring || {}).aparCount || 0}</span>
+                    </span>
+                    <span className="text-gray-300">·</span>
+                    <span className="inline-flex items-center gap-1 hover:text-blue-600 transition-colors" title={`Hydrant: ${(dashboardData.monitoring || {}).hydrantCount || 0} Unit`}>
+                      <Droplet size={13} className="text-blue-500" />
+                      <span>{(dashboardData.monitoring || {}).hydrantCount || 0}</span>
+                    </span>
+                    <span className="text-gray-300">·</span>
+                    <span className="inline-flex items-center gap-1 hover:text-emerald-600 transition-colors" title={`P3K: ${(dashboardData.monitoring || {}).p3kCount || 0} Unit`}>
+                      <Cross size={13} className="text-emerald-600" />
+                      <span>{(dashboardData.monitoring || {}).p3kCount || 0}</span>
+                    </span>
+                    {((dashboardData.monitoring || {}).otherCount || 0) > 0 && (
+                      <>
+                        <span className="text-gray-300">·</span>
+                        <span className="inline-flex items-center gap-1 hover:text-amber-600 transition-colors" title={`Fasilitas Lainnya: ${(dashboardData.monitoring || {}).otherCount || 0} Unit`}>
+                          <DoorOpen size={13} className="text-amber-500" />
+                          <span>{(dashboardData.monitoring || {}).otherCount || 0}</span>
+                        </span>
+                      </>
+                    )}
+                  </div>
+                </div>
+
+                {/* Card 2: Kepatuhan Inspeksi Bulan Ini */}
+                <div 
+                  onClick={() => navigate('/inspeksi')}
+                  className="p-4 rounded-xl bg-gradient-to-br from-emerald-50/60 to-teal-50/40 border border-emerald-100 hover:border-emerald-200 transition-all cursor-pointer group"
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-xs font-semibold text-emerald-800">Inspeksi Bulan Ini</span>
+                    <ClipboardCheck size={18} className="text-emerald-600 group-hover:scale-110 transition-transform" />
+                  </div>
+                  <div className="flex items-baseline justify-between">
+                    <div className="text-2xl font-black text-gray-900">
+                      {(dashboardData.monitoring || {}).checkedThisMonth || 0} <span className="text-xs font-normal text-gray-500">/ {((dashboardData.monitoring || {}).totalFacilities || 0)}</span>
+                    </div>
+                    <span className="text-xs font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full">
+                      {(dashboardData.monitoring || {}).inspectionPercentage || 0}%
+                    </span>
+                  </div>
+                  {/* Progress bar */}
+                  <div className="w-full bg-emerald-200/50 h-1.5 rounded-full mt-2.5 overflow-hidden">
+                    <div 
+                      className="bg-emerald-600 h-full rounded-full transition-all duration-500" 
+                      style={{ width: `${Math.min(100, Math.max(0, (dashboardData.monitoring || {}).inspectionPercentage || 0))}%` }}
+                    />
+                  </div>
+                  <p className="text-[11px] text-emerald-700 font-medium mt-1.5">
+                    Sisa {(dashboardData.monitoring || {}).daysLeftInMonth || 0} hari kerja bulan ini
+                  </p>
+                </div>
+
+                {/* Card 3: Belum Diperiksa */}
+                <div 
+                  onClick={() => navigate('/inspeksi')}
+                  className="p-4 rounded-xl bg-gradient-to-br from-amber-50/60 to-orange-50/40 border border-amber-100 hover:border-amber-200 transition-all cursor-pointer group"
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-xs font-semibold text-amber-800">Belum Dicek Bulan Ini</span>
+                    <Clock size={18} className="text-amber-600 group-hover:scale-110 transition-transform" />
+                  </div>
+                  <div className="text-2xl font-black text-gray-900">
+                    {(dashboardData.monitoring || {}).uncheckedThisMonth || 0} <span className="text-xs font-normal text-gray-500">Unit</span>
+                  </div>
+                  <p className="text-[11px] text-amber-700 font-medium mt-2 flex items-center gap-1">
+                    <span>Perlu checklist fisik petugas</span>
+                    <ChevronRight size={12} />
+                  </p>
+                </div>
+
+                {/* Card 4: Antrean Refill & Temuan */}
+                <div 
+                  onClick={() => navigate('/monitoring')}
+                  className="p-4 rounded-xl bg-gradient-to-br from-rose-50/60 to-pink-50/40 border border-rose-100 hover:border-rose-200 transition-all cursor-pointer group"
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-xs font-semibold text-rose-800">Perhatian & Refill</span>
+                    <AlertTriangle size={18} className="text-rose-600 group-hover:scale-110 transition-transform" />
+                  </div>
+                  <div className="text-2xl font-black text-gray-900">
+                    {(((dashboardData.monitoring || {}).expiredCount || 0) + ((dashboardData.monitoring || {}).refillQueueCount || 0))} <span className="text-xs font-normal text-gray-500">Unit</span>
+                  </div>
+                  <p className="text-[11px] text-rose-700 font-medium mt-2 truncate">
+                    {(dashboardData.monitoring || {}).refillQueueCount || 0} antrean isi ulang · {(dashboardData.monitoring || {}).findingsCount || 0} temuan
+                  </p>
+                </div>
+
+              </div>
+            </div>
+          )}
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             
