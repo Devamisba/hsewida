@@ -342,8 +342,8 @@ class WorkPermitController extends Controller
             'pekerja' => 'required|array|min:1',
             'pekerja.*.nama' => 'required|string',
             'pekerja.*.jabatan' => 'required|string',
-            'pekerja.*.alamat' => 'nullable|string',
-            'pekerja.*.id_card_photo' => 'nullable|string',
+            'pekerja.*.alamat' => 'required|string',
+            'pekerja.*.id_card_photo' => 'required|string',
 
             // Step 4
             'jsa' => 'required|array|min:1',
@@ -374,6 +374,8 @@ class WorkPermitController extends Controller
             'pekerja.min' => 'Mohon isi data Tenaga Kerja minimal 1 orang.',
             'pekerja.*.nama.required' => 'Mohon lengkapi Nama Tenaga Kerja.',
             'pekerja.*.jabatan.required' => 'Mohon lengkapi Jabatan Tenaga Kerja.',
+            'pekerja.*.alamat.required' => 'Mohon lengkapi Alamat Tenaga Kerja.',
+            'pekerja.*.id_card_photo.required' => 'Mohon unggah Foto ID Card / KTP Tenaga Kerja.',
             'jsa.required' => 'Mohon isi data Job Safety Analysis (JSA) minimal 1 tahapan kerja.',
             'jsa.min' => 'Mohon isi data Job Safety Analysis (JSA) minimal 1 tahapan kerja.',
             'jsa.*.tahapan.required' => 'Mohon isi kolom Tahapan Pekerjaan pada tabel JSA.',

@@ -320,13 +320,24 @@ export default function CreateRequestPage() {
         focusAndScrollToField("workers-section", "Mohon isi data Tenaga Kerja minimal 1 orang.");
         return;
       }
-      const emptyIdx = formData.pekerja.findIndex((p: any) => !p.nama?.trim() || !p.jabatan?.trim());
-      if (emptyIdx !== -1) {
-        const targetId = !formData.pekerja[emptyIdx].nama?.trim() 
-          ? `pekerja-nama-${emptyIdx}` 
-          : `pekerja-jabatan-${emptyIdx}`;
-        focusAndScrollToField(targetId, `Mohon lengkapi Nama dan Jabatan tenaga kerja ke-${emptyIdx + 1}.`);
-        return;
+      for (let i = 0; i < formData.pekerja.length; i++) {
+        const p = formData.pekerja[i];
+        if (!p.nama || !p.nama.trim()) {
+          focusAndScrollToField(`pekerja-nama-${i}`, `Mohon lengkapi Nama Lengkap tenaga kerja ke-${i + 1}.`);
+          return;
+        }
+        if (!p.jabatan || !p.jabatan.trim()) {
+          focusAndScrollToField(`pekerja-jabatan-${i}`, `Mohon lengkapi Jabatan tenaga kerja ke-${i + 1}.`);
+          return;
+        }
+        if (!p.alamat || !p.alamat.trim()) {
+          focusAndScrollToField(`pekerja-alamat-${i}`, `Mohon lengkapi Alamat domisili tenaga kerja ke-${i + 1}.`);
+          return;
+        }
+        if (!p.id_card_photo) {
+          focusAndScrollToField(`pekerja-foto-${i}`, `Mohon unggah Foto ID Card / KTP tenaga kerja ke-${i + 1}.`);
+          return;
+        }
       }
     }
 
@@ -374,7 +385,7 @@ export default function CreateRequestPage() {
       return;
     }
 
-    if (!formData.pekerja || formData.pekerja.length === 0 || formData.pekerja.some((p: any) => !p.nama?.trim() || !p.jabatan?.trim())) {
+    if (!formData.pekerja || formData.pekerja.length === 0 || formData.pekerja.some((p: any) => !p.nama?.trim() || !p.jabatan?.trim() || !p.alamat?.trim() || !p.id_card_photo)) {
       setCurrentStep(3);
       setTimeout(() => nextStep(), 50);
       setIsSubmitting(false);
@@ -622,16 +633,24 @@ export default function CreateRequestPage() {
               
               {currentStep < 4 ? (
                 <button
+                  type="button"
                   onClick={nextStep}
-                  className="px-6 py-2.5 rounded-lg font-medium text-sm text-on-primary bg-primary hover:opacity-90 transition-colors shadow-sm"
+                  className="px-6 py-2.5 rounded-lg font-medium text-sm text-on-primary bg-primary hover:opacity-90 transition-colors shadow-sm cursor-pointer"
                 >
                   Next Step
                 </button>
               ) : (
                 <button
+                  type="button"
                   onClick={handleSubmit}
-                  disabled={isSubmitting}
-                  className="flex items-center gap-2 px-6 py-2.5 rounded-lg font-medium text-sm text-on-primary bg-primary hover:opacity-90 transition-colors shadow-sm disabled:opacity-70"
+                  disabled={!formData.disclaimerAccepted || isSubmitting}
+                  className={cn(
+                    "flex items-center gap-2 px-6 py-2.5 rounded-lg font-bold text-sm transition-all",
+                    formData.disclaimerAccepted && !isSubmitting
+                      ? "bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer shadow-md hover:shadow-lg active:scale-98"
+                      : "bg-slate-300 text-slate-500 cursor-not-allowed border border-slate-300 shadow-none"
+                  )}
+                  title={!formData.disclaimerAccepted ? "Centang pernyataan keselamatan kerja terlebih dahulu" : "Kirim Pengajuan Izin Kerja"}
                 >
                   {isSubmitting ? "Submitting..." : "Submit Permit"}
                 </button>

@@ -153,10 +153,18 @@ export function Step3TenagaKerja({ data, updateData }: { data: any, updateData: 
           <thead>
             <tr className="bg-gray-50 border-b border-gray-200">
               <th className="px-4 py-3 text-xs font-semibold text-gray-600 uppercase tracking-wider w-12 text-center">No</th>
-              <th className="px-4 py-3 text-xs font-semibold text-gray-600 uppercase tracking-wider">Nama Lengkap</th>
-              <th className="px-4 py-3 text-xs font-semibold text-gray-600 uppercase tracking-wider">Jabatan</th>
-              <th className="px-4 py-3 text-xs font-semibold text-gray-600 uppercase tracking-wider">Alamat</th>
-              <th className="px-4 py-3 text-xs font-semibold text-gray-600 uppercase tracking-wider w-56 text-center">ID Card / Foto</th>
+              <th className="px-4 py-3 text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                Nama Lengkap <span className="text-red-500 font-bold">*</span>
+              </th>
+              <th className="px-4 py-3 text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                Jabatan <span className="text-red-500 font-bold">*</span>
+              </th>
+              <th className="px-4 py-3 text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                Alamat <span className="text-red-500 font-bold">*</span>
+              </th>
+              <th className="px-4 py-3 text-xs font-semibold text-gray-600 uppercase tracking-wider w-56 text-center">
+                ID Card / Foto <span className="text-red-500 font-bold">*</span>
+              </th>
               <th className="px-4 py-3 w-14"></th>
             </tr>
           </thead>
@@ -195,16 +203,18 @@ export function Step3TenagaKerja({ data, updateData }: { data: any, updateData: 
                   </td>
                   <td className="px-4 py-3">
                     <input 
+                      id={`pekerja-alamat-${idx}`}
                       type="text" 
+                      required
                       value={p.alamat} 
                       onChange={(e) => updateWorker(p.id, 'alamat', e.target.value)} 
                       className="w-full px-3 py-1.5 rounded-lg border border-gray-300 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" 
-                      placeholder="Alamat domisili..." 
+                      placeholder="Alamat domisili lengkap..." 
                     />
                   </td>
                   <td className="px-4 py-3">
                     {p.id_card_photo ? (
-                      <div className="flex items-center justify-between gap-2 p-1.5 bg-emerald-50 border border-emerald-200 rounded-lg">
+                      <div id={`pekerja-foto-${idx}`} className="flex items-center justify-between gap-2 p-1.5 bg-emerald-50 border border-emerald-200 rounded-lg">
                         <div className="flex items-center gap-2 overflow-hidden">
                           {p.id_card_photo.startsWith("data:image") ? (
                             <img 
@@ -250,7 +260,10 @@ export function Step3TenagaKerja({ data, updateData }: { data: any, updateData: 
                         </div>
                       </div>
                     ) : (
-                      <label className="flex items-center justify-center gap-1.5 px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs font-semibold rounded-lg cursor-pointer transition-colors border border-blue-200 shadow-sm">
+                      <label 
+                        id={`pekerja-foto-${idx}`}
+                        className="flex items-center justify-center gap-1.5 px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs font-semibold rounded-lg cursor-pointer transition-colors border border-blue-200 shadow-sm"
+                      >
                         <UploadCloud size={14} />
                         <span>Upload Foto</span>
                         <input 
@@ -323,17 +336,25 @@ export function Step3TenagaKerja({ data, updateData }: { data: any, updateData: 
               />
             </div>
             <div className="space-y-1">
-              <label className="text-xs font-medium text-gray-600">Alamat</label>
+              <label className="text-xs font-medium text-gray-600">
+                Alamat <span className="text-red-500 font-bold">*</span>
+              </label>
               <input 
+                id={`pekerja-alamat-${idx}-mobile`}
                 type="text" 
+                required
                 value={p.alamat} 
                 onChange={(e) => updateWorker(p.id, 'alamat', e.target.value)} 
                 className="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm focus:ring-2 focus:ring-blue-500 outline-none" 
+                placeholder="Alamat domisili lengkap..."
               />
             </div>
             <div className="pt-2">
+              <label className="text-xs font-medium text-gray-600 block mb-1">
+                Foto / Kartu Identitas <span className="text-red-500 font-bold">*</span>
+              </label>
               {p.id_card_photo ? (
-                <div className="flex items-center justify-between p-2 bg-emerald-50 border border-emerald-200 rounded-lg">
+                <div id={`pekerja-foto-${idx}-mobile`} className="flex items-center justify-between p-2 bg-emerald-50 border border-emerald-200 rounded-lg">
                   <div className="flex items-center gap-2">
                     {p.id_card_photo.startsWith("data:image") && (
                       <img 
@@ -361,7 +382,10 @@ export function Step3TenagaKerja({ data, updateData }: { data: any, updateData: 
                   </button>
                 </div>
               ) : (
-                <label className="flex items-center justify-center gap-2 w-full p-2.5 bg-blue-50 text-blue-700 text-sm font-semibold rounded-lg border border-blue-200 border-dashed hover:bg-blue-100 transition-colors cursor-pointer">
+                <label 
+                  id={`pekerja-foto-${idx}-mobile`}
+                  className="flex items-center justify-center gap-2 w-full p-2.5 bg-blue-50 text-blue-700 text-sm font-semibold rounded-lg border border-blue-200 border-dashed hover:bg-blue-100 transition-colors cursor-pointer"
+                >
                   <UploadCloud size={18} />
                   <span>Upload Foto / Kartu Identitas</span>
                   <input 
