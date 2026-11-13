@@ -1,57 +1,43 @@
-// Smart Auth Storage: Prioritize tab-isolated sessionStorage with seamless localStorage fallback
-// Allows new tabs to inherit session automatically, while still keeping multi-role flexibility
+// Tab-isolated Auth Storage (Strictly scoped per tab/browser session)
+// Ensures users must log in upon visiting the site, prevents cross-tab session leakage,
+// and prevents persistent ghost sessions (such as auto-logging into previously tested roles).
 
 const TOKEN_KEY = 'authToken';
 const ROLE_KEY = 'userRole';
 const USER_KEY = 'userData';
 
-// Sync session from localStorage to sessionStorage if sessionStorage is empty on new tab
-function hydrateSessionFromStorage() {
+// Actively purge any legacy persistent localStorage auth keys from browser
+// to prevent stale auto-login from previous test sessions
+function purgeLegacyLocalStorage() {
   if (typeof window === 'undefined') return;
   try {
-    const sessionToken = sessionStorage.getItem(TOKEN_KEY);
-    if (!sessionToken) {
-      const localToken = localStorage.getItem(TOKEN_KEY);
-      if (localToken) {
-        sessionStorage.setItem(TOKEN_KEY, localToken);
-        const localRole = localStorage.getItem(ROLE_KEY);
-        if (localRole) sessionStorage.setItem(ROLE_KEY, localRole);
-        const localUser = localStorage.getItem(USER_KEY);
-        if (localUser) sessionStorage.setItem(USER_KEY, localUser);
-      }
-    }
+    localStorage.removeItem(TOKEN_KEY);
+    localStorage.removeItem(ROLE_KEY);
+    localStorage.removeItem(USER_KEY);
+    localStorage.removeItem('hse_auth_token');
+    localStorage.removeItem('hse_user_role');
+    localStorage.removeItem('hse_user_data');
   } catch {}
 }
+
+// Run cleanup immediately on load
+purgeLegacyLocalStorage();
 
 export const auth = {
   getToken(): string | null {
     if (typeof window === 'undefined') return null;
-    let token = sessionStorage.getItem(TOKEN_KEY);
-    if (!token) {
-      hydrateSessionFromStorage();
-      token = sessionStorage.getItem(TOKEN_KEY);
-    }
-    return token;
+    return sessionStorage.getItem(TOKEN_KEY);
   },
 
   getRole(): string | null {
     if (typeof window === 'undefined') return null;
-    let role = sessionStorage.getItem(ROLE_KEY);
-    if (!role) {
-      hydrateSessionFromStorage();
-      role = sessionStorage.getItem(ROLE_KEY);
-    }
-    return role;
+    return sessionStorage.getItem(ROLE_KEY);
   },
 
   getUser(): any {
     if (typeof window === 'undefined') return null;
     try {
-      let raw = sessionStorage.getItem(USER_KEY);
-      if (!raw) {
-        hydrateSessionFromStorage();
-        raw = sessionStorage.getItem(USER_KEY);
-      }
+      const raw = sessionStorage.getItem(USER_KEY);
       return raw ? JSON.parse(raw) : null;
     } catch {
       return null;
@@ -62,16 +48,13 @@ export const auth = {
     if (typeof window === 'undefined') return;
     const roleCode = user?.role?.code || (typeof user?.role === 'string' ? user.role : 'admin');
     
-    // Save to both sessionStorage (active tab) and localStorage (cross-tab / new tabs inheritance)
+    // Save strictly to sessionStorage for the active session
     sessionStorage.setItem(TOKEN_KEY, token);
     sessionStorage.setItem(ROLE_KEY, roleCode);
     sessionStorage.setItem(USER_KEY, JSON.stringify(user));
 
-    try {
-      localStorage.setItem(TOKEN_KEY, token);
-      localStorage.setItem(ROLE_KEY, roleCode);
-      localStorage.setItem(USER_KEY, JSON.stringify(user));
-    } catch {}
+    // Ensure localStorage never keeps residual auth keys
+    purgeLegacyLocalStorage();
 
     window.dispatchEvent(new CustomEvent('auth:user-updated', { detail: user }));
   },
@@ -80,9 +63,6 @@ export const auth = {
     if (typeof window === 'undefined') return;
     const userStr = JSON.stringify(user);
     sessionStorage.setItem(USER_KEY, userStr);
-    try {
-      localStorage.setItem(USER_KEY, userStr);
-    } catch {}
     window.dispatchEvent(new CustomEvent('auth:user-updated', { detail: user }));
   },
 
@@ -92,11 +72,7 @@ export const auth = {
     sessionStorage.removeItem(ROLE_KEY);
     sessionStorage.removeItem(USER_KEY);
 
-    try {
-      localStorage.removeItem(TOKEN_KEY);
-      localStorage.removeItem(ROLE_KEY);
-      localStorage.removeItem(USER_KEY);
-    } catch {}
+    purgeLegacyLocalStorage();
 
     window.dispatchEvent(new CustomEvent('auth:user-updated', { detail: null }));
   },
