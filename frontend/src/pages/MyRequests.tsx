@@ -393,26 +393,6 @@ export default function MyRequestsPage() {
                 </span>
               </button>
 
-              {/* Selesai */}
-              <button
-                type="button"
-                onClick={() => setStatusFilter("Selesai")}
-                className={cn(
-                  "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer whitespace-nowrap",
-                  statusFilter === "Selesai"
-                    ? "bg-[#162f65] text-white shadow-xs"
-                    : "bg-white text-slate-700 border border-slate-200 hover:bg-slate-50"
-                )}
-              >
-                <CheckCircle2 size={13} className={statusFilter === "Selesai" ? "text-white" : "text-blue-600"} />
-                <span>Selesai</span>
-                <span className={cn(
-                  "px-1.5 py-0.2 rounded-full text-[10px] font-mono font-bold",
-                  statusFilter === "Selesai" ? "bg-white/20 text-white" : "bg-blue-50 text-blue-700 border border-blue-200"
-                )}>
-                  {statusCounts.selesai}
-                </span>
-              </button>
 
               {/* Ditolak */}
               <button
