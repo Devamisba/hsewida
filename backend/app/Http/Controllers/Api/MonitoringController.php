@@ -1012,7 +1012,7 @@ class MonitoringController extends Controller
                 if (isset($ans['passed']) && $ans['passed'] === false) {
                     $hasIssue = true;
                 }
-                if (isset($ans['jawaban']) && in_array(strtolower($ans['jawaban']), ['tidak', 'rendah', 'tinggi', 'false'])) {
+                if (isset($ans['jawaban']) && in_array(strtolower($ans['jawaban']), ['tidak', 'rendah', 'tinggi', 'false', 'expired', 'putus', 'rusak', 'macet', 'terhalang'])) {
                     $hasIssue = true;
                 }
             }
@@ -1034,10 +1034,13 @@ class MonitoringController extends Controller
             // Jalur B: Kondisi check (MAX Score: OK=0, Minor=1, Kritis=2)
             $maxScore = 0;
             foreach ($answers as $ans) {
-                $val = strtolower($ans['jawaban'] ?? $ans['score'] ?? 'ok');
-                if ($val === 'kritis' || $val === 'rusak' || $val == '2') {
+                if (isset($ans['passed']) && $ans['passed'] === false) {
                     $maxScore = max($maxScore, 2);
-                } elseif ($val === 'minor' || $val === 'perhatian' || $val == '1') {
+                }
+                $val = strtolower($ans['jawaban'] ?? $ans['score'] ?? 'ok');
+                if (in_array($val, ['kritis', 'rusak', '2', 'tidak', 'false', 'macet', 'drop', 'mati', 'pudar', 'kotor', 'buram', 'goyang', 'retak', 'terhalang', 'terkunci'])) {
+                    $maxScore = max($maxScore, 2);
+                } elseif (in_array($val, ['minor', 'perhatian', '1', 'bergeser'])) {
                     $maxScore = max($maxScore, 1);
                 }
             }

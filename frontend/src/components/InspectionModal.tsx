@@ -1,6 +1,437 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { X, CheckCircle2, AlertTriangle, ArrowRight } from "lucide-react";
 import { api } from "@/services/api";
+
+interface CategoryOption {
+  label: string;
+  isPass: boolean;
+}
+
+interface CategoryQuestion {
+  id: string;
+  code: string;
+  label: string;
+  question: string;
+  options: CategoryOption[];
+  defaultAnswer: string;
+}
+
+interface InspectionCategoryConfig {
+  category: string;
+  name: string;
+  badge: string;
+  bannerTitle: string;
+  isConsumable: boolean;
+  questions: CategoryQuestion[];
+}
+
+const CATEGORY_INSPECTION_CONFIGS: Record<string, InspectionCategoryConfig> = {
+  apar: {
+    category: "apar",
+    name: "APAR",
+    badge: "APAR",
+    bannerTitle: "Checklist APAR (Tabung & Media Pemadam)",
+    isConsumable: true,
+    questions: [
+      {
+        id: "segel_pin",
+        code: "Sgl",
+        label: "Segel & Safety Pin",
+        question: "1. Segel & safety pin pengaman masih utuh terpasang?",
+        options: [
+          { label: "Utuh", isPass: true },
+          { label: "Putus", isPass: false },
+        ],
+        defaultAnswer: "Utuh",
+      },
+      {
+        id: "fisik_tabung",
+        code: "Tbg",
+        label: "Kondisi Fisik Tabung",
+        question: "2. Fisik tabung bebas karat, penyok & keropos?",
+        options: [
+          { label: "Ya", isPass: true },
+          { label: "Tidak", isPass: false },
+        ],
+        defaultAnswer: "Ya",
+      },
+      {
+        id: "selang_nozzle",
+        code: "Slg",
+        label: "Selang & Corong Nozzle",
+        question: "3. Selang (hose) & nozzle bersih, fleksibel, tidak buntu?",
+        options: [
+          { label: "Ya", isPass: true },
+          { label: "Tidak", isPass: false },
+        ],
+        defaultAnswer: "Ya",
+      },
+      {
+        id: "tekanan_indikator",
+        code: "Tek",
+        label: "Tekanan Indikator APAR",
+        question: "4. Tekanan jarum indikator APAR berada di zona hijau?",
+        options: [
+          { label: "Normal", isPass: true },
+          { label: "Rendah", isPass: false },
+          { label: "Tinggi", isPass: false },
+        ],
+        defaultAnswer: "Normal",
+      },
+      {
+        id: "aksesibilitas",
+        code: "Aks",
+        label: "Aksesibilitas APAR",
+        question: "5. Aksesibilitas penempatan bebas rintangan / tidak terhalang?",
+        options: [
+          { label: "Ya", isPass: true },
+          { label: "Tidak", isPass: false },
+        ],
+        defaultAnswer: "Ya",
+      },
+    ],
+  },
+  p3k: {
+    category: "p3k",
+    name: "Kotak P3K",
+    badge: "Kotak P3K",
+    bannerTitle: "Checklist Kotak P3K (Kelengkapan & Higienitas)",
+    isConsumable: true,
+    questions: [
+      {
+        id: "fisik_kotak",
+        code: "Box",
+        label: "Fisik Kotak P3K",
+        question: "1. Kondisi fisik kotak P3K bersih, kokoh, tidak pecah / rusak?",
+        options: [
+          { label: "Ya", isPass: true },
+          { label: "Tidak", isPass: false },
+        ],
+        defaultAnswer: "Ya",
+      },
+      {
+        id: "kerapian_tata_letak",
+        code: "Rapi",
+        label: "Kerapian Tata Letak",
+        question: "2. Kerapian tata letak obat & peralatan medis tertata rapi?",
+        options: [
+          { label: "Ya", isPass: true },
+          { label: "Tidak", isPass: false },
+        ],
+        defaultAnswer: "Ya",
+      },
+      {
+        id: "kelengkapan_isi",
+        code: "Isi",
+        label: "Kelengkapan Isi & Obat",
+        question: "3. Kelengkapan isi & obat sesuai daftar standar kotak P3K?",
+        options: [
+          { label: "Ya", isPass: true },
+          { label: "Tidak", isPass: false },
+        ],
+        defaultAnswer: "Ya",
+      },
+      {
+        id: "masa_kadaluarsa",
+        code: "Exp",
+        label: "Masa Kadaluarsa Obat",
+        question: "4. Masa kadaluarsa seluruh obat & antiseptik masih berlaku (belum expired)?",
+        options: [
+          { label: "Aman", isPass: true },
+          { label: "Expired", isPass: false },
+        ],
+        defaultAnswer: "Aman",
+      },
+      {
+        id: "aksesibilitas",
+        code: "Aks",
+        label: "Aksesibilitas & Kunci",
+        question: "5. Aksesibilitas mudah dijangkau darurat & kunci/segel siap buka?",
+        options: [
+          { label: "Ya", isPass: true },
+          { label: "Tidak", isPass: false },
+        ],
+        defaultAnswer: "Ya",
+      },
+    ],
+  },
+  hydrant: {
+    category: "hydrant",
+    name: "Hydrant",
+    badge: "Hydrant",
+    bannerTitle: "Checklist Hydrant (Box, Selang & Main Valve)",
+    isConsumable: false,
+    questions: [
+      {
+        id: "box_pilar",
+        code: "Box",
+        label: "Box / Pilar Hydrant",
+        question: "1. Box / pilar hydrant bersih, tertutup rapi & tidak terhalang?",
+        options: [
+          { label: "Baik", isPass: true },
+          { label: "Rusak", isPass: false },
+        ],
+        defaultAnswer: "Baik",
+      },
+      {
+        id: "selang_pemadam",
+        code: "Slg",
+        label: "Selang Pemadam (Hose)",
+        question: "2. Selang pemadam (hose) tergulung rapi, fleksibel & tidak bocor?",
+        options: [
+          { label: "Baik", isPass: true },
+          { label: "Rusak", isPass: false },
+        ],
+        defaultAnswer: "Baik",
+      },
+      {
+        id: "nozzle_coupling",
+        code: "Nozz",
+        label: "Nozzle & Coupling",
+        question: "3. Nozzle & coupling kopling terpasang presisi & siap pakai?",
+        options: [
+          { label: "Baik", isPass: true },
+          { label: "Rusak", isPass: false },
+        ],
+        defaultAnswer: "Baik",
+      },
+      {
+        id: "kran_utama",
+        code: "Vlv",
+        label: "Kran Utama (Valve)",
+        question: "4. Kran utama (main valve) dapat diputar lancar & tidak rembes?",
+        options: [
+          { label: "Lancar", isPass: true },
+          { label: "Macet", isPass: false },
+        ],
+        defaultAnswer: "Lancar",
+      },
+      {
+        id: "tekanan_air",
+        code: "Tek",
+        label: "Tekanan Air (Pressure)",
+        question: "5. Tekanan air siap pakai & indikator tekanan normal?",
+        options: [
+          { label: "Normal", isPass: true },
+          { label: "Drop", isPass: false },
+        ],
+        defaultAnswer: "Normal",
+      },
+    ],
+  },
+  assembly_point: {
+    category: "assembly_point",
+    name: "Titik Kumpul",
+    badge: "Titik Kumpul",
+    bannerTitle: "Checklist Titik Kumpul (Area Evakuasi & Rambu)",
+    isConsumable: false,
+    questions: [
+      {
+        id: "papan_rambu",
+        code: "Rmb",
+        label: "Papan Rambu Kumpul",
+        question: "1. Papan rambu titik kumpul tegak kokoh & jelas terbaca?",
+        options: [
+          { label: "Jelas", isPass: true },
+          { label: "Rusak", isPass: false },
+        ],
+        defaultAnswer: "Jelas",
+      },
+      {
+        id: "jalur_akses",
+        code: "Jlr",
+        label: "Jalur Akses Evakuasi",
+        question: "2. Jalur akses evakuasi menuju area bebas material atau kendaraan?",
+        options: [
+          { label: "Bebas", isPass: true },
+          { label: "Terhalang", isPass: false },
+        ],
+        defaultAnswer: "Bebas",
+      },
+      {
+        id: "kebersihan_area",
+        code: "Area",
+        label: "Kebersihan Area Kumpul",
+        question: "3. Kebersihan permukaan area rata, bersih, bebas genangan / licin?",
+        options: [
+          { label: "Bersih", isPass: true },
+          { label: "Kotor", isPass: false },
+        ],
+        defaultAnswer: "Bersih",
+      },
+      {
+        id: "penerangan_darurat",
+        code: "Lmp",
+        label: "Lampu Penerangan",
+        question: "4. Lampu penerangan darurat / malam hari berfungsi menyala terang?",
+        options: [
+          { label: "Menyala", isPass: true },
+          { label: "Mati", isPass: false },
+        ],
+        defaultAnswer: "Menyala",
+      },
+      {
+        id: "marka_batas",
+        code: "Mrk",
+        label: "Marka Batas Kumpul",
+        question: "5. Marka & garis batas kumpul cat hijau/kuning terlihat jelas?",
+        options: [
+          { label: "Jelas", isPass: true },
+          { label: "Pudar", isPass: false },
+        ],
+        defaultAnswer: "Jelas",
+      },
+    ],
+  },
+  safety_mirror: {
+    category: "safety_mirror",
+    name: "Safety Mirror",
+    badge: "Safety Mirror",
+    bannerTitle: "Checklist Safety Mirror (Cermin Cembung Tikungan)",
+    isConsumable: false,
+    questions: [
+      {
+        id: "kebersihan_cermin",
+        code: "Kca",
+        label: "Kebersihan Kaca Cermin",
+        question: "1. Kebersihan kaca cermin bening, bebas debu pekat, lumpur & minyak?",
+        options: [
+          { label: "Bening", isPass: true },
+          { label: "Buram", isPass: false },
+        ],
+        defaultAnswer: "Bening",
+      },
+      {
+        id: "sudut_pandang",
+        code: "Sdt",
+        label: "Sudut Pandang (Angle)",
+        question: "2. Sudut pandang (angle) cermin mengarah tepat ke blindspot?",
+        options: [
+          { label: "Tepat", isPass: true },
+          { label: "Bergeser", isPass: false },
+        ],
+        defaultAnswer: "Tepat",
+      },
+      {
+        id: "tiang_braket",
+        code: "Brk",
+        label: "Braket & Tiang Penyangga",
+        question: "3. Tiang penyangga & braket baut kencang, kokoh, tidak goyang?",
+        options: [
+          { label: "Kokoh", isPass: true },
+          { label: "Goyang", isPass: false },
+        ],
+        defaultAnswer: "Kokoh",
+      },
+      {
+        id: "fisik_cermin",
+        code: "Bnk",
+        label: "Fisik Cermin & Topi",
+        question: "4. Fisik cermin & topi pelindung utuh, tidak retak / pecah / karat?",
+        options: [
+          { label: "Utuh", isPass: true },
+          { label: "Retak", isPass: false },
+        ],
+        defaultAnswer: "Utuh",
+      },
+      {
+        id: "bebas_halangan",
+        code: "Hlg",
+        label: "Bebas Halangan Pandang",
+        question: "5. Pandangan bebas halangan (tidak tertutup dahan/pohon/barang)?",
+        options: [
+          { label: "Bebas", isPass: true },
+          { label: "Terhalang", isPass: false },
+        ],
+        defaultAnswer: "Bebas",
+      },
+    ],
+  },
+  emergency_door: {
+    category: "emergency_door",
+    name: "Pintu Darurat",
+    badge: "Pintu Darurat",
+    bannerTitle: "Checklist Pintu Darurat (Jalur Evakuasi Darurat)",
+    isConsumable: false,
+    questions: [
+      {
+        id: "panic_bar",
+        code: "Bar",
+        label: "Mekanisme Panic Bar",
+        question: "1. Mekanisme panic bar terbuka lancar sekali tekan dari arah dalam?",
+        options: [
+          { label: "Lancar", isPass: true },
+          { label: "Macet", isPass: false },
+        ],
+        defaultAnswer: "Lancar",
+      },
+      {
+        id: "bebas_gembok",
+        code: "Knc",
+        label: "Bebas Gembok & Kunci",
+        question: "2. Bebas gembok & kunci (tidak digembok saat jam operasional)?",
+        options: [
+          { label: "Bebas", isPass: true },
+          { label: "Terkunci", isPass: false },
+        ],
+        defaultAnswer: "Bebas",
+      },
+      {
+        id: "exit_sign",
+        code: "Sgn",
+        label: "Lampu Exit Sign",
+        question: "3. Lampu exit sign / tanda darurat hijau menyala terang?",
+        options: [
+          { label: "Menyala", isPass: true },
+          { label: "Mati", isPass: false },
+        ],
+        defaultAnswer: "Menyala",
+      },
+      {
+        id: "akses_keluar",
+        code: "Jlr",
+        label: "Akses Koridor Keluar",
+        question: "4. Akses koridor jalan keluar bebas rintangan dan tumpukan barang?",
+        options: [
+          { label: "Lapang", isPass: true },
+          { label: "Terhalang", isPass: false },
+        ],
+        defaultAnswer: "Lapang",
+      },
+      {
+        id: "daun_pintu_closer",
+        code: "Pnt",
+        label: "Daun Pintu & Door Closer",
+        question: "5. Daun pintu & door closer menutup rapat secara otomatis?",
+        options: [
+          { label: "Rapat", isPass: true },
+          { label: "Rusak", isPass: false },
+        ],
+        defaultAnswer: "Rapat",
+      },
+    ],
+  },
+};
+
+const getInspectionConfig = (cat?: string, fallbackType?: string): InspectionCategoryConfig => {
+  const c = (cat || "").toLowerCase().trim();
+  if (c.includes("p3k") || c.includes("first_aid")) return CATEGORY_INSPECTION_CONFIGS.p3k;
+  if (c.includes("hydrant")) return CATEGORY_INSPECTION_CONFIGS.hydrant;
+  if (c.includes("assembly") || c.includes("titik_kumpul") || c.includes("kumpul")) return CATEGORY_INSPECTION_CONFIGS.assembly_point;
+  if (c.includes("mirror") || c.includes("cermin")) return CATEGORY_INSPECTION_CONFIGS.safety_mirror;
+  if (c.includes("door") || c.includes("pintu")) return CATEGORY_INSPECTION_CONFIGS.emergency_door;
+  if (c.includes("apar")) return CATEGORY_INSPECTION_CONFIGS.apar;
+
+  const t = (fallbackType || "").toLowerCase().trim();
+  if (t.includes("p3k") || t.includes("first_aid")) return CATEGORY_INSPECTION_CONFIGS.p3k;
+  if (t.includes("hydrant")) return CATEGORY_INSPECTION_CONFIGS.hydrant;
+  if (t.includes("kumpul") || t.includes("assembly")) return CATEGORY_INSPECTION_CONFIGS.assembly_point;
+  if (t.includes("mirror") || t.includes("cermin")) return CATEGORY_INSPECTION_CONFIGS.safety_mirror;
+  if (t.includes("pintu") || t.includes("door")) return CATEGORY_INSPECTION_CONFIGS.emergency_door;
+  if (t.includes("apar")) return CATEGORY_INSPECTION_CONFIGS.apar;
+
+  return CATEGORY_INSPECTION_CONFIGS.apar;
+};
 
 interface InspectionModalProps {
   isOpen: boolean;
@@ -18,38 +449,48 @@ export function InspectionModal({ isOpen, onClose, item, type, onSuccess }: Insp
   const [actionPlan, setActionPlan] = useState("");
   const [pic, setPic] = useState("Tim K3 / HSE");
 
-  // Consumable checklist state (§4.1)
-  const [consumableAnswers, setConsumableAnswers] = useState<Record<string, string>>({
-    segel_utuh: "Ya",
-    fisik_tabung: "Ya",
-    label_terbaca: "Ya",
-    tekanan: "Normal",
-    aksesibilitas: "Ya",
-  });
+  const config = useMemo(() => {
+    return getInspectionConfig(item?.category, type);
+  }, [item?.category, type]);
 
-  // Kondisi checklist state (§4.2)
-  const [kondisiAnswers, setKondisiAnswers] = useState<Record<string, string>>({
-    fisik_komponen: "OK",
-    fungsi_mekanis: "OK",
-    kebocoran: "OK",
-    kelengkapan: "OK",
-    kebersihan: "OK",
-  });
+  // Answers state mapped by question ID
+  const [answers, setAnswers] = useState<Record<string, string>>({});
 
-  const isConsumable = item?.tipe_item === "CONSUMABLE";
+  // Reset or initialize answers when modal opens or item changes
+  useEffect(() => {
+    if (isOpen && item) {
+      const initial: Record<string, string> = {};
+      config.questions.forEach((q) => {
+        initial[q.id] = q.defaultAnswer;
+      });
+      setAnswers(initial);
+      setStep("detail");
+      setError("");
+      setFindingNotes("");
+      setActionPlan("");
+    }
+  }, [isOpen, item, config]);
 
-  // Real-time calculation for Jalur B (Kondisi)
-  const calculatedConditionStatus = useMemo(() => {
-    let max = 0;
-    Object.values(kondisiAnswers).forEach((val) => {
-      if (val === "Kritis") max = Math.max(max, 2);
-      else if (val === "Minor") max = Math.max(max, 1);
+  // Evaluated failed questions
+  const failedQuestions = useMemo(() => {
+    return config.questions.filter((q) => {
+      const currentVal = answers[q.id] ?? q.defaultAnswer;
+      const opt = q.options.find((o) => o.label === currentVal);
+      return opt ? !opt.isPass : false;
     });
+  }, [config, answers]);
 
-    if (max === 2) return { status: "RUSAK", label: "RUSAK / PERLU TINDAKAN", color: "text-rose-700 bg-rose-50 border-rose-200" };
-    if (max === 1) return { status: "PERLU_PERHATIAN", label: "PERLU PERHATIAN", color: "text-amber-700 bg-amber-50 border-amber-200" };
-    return { status: "BAIK", label: "KONDISI BAIK", color: "text-emerald-700 bg-emerald-50 border-emerald-200" };
-  }, [kondisiAnswers]);
+  const isFailed = failedQuestions.length > 0;
+
+  const conditionStatus = useMemo(() => {
+    if (config.isConsumable) {
+      if (isFailed) return { status: "PERLU_TINDAKAN", label: "PERLU TINDAKAN / REFILL", color: "text-rose-700 bg-rose-50 border-rose-200" };
+      return { status: "AMAN", label: "KONDISI AMAN", color: "text-emerald-700 bg-emerald-50 border-emerald-200" };
+    } else {
+      if (isFailed) return { status: "RUSAK", label: "PERLU PERBAIKAN", color: "text-rose-700 bg-rose-50 border-rose-200" };
+      return { status: "BAIK", label: "KONDISI BAIK", color: "text-emerald-700 bg-emerald-50 border-emerald-200" };
+    }
+  }, [config.isConsumable, isFailed]);
 
   if (!isOpen || !item) return null;
 
@@ -63,49 +504,32 @@ export function InspectionModal({ isOpen, onClose, item, type, onSuccess }: Insp
     setError("");
 
     try {
-      let checklistResults: any[] = [];
-      let checklistType = isConsumable ? "CONSUMABLE_CHECK" : "KONDISI_CHECK";
-
-      if (isConsumable) {
-        checklistResults = [
-          { item: "Segel/pin masih utuh?", jawaban: consumableAnswers.segel_utuh, passed: consumableAnswers.segel_utuh === "Ya" },
-          { item: "Fisik tabung/kemasan tidak rusak/korosi?", jawaban: consumableAnswers.fisik_tabung, passed: consumableAnswers.fisik_tabung === "Ya" },
-          { item: "Label & tanggal kadaluarsa terbaca jelas?", jawaban: consumableAnswers.label_terbaca, passed: consumableAnswers.label_terbaca === "Ya" },
-          { item: "Tekanan sesuai indikator?", jawaban: consumableAnswers.tekanan, passed: consumableAnswers.tekanan === "Normal" },
-          { item: "Aksesibilitas (tidak terhalang barang)?", jawaban: consumableAnswers.aksesibilitas, passed: consumableAnswers.aksesibilitas === "Ya" },
-        ];
-      } else {
-        checklistResults = [
-          { item: "Kondisi fisik komponen (retak/getas/korosi)", jawaban: kondisiAnswers.fisik_komponen },
-          { item: "Fungsi mekanis (dapat dioperasikan normal)", jawaban: kondisiAnswers.fungsi_mekanis },
-          { item: "Kebocoran / rembesan fluida", jawaban: kondisiAnswers.kebocoran },
-          { item: "Kelengkapan aksesoris (nozzle/bracket)", jawaban: kondisiAnswers.kelengkapan },
-          { item: "Kebersihan & area bebas obstruksi", jawaban: kondisiAnswers.kebersihan },
-        ];
-      }
-
-      // Check if there are critical issues requiring finding/capa
-      const isFailed = isConsumable
-        ? checklistResults.some((c) => !c.passed)
-        : calculatedConditionStatus.status !== "BAIK";
+      const checklistResults = config.questions.map((q) => {
+        const currentVal = answers[q.id] ?? q.defaultAnswer;
+        const opt = q.options.find((o) => o.label === currentVal);
+        return {
+          id: q.id,
+          code: q.code,
+          item: q.label,
+          label: q.label,
+          jawaban: currentVal,
+          passed: opt ? opt.isPass : true,
+        };
+      });
 
       if (isFailed && step === "inspect") {
-        setFindingNotes(
-          isConsumable
-            ? "Terdapat ketidaksesuaian pada checklist fisik atau tekanan APD/APAR."
-            : `Hasil inspeksi menunjukkan status ${calculatedConditionStatus.label}.`
-        );
+        const failedLabels = failedQuestions.map((q) => q.label).join(", ");
+        setFindingNotes(`Terdapat ketidaksesuaian pada parameter ${config.name}: ${failedLabels}.`);
         setStep("finding");
         setSubmitting(false);
         return;
       }
 
-      // Submit direct pass
       const res = await api.submitInspection({
         facility_id: item.rawId || item.id,
-        tipe_checklist: checklistType,
+        tipe_checklist: config.isConsumable ? "CONSUMABLE_CHECK" : "KONDISI_CHECK",
         checklist_results: checklistResults,
-        notes: "Semua poin checklist terverifikasi baik dan aman sesuai SOP pabrik.",
+        notes: `Semua 5 parameter checklist ${config.name} terverifikasi baik dan aman sesuai standar teknis K3.`,
       });
 
       if (res.success) {
@@ -126,31 +550,27 @@ export function InspectionModal({ isOpen, onClose, item, type, onSuccess }: Insp
     setError("");
 
     try {
-      const checklistType = isConsumable ? "CONSUMABLE_CHECK" : "KONDISI_CHECK";
-      const checklistResults = isConsumable
-        ? [
-            { item: "Segel/pin masih utuh?", jawaban: consumableAnswers.segel_utuh, passed: consumableAnswers.segel_utuh === "Ya" },
-            { item: "Fisik tabung/kemasan tidak rusak/korosi?", jawaban: consumableAnswers.fisik_tabung, passed: consumableAnswers.fisik_tabung === "Ya" },
-            { item: "Label & tanggal kadaluarsa terbaca jelas?", jawaban: consumableAnswers.label_terbaca, passed: consumableAnswers.label_terbaca === "Ya" },
-            { item: "Tekanan sesuai indikator?", jawaban: consumableAnswers.tekanan, passed: consumableAnswers.tekanan === "Normal" },
-            { item: "Aksesibilitas (tidak terhalang barang)?", jawaban: consumableAnswers.aksesibilitas, passed: consumableAnswers.aksesibilitas === "Ya" },
-          ]
-        : [
-            { item: "Kondisi fisik komponen", jawaban: kondisiAnswers.fisik_komponen },
-            { item: "Fungsi mekanis", jawaban: kondisiAnswers.fungsi_mekanis },
-            { item: "Kebocoran / rembesan", jawaban: kondisiAnswers.kebocoran },
-            { item: "Kelengkapan aksesoris", jawaban: kondisiAnswers.kelengkapan },
-            { item: "Kebersihan & bebas obstruksi", jawaban: kondisiAnswers.kebersihan },
-          ];
+      const checklistResults = config.questions.map((q) => {
+        const currentVal = answers[q.id] ?? q.defaultAnswer;
+        const opt = q.options.find((o) => o.label === currentVal);
+        return {
+          id: q.id,
+          code: q.code,
+          item: q.label,
+          label: q.label,
+          jawaban: currentVal,
+          passed: opt ? opt.isPass : true,
+        };
+      });
 
       const res = await api.submitInspection({
         facility_id: item.rawId || item.id,
-        tipe_checklist: checklistType,
+        tipe_checklist: config.isConsumable ? "CONSUMABLE_CHECK" : "KONDISI_CHECK",
         checklist_results: checklistResults,
         notes: findingNotes,
         finding_description: findingNotes,
-        severity: calculatedConditionStatus.status === "RUSAK" ? "Kritis" : "Minor",
-        action_plan: actionPlan || "Perbaikan / penggantian fasilitas segera oleh tim penanggung jawab",
+        severity: "Kritis",
+        action_plan: actionPlan || `Perbaikan / penggantian komponen ${config.name} segera oleh tim penanggung jawab`,
         pic_name: pic,
       });
 
@@ -184,16 +604,16 @@ export function InspectionModal({ isOpen, onClose, item, type, onSuccess }: Insp
           <div>
             <div className="flex items-center gap-2">
               <span className={`px-2 py-0.5 rounded text-[10px] font-extrabold uppercase tracking-wider ${
-                isConsumable ? "bg-purple-100 text-purple-700" : "bg-blue-100 text-blue-700"
+                config.isConsumable ? "bg-purple-100 text-purple-700" : "bg-blue-100 text-blue-700"
               }`}>
-                {isConsumable ? "Jalur A: Consumable" : "Jalur B: Kondisi Fisik"}
+                {config.isConsumable ? `Jalur A: Consumable (${config.badge})` : `Jalur B: Kondisi Fisik (${config.badge})`}
               </span>
-              <span className="text-xs font-mono font-bold text-slate-500">{item.id || item.code}</span>
+              <span className="text-xs font-mono font-bold text-slate-500">{item.code || item.id}</span>
             </div>
             <h2 className="text-base font-extrabold text-slate-900 mt-1">{item.nama_item || item.jenis || type}</h2>
-            <p className="text-xs text-slate-500">{item.lokasi} • QR: {item.qr_code_id || item.id}</p>
+            <p className="text-xs text-slate-500">{item.lokasi || item.location?.name || "Lokasi Pabrik"} • QR: {item.qr_code_id || item.code || item.id}</p>
           </div>
-          <button onClick={handleClose} className="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-200 transition-colors">
+          <button onClick={handleClose} className="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-200 transition-colors cursor-pointer">
             <X size={18} />
           </button>
         </div>
@@ -222,9 +642,9 @@ export function InspectionModal({ isOpen, onClose, item, type, onSuccess }: Insp
                   </span>
                 </div>
 
-                {isConsumable ? (
+                {config.isConsumable ? (
                   <div className="pt-2 border-t border-slate-200/80 flex items-center justify-between">
-                    <span className="text-slate-600">Batas Kadaluarsa Media:</span>
+                    <span className="text-slate-600">Batas Kadaluarsa Media / Masa Berlaku:</span>
                     <strong className="font-mono text-slate-900">{item.expired || item.consumableCycle?.expired_at || "-"}</strong>
                   </div>
                 ) : (
@@ -247,248 +667,65 @@ export function InspectionModal({ isOpen, onClose, item, type, onSuccess }: Insp
             </div>
           )}
 
-          {/* STEP 2: CHECKLIST DUAL-MODE */}
+          {/* STEP 2: CHECKLIST BERDASARKAN KATEGORI */}
           {step === "inspect" && (
-            <div className="space-y-5">
-              {/* JALUR A: CONSUMABLE CHECKLIST (§4.1) */}
-              {isConsumable ? (
-                <div className="space-y-4">
-                  <div className="p-3 bg-purple-50 border border-purple-200 rounded-xl flex items-center justify-between">
-                    <span className="font-bold text-purple-900">Checklist Consumable (Media & Tabung)</span>
-                    <span className="text-[11px] text-purple-700 font-semibold">5 Poin Standar K3</span>
-                  </div>
-
-                  {/* 1. Segel/pin */}
-                  <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
-                    <span className="font-bold text-slate-800 block">1. Segel / pin pengaman masih utuh?</span>
-                    <div className="flex gap-2">
-                      {["Ya", "Tidak"].map((opt) => (
-                        <button
-                          key={opt}
-                          type="button"
-                          onClick={() => setConsumableAnswers({ ...consumableAnswers, segel_utuh: opt })}
-                          className={`flex-1 py-1.5 rounded-lg font-bold border transition-all ${
-                            consumableAnswers.segel_utuh === opt
-                              ? opt === "Ya" ? "bg-emerald-600 text-white border-emerald-600" : "bg-rose-600 text-white border-rose-600"
-                              : "bg-white text-slate-700 border-slate-200"
-                          }`}
-                        >
-                          {opt}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* 2. Fisik tabung */}
-                  <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
-                    <span className="font-bold text-slate-800 block">2. Fisik tabung / kemasan tidak rusak / korosi?</span>
-                    <div className="flex gap-2">
-                      {["Ya", "Tidak"].map((opt) => (
-                        <button
-                          key={opt}
-                          type="button"
-                          onClick={() => setConsumableAnswers({ ...consumableAnswers, fisik_tabung: opt })}
-                          className={`flex-1 py-1.5 rounded-lg font-bold border transition-all ${
-                            consumableAnswers.fisik_tabung === opt
-                              ? opt === "Ya" ? "bg-emerald-600 text-white border-emerald-600" : "bg-rose-600 text-white border-rose-600"
-                              : "bg-white text-slate-700 border-slate-200"
-                          }`}
-                        >
-                          {opt}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* 3. Label & tanggal */}
-                  <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
-                    <span className="font-bold text-slate-800 block">3. Label & tanggal kadaluarsa terbaca jelas?</span>
-                    <div className="flex gap-2">
-                      {["Ya", "Tidak"].map((opt) => (
-                        <button
-                          key={opt}
-                          type="button"
-                          onClick={() => setConsumableAnswers({ ...consumableAnswers, label_terbaca: opt })}
-                          className={`flex-1 py-1.5 rounded-lg font-bold border transition-all ${
-                            consumableAnswers.label_terbaca === opt
-                              ? opt === "Ya" ? "bg-emerald-600 text-white border-emerald-600" : "bg-rose-600 text-white border-rose-600"
-                              : "bg-white text-slate-700 border-slate-200"
-                          }`}
-                        >
-                          {opt}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* 4. Tekanan */}
-                  <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
-                    <span className="font-bold text-slate-800 block">4. Tekanan jarum indikator APAR:</span>
-                    <div className="flex gap-2">
-                      {["Normal", "Rendah", "Tinggi"].map((opt) => (
-                        <button
-                          key={opt}
-                          type="button"
-                          onClick={() => setConsumableAnswers({ ...consumableAnswers, tekanan: opt })}
-                          className={`flex-1 py-1.5 rounded-lg font-bold border transition-all ${
-                            consumableAnswers.tekanan === opt
-                              ? opt === "Normal" ? "bg-emerald-600 text-white border-emerald-600" : "bg-rose-600 text-white border-rose-600"
-                              : "bg-white text-slate-700 border-slate-200"
-                          }`}
-                        >
-                          {opt}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* 5. Aksesibilitas */}
-                  <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
-                    <span className="font-bold text-slate-800 block">5. Aksesibilitas bebas rintangan / tidak terhalang?</span>
-                    <div className="flex gap-2">
-                      {["Ya", "Tidak"].map((opt) => (
-                        <button
-                          key={opt}
-                          type="button"
-                          onClick={() => setConsumableAnswers({ ...consumableAnswers, aksesibilitas: opt })}
-                          className={`flex-1 py-1.5 rounded-lg font-bold border transition-all ${
-                            consumableAnswers.aksesibilitas === opt
-                              ? opt === "Ya" ? "bg-emerald-600 text-white border-emerald-600" : "bg-rose-600 text-white border-rose-600"
-                              : "bg-white text-slate-700 border-slate-200"
-                          }`}
-                        >
-                          {opt}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
+            <div className="space-y-4">
+              {/* Header Banner Kategori */}
+              <div className={`p-3 rounded-xl flex items-center justify-between border ${
+                config.isConsumable ? "bg-purple-50 border-purple-200" : "bg-blue-50 border-blue-200"
+              }`}>
+                <div>
+                  <span className={`font-bold block text-sm ${config.isConsumable ? "text-purple-900" : "text-blue-900"}`}>
+                    {config.bannerTitle}
+                  </span>
+                  <span className="text-[11px] text-slate-500">5 Poin Standar Teknis K3 PT Widatra Bhakti</span>
                 </div>
-              ) : (
-                /* JALUR B: KONDISI CHECKLIST (§4.2) */
-                <div className="space-y-4">
-                  <div className="p-3 bg-blue-50 border border-blue-200 rounded-xl flex items-center justify-between">
-                    <div>
-                      <span className="font-bold text-blue-900 block">Checklist Kondisi Fisik & Mekanis</span>
-                      <span className="text-[10px] text-blue-700">Skor MAX: OK (0), Minor (1), Kritis (2)</span>
-                    </div>
-                    <span className={`px-2.5 py-1 rounded-lg border font-extrabold text-xs ${calculatedConditionStatus.color}`}>
-                      {calculatedConditionStatus.label}
-                    </span>
-                  </div>
+                <span className={`px-2.5 py-1 rounded-lg border font-extrabold text-xs ${conditionStatus.color}`}>
+                  {conditionStatus.label}
+                </span>
+              </div>
 
-                  {/* 1. Fisik komponen */}
-                  <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
-                    <span className="font-bold text-slate-800 block">1. Kondisi fisik komponen (retak, getas, korosi, penyok)?</span>
-                    <div className="flex gap-2">
-                      {["OK", "Minor", "Kritis"].map((opt) => (
-                        <button
-                          key={opt}
-                          type="button"
-                          onClick={() => setKondisiAnswers({ ...kondisiAnswers, fisik_komponen: opt })}
-                          className={`flex-1 py-1.5 rounded-lg font-bold border transition-all ${
-                            kondisiAnswers.fisik_komponen === opt
-                              ? opt === "OK" ? "bg-emerald-600 text-white border-emerald-600" : opt === "Minor" ? "bg-amber-600 text-white border-amber-600" : "bg-rose-600 text-white border-rose-600"
-                              : "bg-white text-slate-700 border-slate-200"
-                          }`}
-                        >
-                          {opt}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
+              {/* Pertanyaan 5 Parameter */}
+              <div className="space-y-3">
+                {config.questions.map((q) => {
+                  const currentVal = answers[q.id] ?? q.defaultAnswer;
+                  return (
+                    <div key={q.id} className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
+                      <span className="font-bold text-slate-800 block text-xs">{q.question}</span>
+                      <div className="flex gap-2">
+                        {q.options.map((opt) => {
+                          const isSelected = currentVal === opt.label;
+                          const btnColor = opt.isPass
+                            ? isSelected
+                              ? "bg-emerald-600 text-white border-emerald-600 shadow-xs"
+                              : "bg-white text-slate-700 border-slate-200 hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-300"
+                            : isSelected
+                            ? "bg-rose-600 text-white border-rose-600 shadow-xs"
+                            : "bg-white text-slate-700 border-slate-200 hover:bg-rose-50 hover:text-rose-700 hover:border-rose-300";
 
-                  {/* 2. Fungsi mekanis */}
-                  <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
-                    <span className="font-bold text-slate-800 block">2. Fungsi mekanis (bisa dibuka / dioperasikan normal)?</span>
-                    <div className="flex gap-2">
-                      {["OK", "Minor", "Kritis"].map((opt) => (
-                        <button
-                          key={opt}
-                          type="button"
-                          onClick={() => setKondisiAnswers({ ...kondisiAnswers, fungsi_mekanis: opt })}
-                          className={`flex-1 py-1.5 rounded-lg font-bold border transition-all ${
-                            kondisiAnswers.fungsi_mekanis === opt
-                              ? opt === "OK" ? "bg-emerald-600 text-white border-emerald-600" : opt === "Minor" ? "bg-amber-600 text-white border-amber-600" : "bg-rose-600 text-white border-rose-600"
-                              : "bg-white text-slate-700 border-slate-200"
-                          }`}
-                        >
-                          {opt}
-                        </button>
-                      ))}
+                          return (
+                            <button
+                              key={opt.label}
+                              type="button"
+                              onClick={() => setAnswers((prev) => ({ ...prev, [q.id]: opt.label }))}
+                              className={`flex-1 py-1.5 rounded-lg font-bold border text-xs transition-all cursor-pointer ${btnColor}`}
+                            >
+                              {opt.label}
+                            </button>
+                          );
+                        })}
+                      </div>
                     </div>
-                  </div>
-
-                  {/* 3. Kebocoran */}
-                  <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
-                    <span className="font-bold text-slate-800 block">3. Kebocoran / rembesan air atau fluida?</span>
-                    <div className="flex gap-2">
-                      {["OK", "Minor", "Kritis"].map((opt) => (
-                        <button
-                          key={opt}
-                          type="button"
-                          onClick={() => setKondisiAnswers({ ...kondisiAnswers, kebocoran: opt })}
-                          className={`flex-1 py-1.5 rounded-lg font-bold border transition-all ${
-                            kondisiAnswers.kebocoran === opt
-                              ? opt === "OK" ? "bg-emerald-600 text-white border-emerald-600" : opt === "Minor" ? "bg-amber-600 text-white border-amber-600" : "bg-rose-600 text-white border-rose-600"
-                              : "bg-white text-slate-700 border-slate-200"
-                          }`}
-                        >
-                          {opt}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* 4. Kelengkapan */}
-                  <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
-                    <span className="font-bold text-slate-800 block">4. Kelengkapan aksesoris (nozzle, kunci, selang, bracket)?</span>
-                    <div className="flex gap-2">
-                      {["OK", "Minor", "Kritis"].map((opt) => (
-                        <button
-                          key={opt}
-                          type="button"
-                          onClick={() => setKondisiAnswers({ ...kondisiAnswers, kelengkapan: opt })}
-                          className={`flex-1 py-1.5 rounded-lg font-bold border transition-all ${
-                            kondisiAnswers.kelengkapan === opt
-                              ? opt === "OK" ? "bg-emerald-600 text-white border-emerald-600" : opt === "Minor" ? "bg-amber-600 text-white border-amber-600" : "bg-rose-600 text-white border-rose-600"
-                              : "bg-white text-slate-700 border-slate-200"
-                          }`}
-                        >
-                          {opt}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* 5. Kebersihan & Bebas Obstruksi */}
-                  <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
-                    <span className="font-bold text-slate-800 block">5. Kebersihan & area sekitar bebas obstruksi / rintangan?</span>
-                    <div className="flex gap-2">
-                      {["OK", "Minor", "Kritis"].map((opt) => (
-                        <button
-                          key={opt}
-                          type="button"
-                          onClick={() => setKondisiAnswers({ ...kondisiAnswers, kebersihan: opt })}
-                          className={`flex-1 py-1.5 rounded-lg font-bold border transition-all ${
-                            kondisiAnswers.kebersihan === opt
-                              ? opt === "OK" ? "bg-emerald-600 text-white border-emerald-600" : opt === "Minor" ? "bg-amber-600 text-white border-amber-600" : "bg-rose-600 text-white border-rose-600"
-                              : "bg-white text-slate-700 border-slate-200"
-                          }`}
-                        >
-                          {opt}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              )}
+                  );
+                })}
+              </div>
 
               {/* Submit Button */}
               <div className="pt-3 border-t border-slate-100 flex justify-between gap-3">
                 <button
                   type="button"
                   onClick={() => setStep("detail")}
-                  className="px-4 py-2 font-bold text-slate-600 hover:bg-slate-100 rounded-xl transition-colors"
+                  className="px-4 py-2 font-bold text-slate-600 hover:bg-slate-100 rounded-xl transition-colors cursor-pointer"
                 >
                   Kembali
                 </button>
@@ -504,11 +741,11 @@ export function InspectionModal({ isOpen, onClose, item, type, onSuccess }: Insp
             </div>
           )}
 
-          {/* STEP 3: LAPORAN TEMUAN (JIKA ADA MINOR/KRITIS/FAIL) */}
+          {/* STEP 3: LAPORAN TEMUAN (JIKA ADA PARAMETER FAIL) */}
           {step === "finding" && (
             <div className="space-y-4 animate-in slide-in-from-bottom-4">
               <div className="p-3 bg-rose-50 text-rose-800 border border-rose-200 rounded-xl flex items-center gap-2 font-bold">
-                <AlertTriangle size={16} /> Ada Temuan Masalah pada Alat K3 Ini
+                <AlertTriangle size={16} /> Ada Temuan Masalah pada {config.name} Ini
               </div>
 
               <div>
@@ -527,14 +764,14 @@ export function InspectionModal({ isOpen, onClose, item, type, onSuccess }: Insp
                 <button
                   type="button"
                   onClick={() => setStep("inspect")}
-                  className="px-4 py-2 font-bold text-slate-600 hover:bg-slate-100 rounded-xl transition-colors"
+                  className="px-4 py-2 font-bold text-slate-600 hover:bg-slate-100 rounded-xl transition-colors cursor-pointer"
                 >
                   Kembali ke Checklist
                 </button>
                 <button
                   type="button"
                   onClick={() => setStep("capa")}
-                  className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white font-bold rounded-xl shadow-sm transition-all flex items-center gap-1.5"
+                  className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white font-bold rounded-xl shadow-sm transition-all flex items-center gap-1.5 cursor-pointer"
                 >
                   Lanjut ke Tindakan Perbaikan (CAPA) <ArrowRight size={14} />
                 </button>
@@ -556,7 +793,7 @@ export function InspectionModal({ isOpen, onClose, item, type, onSuccess }: Insp
                   rows={2}
                   value={actionPlan}
                   onChange={(e) => setActionPlan(e.target.value)}
-                  placeholder="Contoh: Ganti selang hydrant yang retak / ganti isi media tabung APAR segera..."
+                  placeholder={`Contoh: Perbaikan / penggantian komponen ${config.name} segera oleh tim penanggung jawab...`}
                   className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white text-slate-900"
                 />
               </div>
@@ -570,7 +807,7 @@ export function InspectionModal({ isOpen, onClose, item, type, onSuccess }: Insp
                 >
                   <option value="Tim K3 / HSE">Tim K3 / HSE</option>
                   <option value="Tim Maintenance / GA">Tim Maintenance / GA</option>
-                  <option value="Vendor Rekanan APAR">Vendor Rekanan APAR</option>
+                  <option value="Vendor Rekanan K3">Vendor Rekanan K3</option>
                   <option value="Supervisor Area Pabrik">Supervisor Area Pabrik</option>
                 </select>
               </div>
@@ -579,7 +816,7 @@ export function InspectionModal({ isOpen, onClose, item, type, onSuccess }: Insp
                 <button
                   type="button"
                   onClick={() => setStep("finding")}
-                  className="px-4 py-2 font-bold text-slate-600 hover:bg-slate-100 rounded-xl transition-colors"
+                  className="px-4 py-2 font-bold text-slate-600 hover:bg-slate-100 rounded-xl transition-colors cursor-pointer"
                 >
                   Kembali
                 </button>
