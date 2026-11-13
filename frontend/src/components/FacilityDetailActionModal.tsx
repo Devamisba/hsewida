@@ -342,7 +342,7 @@ export function FacilityDetailActionModal({
               <div className="flex items-center justify-center sm:justify-start gap-1.5 flex-wrap">
                 <span className="text-xs font-bold text-slate-900">QR Code Identifikasi & Scan Lapangan</span>
                 <span className="text-[10px] font-mono font-bold text-purple-700 bg-white border border-purple-200 px-1.5 py-0.5 rounded">
-                  {facility.qr_code_id || `QR-APAR-${facility.code}`}
+                  {facility.qr_code_id || (isApar ? `QR-APAR-${facility.code}` : `QR-${facility.code}`)}
                 </span>
               </div>
               <p className="text-[11px] text-slate-600 leading-relaxed">
@@ -362,16 +362,15 @@ export function FacilityDetailActionModal({
                   <span>Cetak Stiker QR</span>
                 </button>
 
-                {isApar && (
-                  <Link
+                <Link
                     to={`/scan/apar/${facility.code}`}
                     onClick={onClose}
                     className="inline-flex items-center gap-1.5 px-3 py-2 bg-white border border-purple-300 hover:bg-purple-100/60 text-purple-900 rounded-lg text-xs font-semibold transition cursor-pointer"
+                    title="Buka formulir pengecekan lapangan"
                   >
                     <ExternalLink size={13} />
                     <span>Buka Pengecekan</span>
                   </Link>
-                )}
               </div>
             </div>
           </div>
@@ -500,56 +499,52 @@ export function FacilityDetailActionModal({
             </h3>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-              {/* 1. Form K3 (Dual-Tier Web / Scan Link) */}
-              {isApar && (
-                <Link
-                  to={`/scan/apar/${facility.code}`}
-                  onClick={onClose}
-                  className="flex items-center justify-between p-3 rounded-lg border border-rose-200 bg-rose-50/50 hover:bg-rose-100/70 hover:border-rose-300 transition text-left group"
-                >
-                  <div className="flex items-center gap-2.5 min-w-0">
-                    <div className="w-8 h-8 rounded-md bg-rose-100 text-rose-700 flex items-center justify-center shrink-0">
-                      <ExternalLink size={16} />
-                    </div>
-                    <div className="min-w-0">
-                      <div className="font-bold text-xs text-rose-900 flex items-center gap-1">
-                        Form K3 Lapangan
-                      </div>
-                      <p className="text-[11px] text-rose-700 truncate">
-                        Pengecekan Petugas & Verifikasi PIC
-                      </p>
-                    </div>
+              {/* 1. Form K3 Lapangan (Scan / Kamera Realtime & Verifikasi PIC - Untuk Seluruh Fasilitas) */}
+              <Link
+                to={`/scan/apar/${facility.code}`}
+                onClick={onClose}
+                className="flex items-center justify-between p-3 rounded-lg border border-rose-200 bg-rose-50/50 hover:bg-rose-100/70 hover:border-rose-300 transition text-left group"
+              >
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <div className="w-8 h-8 rounded-md bg-rose-100 text-rose-700 flex items-center justify-center shrink-0">
+                    <ExternalLink size={16} />
                   </div>
-                  <ChevronRight size={15} className="text-rose-400 group-hover:translate-x-0.5 transition" />
-                </Link>
-              )}
+                  <div className="min-w-0">
+                    <div className="font-bold text-xs text-rose-900 flex items-center gap-1">
+                      Form K3 Lapangan
+                    </div>
+                    <p className="text-[11px] text-rose-700 truncate">
+                      Pengecekan Petugas & Verifikasi PIC
+                    </p>
+                  </div>
+                </div>
+                <ChevronRight size={15} className="text-rose-400 group-hover:translate-x-0.5 transition" />
+              </Link>
 
-              {/* 2. Checklist Inspeksi K3 (Khusus untuk fasilitas selain APAR, karena APAR sudah menggunakan Form K3 Lapangan) */}
-              {!isApar && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    onClose();
-                    onInspect(facility);
-                  }}
-                  className="flex items-center justify-between p-3 rounded-lg border border-sky-200 bg-sky-50/50 hover:bg-sky-100/70 hover:border-sky-300 transition text-left group cursor-pointer"
-                >
-                  <div className="flex items-center gap-2.5 min-w-0">
-                    <div className="w-8 h-8 rounded-md bg-sky-100 text-sky-700 flex items-center justify-center shrink-0">
-                      <ClipboardCheck size={16} />
-                    </div>
-                    <div className="min-w-0">
-                      <div className="font-bold text-xs text-sky-900">
-                        Checklist Inspeksi
-                      </div>
-                      <p className="text-[11px] text-sky-700 truncate">
-                        Input form checklist berkala
-                      </p>
-                    </div>
+              {/* 2. Checklist Inspeksi K3 (Modal Checklist Desktop & CAPA - Untuk Seluruh Fasilitas Termasuk APAR) */}
+              <button
+                type="button"
+                onClick={() => {
+                  onClose();
+                  onInspect(facility);
+                }}
+                className="flex items-center justify-between p-3 rounded-lg border border-sky-200 bg-sky-50/50 hover:bg-sky-100/70 hover:border-sky-300 transition text-left group cursor-pointer"
+              >
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <div className="w-8 h-8 rounded-md bg-sky-100 text-sky-700 flex items-center justify-center shrink-0">
+                    <ClipboardCheck size={16} />
                   </div>
-                  <ChevronRight size={15} className="text-sky-400 group-hover:translate-x-0.5 transition" />
-                </button>
-              )}
+                  <div className="min-w-0">
+                    <div className="font-bold text-xs text-sky-900">
+                      Checklist Inspeksi
+                    </div>
+                    <p className="text-[11px] text-sky-700 truncate">
+                      Input form checklist berkala
+                    </p>
+                  </div>
+                </div>
+                <ChevronRight size={15} className="text-sky-400 group-hover:translate-x-0.5 transition" />
+              </button>
 
               {/* 3. Cetak Label QR Stiker */}
               <button
