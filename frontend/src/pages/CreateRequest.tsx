@@ -428,7 +428,7 @@ export default function CreateRequestPage() {
   if (isSuccess) {
     return (
       <div className="flex-1 flex flex-col h-full bg-background/50">
-        <Header title="Create Work Permit" />
+        <Header title="Izin Kerja" />
         <div className="flex-1 flex flex-col items-center justify-center p-6 text-center">
           <div className="w-16 h-16 bg-success-container text-success rounded-full flex items-center justify-center mb-6">
             <CheckCircle size={32} />
@@ -470,7 +470,7 @@ export default function CreateRequestPage() {
 
   return (
     <div className="flex-1 flex flex-col h-full bg-background overflow-hidden">
-      <Header title="Create Work Permit" />
+      <Header title="Izin Kerja" />
       
       <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8">
         <div className="max-w-5xl mx-auto">
@@ -480,12 +480,12 @@ export default function CreateRequestPage() {
             <h2 className="text-2xl font-bold text-gray-900">
               {extendState?.extendMode 
                 ? `Perpanjangan Izin Kerja Ke-${formData.extensionPhase || 1} (Fase ${formData.extensionPhase || 1})` 
-                : "Create Work Permit Request"}
+                : "Pengajuan Izin Kerja"}
             </h2>
             <p className="text-sm text-gray-500 mt-1">
               {extendState?.extendMode 
                 ? `Pengajuan perpanjangan masa berlaku untuk Surat Izin Kerja ${extendState.permitNumber || extendState.id || ""} (SIKA Induk: ${formData.rootPermitNumber || extendState.permitNumber}).`
-                : "Formulir digital Izin Kerja, Safety Induction & JSA untuk vendor eksternal."}
+                : "Formulir digital Izin Kerja, Safety Induction & JSA untuk rekanan dan tim operasional."}
             </p>
           </div>
 

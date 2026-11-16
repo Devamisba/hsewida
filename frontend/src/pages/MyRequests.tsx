@@ -568,7 +568,7 @@ export default function MyRequestsPage() {
                         </p>
                         <p className="text-xs text-gray-500 mt-1 max-w-md mx-auto">
                           {requests.length === 0 
-                            ? "Anda belum memiliki riwayat pengajuan izin kerja. Klik 'Buat Izin Kerja Baru' untuk mengajukan permohonan." 
+                            ? "Anda belum memiliki riwayat pengajuan izin kerja. Klik 'Buat Izin Kerja' untuk mengajukan permohonan." 
                             : "Tidak ditemukan izin kerja yang sesuai dengan filter atau kata kunci pencarian Anda."}
                         </p>
                       </td>
@@ -690,7 +690,7 @@ export default function MyRequestsPage() {
               </p>
               <p className="text-xs text-gray-400 mt-1 max-w-md mx-auto">
                 {requests.length === 0 
-                  ? "Anda belum memiliki pengajuan izin kerja. Klik 'Buat Izin Kerja Baru' untuk mengajukan permohonan." 
+                  ? "Anda belum memiliki pengajuan izin kerja. Klik 'Buat Izin Kerja' untuk mengajukan permohonan." 
                   : "Tidak ditemukan izin kerja yang sesuai dengan filter atau kata kunci pencarian Anda."}
               </p>
             </div>

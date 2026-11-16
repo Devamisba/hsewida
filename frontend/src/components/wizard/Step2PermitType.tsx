@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { ShieldAlert, Loader2, RefreshCw } from "lucide-react";
+import { ShieldAlert, Loader2, RefreshCw, Lock } from "lucide-react";
 import { api } from "@/services/api";
 import { 
   getRecommendedPpeForPermits, 
@@ -46,7 +46,11 @@ export function Step2PermitType({ data, updateData }: { data: any, updateData: a
     return () => { isMounted = false; };
   }, []);
 
+  const isExtension = data.requestType === "Perpanjangan";
+
   const handlePermitToggle = (type: string) => {
+    if (isExtension) return; // Terkunci pada perpanjangan izin
+
     const oldPermits = data.permitTypes || [];
     const newPermits = oldPermits.includes(type)
       ? oldPermits.filter((t: string) => t !== type)
@@ -120,12 +124,33 @@ export function Step2PermitType({ data, updateData }: { data: any, updateData: a
         <>
           {/* Permit Type */}
           <div id="section-permit-types" className="space-y-4 p-1 rounded-xl transition-all">
+            {isExtension && (
+              <div className="flex items-start gap-2.5 p-3.5 bg-amber-50/90 border border-amber-300 rounded-xl text-amber-900 text-xs shadow-2xs animate-in fade-in">
+                <div className="p-1.5 bg-amber-200 text-amber-900 rounded-lg shrink-0 mt-0.5">
+                  <Lock size={15} />
+                </div>
+                <div className="space-y-0.5">
+                  <p className="font-bold text-amber-950">
+                    Jenis Izin Kerja Terkunci (Mode Perpanjangan)
+                  </p>
+                  <p className="text-amber-800 leading-relaxed">
+                    Kategori izin kerja diwarisi langsung dari izin kerja acuan (<strong className="font-mono text-slate-900">{data.rootPermitNumber || data.parentPermitNumber || "SIKA Induk"}</strong>) dan tidak dapat diubah selama proses perpanjangan proyek.
+                  </p>
+                </div>
+              </div>
+            )}
+
             <div className="flex items-center justify-between">
-              <h4 className="text-sm font-bold text-gray-900 uppercase tracking-wider">
-                Type of Work Permit (Master Data)
+              <h4 className="text-sm font-bold text-gray-900 uppercase tracking-wider flex items-center gap-2">
+                <span>Type of Work Permit (Master Data)</span>
+                {isExtension && (
+                  <span className="inline-flex items-center gap-1 text-[11px] font-semibold bg-amber-100 text-amber-900 px-2 py-0.5 rounded-full border border-amber-300">
+                    <Lock size={12} /> Terkunci (Perpanjangan)
+                  </span>
+                )}
               </h4>
               <span className="text-xs text-blue-600 font-medium">
-                Pilih satu atau lebih jenis pekerjaan
+                {isExtension ? "Diwarisi dari izin acuan" : "Pilih satu atau lebih jenis pekerjaan"}
               </span>
             </div>
 
@@ -135,54 +160,98 @@ export function Step2PermitType({ data, updateData }: { data: any, updateData: a
                 return (
                   <label 
                     key={type} 
-                    className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all ${
-                      isChecked 
-                        ? 'border-blue-500 bg-blue-50/60 shadow-xs' 
-                        : 'border-gray-200 hover:bg-gray-50 bg-white'
+                    className={`flex items-center justify-between p-3 rounded-lg border transition-all ${
+                      isExtension
+                        ? isChecked
+                          ? 'border-amber-300 bg-amber-50/70 text-amber-950 cursor-not-allowed opacity-90'
+                          : 'border-gray-200 bg-gray-50 text-gray-400 cursor-not-allowed opacity-60'
+                        : isChecked 
+                          ? 'border-blue-500 bg-blue-50/60 shadow-xs cursor-pointer' 
+                          : 'border-gray-200 hover:bg-gray-50 bg-white cursor-pointer'
                     }`}
                   >
-                    <input 
-                      type="checkbox" 
-                      checked={isChecked}
-                      onChange={() => handlePermitToggle(type)}
-                      className="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
-                    />
-                    <span className={`text-sm ${isChecked ? 'font-semibold text-blue-900' : 'text-gray-700 font-medium'}`}>
-                      {type}
-                    </span>
+                    <div className="flex items-center gap-3">
+                      <input 
+                        type="checkbox" 
+                        checked={isChecked}
+                        disabled={isExtension}
+                        onChange={() => handlePermitToggle(type)}
+                        className={`w-4 h-4 rounded border-gray-300 focus:ring-blue-500 ${
+                          isExtension ? 'cursor-not-allowed text-amber-600' : 'text-blue-600 cursor-pointer'
+                        }`}
+                      />
+                      <span className={`text-sm ${
+                        isExtension 
+                          ? isChecked ? 'font-semibold text-amber-950' : 'text-gray-400' 
+                          : isChecked ? 'font-semibold text-blue-900' : 'text-gray-700 font-medium'
+                      }`}>
+                        {type}
+                      </span>
+                    </div>
+                    {isExtension && isChecked && (
+                      <span title="Terkunci: Diwarisi dari izin sebelumnya" className="flex items-center">
+                        <Lock size={13} className="text-amber-700 shrink-0" />
+                      </span>
+                    )}
                   </label>
                 );
               })}
               
               {/* Single Others checkbox */}
-              <label className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all ${
-                isOthersPermitChecked 
-                  ? 'border-blue-500 bg-blue-50/60 shadow-xs' 
-                  : 'border-gray-200 hover:bg-gray-50 bg-white'
+              <label className={`flex items-center justify-between p-3 rounded-lg border transition-all ${
+                isExtension
+                  ? isOthersPermitChecked
+                    ? 'border-amber-300 bg-amber-50/70 text-amber-950 cursor-not-allowed opacity-90'
+                    : 'border-gray-200 bg-gray-50 text-gray-400 cursor-not-allowed opacity-60'
+                  : isOthersPermitChecked 
+                    ? 'border-blue-500 bg-blue-50/60 shadow-xs cursor-pointer' 
+                    : 'border-gray-200 hover:bg-gray-50 bg-white cursor-pointer'
               }`}>
-                <input 
-                  type="checkbox" 
-                  checked={isOthersPermitChecked}
-                  onChange={() => handlePermitToggle("Others")}
-                  className="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
-                />
-                <span className={`text-sm ${isOthersPermitChecked ? 'font-semibold text-blue-900' : 'text-gray-700 font-medium'}`}>
-                  Others (Lainnya)
-                </span>
+                <div className="flex items-center gap-3">
+                  <input 
+                    type="checkbox" 
+                    checked={isOthersPermitChecked}
+                    disabled={isExtension}
+                    onChange={() => handlePermitToggle("Others")}
+                    className={`w-4 h-4 rounded border-gray-300 focus:ring-blue-500 ${
+                      isExtension ? 'cursor-not-allowed text-amber-600' : 'text-blue-600 cursor-pointer'
+                    }`}
+                  />
+                  <span className={`text-sm ${
+                    isExtension 
+                      ? isOthersPermitChecked ? 'font-semibold text-amber-950' : 'text-gray-400' 
+                      : isOthersPermitChecked ? 'font-semibold text-blue-900' : 'text-gray-700 font-medium'
+                  }`}>
+                    Others (Lainnya)
+                  </span>
+                </div>
+                {isExtension && isOthersPermitChecked && (
+                  <span title="Terkunci: Diwarisi dari izin sebelumnya" className="flex items-center">
+                    <Lock size={13} className="text-amber-700 shrink-0" />
+                  </span>
+                )}
               </label>
             </div>
             
             {isOthersPermitChecked && (
               <div className="mt-2 p-4 bg-gray-50 rounded-lg border border-gray-200">
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                  Specify Other Permit Type <span className="text-red-500">*</span>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5 flex items-center justify-between">
+                  <span>Specify Other Permit Type <span className="text-red-500">*</span></span>
+                  {isExtension && (
+                    <span className="text-xs text-amber-700 font-medium flex items-center gap-1">
+                      <Lock size={11} /> Terkunci
+                    </span>
+                  )}
                 </label>
                 <input 
                   id="otherPermitType"
                   type="text" 
                   value={data.otherPermitType || ""}
+                  disabled={isExtension}
                   onChange={(e) => updateData({ otherPermitType: e.target.value })}
-                  className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                  className={`w-full px-4 py-2.5 rounded-lg border border-gray-300 text-sm ${
+                    isExtension ? 'bg-gray-100 cursor-not-allowed text-gray-600' : 'focus:ring-2 focus:ring-blue-500 focus:border-blue-500'
+                  }`}
                   placeholder="Sebutkan jenis pekerjaan lainnya..."
                 />
               </div>

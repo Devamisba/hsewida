@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { format, addDays, isBefore, startOfToday } from "date-fns";
 import { ClipboardList, HardHat, Building2, CalendarClock } from "lucide-react";
-import { cn, calculateInclusiveDays, formatDateDDMMYY } from "@/lib/utils";
+import { calculateInclusiveDays, formatDateDDMMYY } from "@/lib/utils";
 import { DateInputDDMMYY } from "@/components/DateInputDDMMYY";
 import { api } from "@/services/api";
 import { auth } from "@/lib/auth";
@@ -119,47 +119,26 @@ export function Step1DataKontraktor({ data, updateData }: { data: any, updateDat
       </div>
 
       <div className="space-y-6">
-        <div>
-          <label className="block text-sm font-semibold text-gray-700 mb-3">Jenis Permohonan</label>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <label className={cn(
-              "flex items-center gap-3 p-4 rounded-lg border cursor-pointer transition-colors",
-              data.requestType === "Baru" ? "border-blue-500 bg-blue-50/50 text-blue-700 ring-1 ring-blue-500" : "border-gray-200 bg-white hover:bg-gray-50"
-            )}>
-              <input 
-                type="radio" 
-                name="requestType" 
-                value="Baru" 
-                checked={data.requestType === "Baru"} 
-                onChange={(e) => {
-                  const val = e.target.value;
-                  updateData({ requestType: val });
-                  setMinStartDate(format(addDays(startOfToday(), minLeadDays), 'yyyy-MM-dd'));
-                }}
-                className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
-              />
-              <span className="font-medium">Baru</span>
-            </label>
-            <label className={cn(
-              "flex items-center gap-3 p-4 rounded-lg border cursor-pointer transition-colors",
-              data.requestType === "Perpanjangan" ? "border-blue-500 bg-blue-50/50 text-blue-700 ring-1 ring-blue-500" : "border-gray-200 bg-white hover:bg-gray-50"
-            )}>
-              <input 
-                type="radio" 
-                name="requestType" 
-                value="Perpanjangan" 
-                checked={data.requestType === "Perpanjangan"} 
-                onChange={(e) => {
-                  const val = e.target.value;
-                  updateData({ requestType: val });
-                  setMinStartDate(format(startOfToday(), 'yyyy-MM-dd'));
-                }}
-                className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
-              />
-              <span className="font-medium">Perpanjangan</span>
-            </label>
+        {data.requestType === "Perpanjangan" && (
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 bg-amber-50/90 border border-amber-200 rounded-xl text-amber-900 text-sm shadow-xs animate-in fade-in">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-amber-200/90 text-amber-900 rounded-lg shrink-0">
+                <CalendarClock size={20} />
+              </div>
+              <div>
+                <p className="font-bold text-amber-950 text-sm">
+                  Permohonan Perpanjangan Izin Kerja &mdash; Fase {data.extensionPhase || 1}
+                </p>
+                <p className="text-xs text-amber-800 mt-0.5">
+                  Mengacu pada SIKA Induk: <strong className="font-mono text-slate-900">{data.rootPermitNumber || data.parentPermitNumber || "SIKA Sebelumnya"}</strong>
+                </p>
+              </div>
+            </div>
+            <span className="text-[11px] font-bold bg-amber-200 text-amber-900 px-2.5 py-1 rounded-full uppercase tracking-wider shrink-0 self-start sm:self-auto">
+              Perpanjangan Ke-{data.extensionPhase || 1}
+            </span>
           </div>
-        </div>
+        )}
 
         {/* 1. Detail Pekerjaan & Jadwal */}
         <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm space-y-5">

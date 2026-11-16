@@ -386,7 +386,7 @@ export default function DashboardPage() {
                         <PlusCircle size={22} />
                       </div>
                       <div>
-                        <h3 className="font-bold text-sm sm:text-base text-white">Buat Izin Baru</h3>
+                        <h3 className="font-bold text-sm sm:text-base text-white">Buat Izin Kerja</h3>
                         <p className="text-slate-400 text-xs mt-0.5">Ajukan Work Permit keselamatan baru</p>
                       </div>
                     </div>

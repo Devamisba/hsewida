@@ -76,7 +76,7 @@ export const NAVIGATION_CONFIG: NavItem[] = [
     roles: ["*"],
     children: [
       {
-        name: "Izin Kerja Baru",
+        name: "Izin Kerja",
         href: "/create-request",
         icon: FilePlus2,
         roles: ["admin", "hse", "pic_k3", "kontraktor", "contractor", "pemohon", "vendor"],
