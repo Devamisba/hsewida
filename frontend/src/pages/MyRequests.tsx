@@ -173,6 +173,7 @@ export default function MyRequestsPage() {
   const [previewPhoto, setPreviewPhoto] = useState<string | null>(null);
   const [extensionWindowDays, setExtensionWindowDays] = useState(3);
   const [statusFilter, setStatusFilter] = useState<string>("ALL");
+  const [typeFilter, setTypeFilter] = useState<string>("ALL");
   const [searchQuery, setSearchQuery] = useState<string>("");
 
   const statusCounts = useMemo(() => {
@@ -180,6 +181,7 @@ export default function MyRequestsPage() {
     let activeTotal = 0;
     let pending = 0;
     let disetujui = 0;
+    let perpanjangan = 0;
     let selesai = 0;
     let ditolak = 0;
 
@@ -191,6 +193,11 @@ export default function MyRequestsPage() {
       }
 
       activeTotal++;
+      const isExt = r.requestType === 'Perpanjangan' || (typeof r.extensionPhase === 'number' && r.extensionPhase > 0) || Boolean(r.parentPermitId);
+      if (isExt) {
+        perpanjangan++;
+      }
+
       if (st.startsWith("Menunggu") || st === "Review PIC" || st === "Review HSE") {
         pending++;
       } else if (st === "Disetujui") {
@@ -204,6 +211,7 @@ export default function MyRequestsPage() {
       all: activeTotal,
       pending,
       disetujui,
+      perpanjangan,
       selesai,
       ditolak,
     };
@@ -219,15 +227,26 @@ export default function MyRequestsPage() {
         return false;
       }
 
+      const isExt = req.requestType === 'Perpanjangan' || (typeof req.extensionPhase === 'number' && req.extensionPhase > 0) || Boolean(req.parentPermitId);
+
       if (statusFilter !== "ALL") {
         if (statusFilter === "PENDING") {
           const st = req.status || "";
           if (!st.startsWith("Menunggu") && st !== "Review PIC" && st !== "Review HSE") {
             return false;
           }
+        } else if (statusFilter === "PERPANJANGAN") {
+          if (!isExt) {
+            return false;
+          }
         } else if (req.status !== statusFilter) {
           return false;
         }
+      }
+
+      if (typeFilter !== "ALL") {
+        if (typeFilter === "PERPANJANGAN" && !isExt) return false;
+        if (typeFilter === "BARU" && isExt) return false;
       }
 
       if (searchQuery.trim()) {
@@ -240,7 +259,7 @@ export default function MyRequestsPage() {
 
       return true;
     });
-  }, [requests, statusFilter, searchQuery]);
+  }, [requests, statusFilter, typeFilter, searchQuery]);
 
   const handleResubmit = (req: any) => {
     navigate("/create-request", { 
@@ -333,19 +352,22 @@ export default function MyRequestsPage() {
               {/* Semua Status */}
               <button
                 type="button"
-                onClick={() => setStatusFilter("ALL")}
+                onClick={() => {
+                  setStatusFilter("ALL");
+                  setTypeFilter("ALL");
+                }}
                 className={cn(
                   "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer whitespace-nowrap",
-                  statusFilter === "ALL"
+                  statusFilter === "ALL" && typeFilter === "ALL"
                     ? "bg-[#162f65] text-white shadow-xs"
                     : "bg-white text-slate-700 border border-slate-200 hover:bg-slate-50"
                 )}
               >
-                <Layers size={13} className={statusFilter === "ALL" ? "text-white" : "text-slate-500"} />
+                <Layers size={13} className={statusFilter === "ALL" && typeFilter === "ALL" ? "text-white" : "text-slate-500"} />
                 <span>Semua Status</span>
                 <span className={cn(
                   "px-1.5 py-0.2 rounded-full text-[10px] font-mono font-bold",
-                  statusFilter === "ALL" ? "bg-white/20 text-white" : "bg-slate-100 text-slate-600"
+                  statusFilter === "ALL" && typeFilter === "ALL" ? "bg-white/20 text-white" : "bg-slate-100 text-slate-600"
                 )}>
                   {statusCounts.all}
                 </span>
@@ -354,7 +376,10 @@ export default function MyRequestsPage() {
               {/* Menunggu / Pending */}
               <button
                 type="button"
-                onClick={() => setStatusFilter("PENDING")}
+                onClick={() => {
+                  setStatusFilter("PENDING");
+                  setTypeFilter("ALL");
+                }}
                 className={cn(
                   "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer whitespace-nowrap",
                   statusFilter === "PENDING"
@@ -375,29 +400,65 @@ export default function MyRequestsPage() {
               {/* Disetujui */}
               <button
                 type="button"
-                onClick={() => setStatusFilter("Disetujui")}
+                onClick={() => {
+                  setStatusFilter("Disetujui");
+                  setTypeFilter("ALL");
+                }}
                 className={cn(
                   "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer whitespace-nowrap",
-                  statusFilter === "Disetujui"
+                  statusFilter === "Disetujui" && typeFilter === "ALL"
                     ? "bg-[#162f65] text-white shadow-xs"
                     : "bg-white text-slate-700 border border-slate-200 hover:bg-slate-50"
                 )}
               >
-                <CheckCircle size={13} className={statusFilter === "Disetujui" ? "text-white" : "text-emerald-600"} />
+                <CheckCircle size={13} className={statusFilter === "Disetujui" && typeFilter === "ALL" ? "text-white" : "text-emerald-600"} />
                 <span>Disetujui</span>
                 <span className={cn(
                   "px-1.5 py-0.2 rounded-full text-[10px] font-mono font-bold",
-                  statusFilter === "Disetujui" ? "bg-white/20 text-white" : "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                  statusFilter === "Disetujui" && typeFilter === "ALL" ? "bg-white/20 text-white" : "bg-emerald-50 text-emerald-700 border border-emerald-200"
                 )}>
                   {statusCounts.disetujui}
                 </span>
               </button>
 
+              {/* Filter Perpanjangan (Baru Ditambahkan Sesuai Permintaan User) */}
+              <button
+                type="button"
+                onClick={() => {
+                  if (statusFilter === "PERPANJANGAN" || typeFilter === "PERPANJANGAN") {
+                    setStatusFilter("ALL");
+                    setTypeFilter("ALL");
+                  } else {
+                    setStatusFilter("PERPANJANGAN");
+                    setTypeFilter("ALL");
+                  }
+                }}
+                className={cn(
+                  "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer whitespace-nowrap",
+                  statusFilter === "PERPANJANGAN" || typeFilter === "PERPANJANGAN"
+                    ? "bg-[#162f65] text-white shadow-xs"
+                    : "bg-white text-slate-700 border border-slate-200 hover:bg-slate-50"
+                )}
+              >
+                <CalendarPlus size={13} className={statusFilter === "PERPANJANGAN" || typeFilter === "PERPANJANGAN" ? "text-white" : "text-amber-600"} />
+                <span>Perpanjangan</span>
+                <span className={cn(
+                  "px-1.5 py-0.2 rounded-full text-[10px] font-mono font-bold",
+                  statusFilter === "PERPANJANGAN" || typeFilter === "PERPANJANGAN"
+                    ? "bg-white/20 text-white"
+                    : "bg-amber-50 text-amber-700 border border-amber-200"
+                )}>
+                  {statusCounts.perpanjangan}
+                </span>
+              </button>
 
               {/* Ditolak */}
               <button
                 type="button"
-                onClick={() => setStatusFilter("Ditolak")}
+                onClick={() => {
+                  setStatusFilter("Ditolak");
+                  setTypeFilter("ALL");
+                }}
                 className={cn(
                   "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer whitespace-nowrap",
                   statusFilter === "Ditolak"
@@ -416,31 +477,69 @@ export default function MyRequestsPage() {
               </button>
             </div>
 
-            {/* Search Box & Counter */}
+            {/* Search Box, Dropdown Tipe & Counter */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2 border-t border-slate-100">
-              <div className="relative flex-1 max-w-md">
-                <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Cari nomor izin (WP-...), pekerjaan, lokasi..."
-                  className="w-full pl-9 pr-8 py-2 text-xs border border-slate-300 rounded-xl focus:outline-none focus:border-primary bg-slate-50/50"
-                />
-                {searchQuery && (
-                  <button
-                    type="button"
-                    onClick={() => setSearchQuery("")}
-                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 text-xs cursor-pointer p-0.5"
-                  >
-                    ✕
-                  </button>
-                )}
+              <div className="flex items-center gap-2 flex-1 max-w-lg">
+                <div className="relative flex-1">
+                  <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Cari nomor izin (WP-...), pekerjaan, lokasi..."
+                    className="w-full pl-9 pr-8 py-2 text-xs border border-slate-300 rounded-xl focus:outline-none focus:border-primary bg-slate-50/50"
+                  />
+                  {searchQuery && (
+                    <button
+                      type="button"
+                      onClick={() => setSearchQuery("")}
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 text-xs cursor-pointer p-0.5"
+                    >
+                      ✕
+                    </button>
+                  )}
+                </div>
+
+                {/* Dropdown Filter Tipe Izin */}
+                <select
+                  value={statusFilter === "PERPANJANGAN" ? "PERPANJANGAN" : typeFilter}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    if (val === "PERPANJANGAN") {
+                      setStatusFilter("PERPANJANGAN");
+                      setTypeFilter("ALL");
+                    } else {
+                      if (statusFilter === "PERPANJANGAN") setStatusFilter("ALL");
+                      setTypeFilter(val);
+                    }
+                  }}
+                  className="text-xs border border-slate-300 rounded-xl px-2.5 py-2 bg-slate-50/50 text-slate-700 font-semibold focus:outline-none focus:border-primary cursor-pointer shrink-0"
+                  title="Filter Tipe Permohonan"
+                >
+                  <option value="ALL">Semua Tipe</option>
+                  <option value="BARU">Izin Baru</option>
+                  <option value="PERPANJANGAN">Khusus Perpanjangan</option>
+                </select>
               </div>
 
-              <span className="text-xs text-slate-500 font-medium">
-                Menampilkan <strong>{filteredRequests.length}</strong> dari {requests.length} izin kerja
-              </span>
+              <div className="flex items-center gap-3 text-xs text-slate-500 font-medium">
+                {(statusFilter !== "ALL" || typeFilter !== "ALL" || searchQuery) && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setStatusFilter("ALL");
+                      setTypeFilter("ALL");
+                      setSearchQuery("");
+                    }}
+                    className="text-primary hover:underline font-bold text-xs cursor-pointer"
+                  >
+                    Reset Filter
+                  </button>
+                )}
+                <span>
+                  Menampilkan <strong>{filteredRequests.length}</strong> dari {requests.length} izin kerja
+                </span>
+              </div>
             </div>
           </div>
 
