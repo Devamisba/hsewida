@@ -266,10 +266,23 @@ export function PrintPermitModal({ permit, onClose }: PrintPermitModalProps) {
             >
               
               {/* BINGKAI HITAM DOKUMEN (PERSIS SEPERTI IKWB2.pdf) */}
-              <div className="border-2 border-slate-900 p-4 sm:p-5 flex-1 flex flex-col justify-between space-y-3.5">
+              <div className="border-2 border-slate-900 p-4 sm:p-5 flex-1 flex flex-col justify-between space-y-3.5 relative overflow-hidden">
+                
+                {/* WATERMARK BACKGROUND LOGO WIDATRA (PERSIS SEPERTI DOKUMEN RESMI IKWB2.pdf) */}
+                <div 
+                  className="absolute top-[48%] left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none z-0 select-none flex items-center justify-center w-[520px] max-w-[82%]"
+                  aria-hidden="true"
+                >
+                  <img 
+                    src="/widatra-watermark.png" 
+                    alt="" 
+                    className="w-full h-auto object-contain opacity-[0.15]"
+                    style={{ opacity: 0.15 }}
+                  />
+                </div>
                 
                 {/* KOP HEADER: SIMETRIS 100% PUSAT (JUDUL IZIN KERJA DEAD-CENTER) DENGAN 3 GARIS PEMBAGI VERTIKAL */}
-                <div className="flex items-center justify-between pb-3 border-b-2 border-slate-900">
+                <div className="flex items-center justify-between pb-3 border-b-2 border-slate-900 relative z-10">
                   {/* SAYAP KIRI (flex-1): Logo K3 + Slogan Resmi K3 */}
                   <div className="flex-1 flex items-center justify-between min-w-0 pr-2 sm:pr-4">
                     <div className="flex-1 flex flex-col items-center justify-center text-center">
@@ -340,7 +353,7 @@ export function PrintPermitModal({ permit, onClose }: PrintPermitModalProps) {
                 </div>
 
               {/* 1. TABEL DATA KONTRAKTOR */}
-              <div className="border border-slate-900 text-xs overflow-hidden">
+              <div className="border border-slate-900 text-xs overflow-hidden relative z-10">
                 <div className="bg-slate-200 px-3 py-1.5 font-bold uppercase tracking-wider text-slate-900 border-b border-slate-900 text-[11px]">
                   DATA KONTRAKTOR
                 </div>
@@ -463,7 +476,7 @@ export function PrintPermitModal({ permit, onClose }: PrintPermitModalProps) {
               </div>
 
               {/* 2. TABEL KONTAK DARURAT */}
-              <div className="border border-slate-900 text-xs overflow-hidden">
+              <div className="border border-slate-900 text-xs overflow-hidden relative z-10">
                 <div className="bg-slate-200 px-3 py-1.5 font-bold uppercase tracking-wider text-slate-900 border-b border-slate-900 text-[11px]">
                   KONTAK DARURAT
                 </div>
@@ -514,7 +527,7 @@ export function PrintPermitModal({ permit, onClose }: PrintPermitModalProps) {
               </div>
 
               {/* 3. CATATAN KESELAMATAN K3 */}
-              <div className="border border-slate-900 text-xs overflow-hidden">
+              <div className="border border-slate-900 text-xs overflow-hidden relative z-10">
                 <div className="bg-slate-200 px-3 py-1.5 font-bold uppercase tracking-wider text-slate-900 border-b border-slate-900 text-[11px]">
                   CATATAN
                 </div>
@@ -528,7 +541,7 @@ export function PrintPermitModal({ permit, onClose }: PrintPermitModalProps) {
               </div>
 
                 {/* 4. BAGIAN BAWAH: SATU KOTAK UTUH DENGAN GARIS PEMISAH VERTIKAL (PERSIS SEPERTI IKWB2.pdf) */}
-                <div className="border border-slate-900 grid grid-cols-12 overflow-hidden bg-white">
+                <div className="border border-slate-900 grid grid-cols-12 overflow-hidden bg-white relative z-10">
                   {/* 4 Pedoman Keselamatan (Kiri) */}
                   <div className="col-span-8 p-3.5 flex flex-col justify-center text-xs space-y-1 font-bold text-slate-900 border-r border-slate-900">
                     <p>1. Utamakan Keselamatan dan Kesehatan Kerja</p>

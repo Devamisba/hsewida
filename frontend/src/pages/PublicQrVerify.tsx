@@ -114,10 +114,23 @@ export default function PublicQrVerifyPage() {
 
         {/* Content Body: PERSIS SEPERTI GAMBAR LAMPIRAN */}
         {data && !loading && (
-          <div className="p-4 sm:p-7 space-y-5">
+          <div className="p-4 sm:p-7 space-y-5 relative overflow-hidden">
+            
+            {/* WATERMARK BACKGROUND LOGO WIDATRA (PERSIS SEPERTI DOKUMEN RESMI IKWB2.pdf) */}
+            <div 
+              className="absolute top-[42%] left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none z-0 select-none flex items-center justify-center w-[450px] max-w-[85%]"
+              aria-hidden="true"
+            >
+              <img 
+                src="/widatra-watermark.png" 
+                alt="" 
+                className="w-full h-auto object-contain opacity-[0.14]"
+                style={{ opacity: 0.14 }}
+              />
+            </div>
             
             {/* KOP RESMI: SIMETRIS 100% PUSAT (JUDUL IZIN KERJA DEAD-CENTER) DENGAN 3 GARIS PEMBAGI VERTIKAL */}
-            <div className="flex items-center justify-between pb-3 border-b-2 border-slate-900">
+            <div className="flex items-center justify-between pb-3 border-b-2 border-slate-900 relative z-10">
               {/* SAYAP KIRI (flex-1): Logo K3 + Slogan Resmi K3 */}
               <div className="flex-1 flex items-center justify-between min-w-0 pr-1.5 sm:pr-3">
                 <div className="flex-1 flex flex-col items-center justify-center text-center">
@@ -188,7 +201,7 @@ export default function PublicQrVerifyPage() {
             </div>
 
             {/* Verification Status Pill */}
-            <div className={`p-2.5 rounded-xl border text-center flex items-center justify-center gap-2 font-bold text-xs sm:text-sm shadow-2xs ${
+            <div className={`p-2.5 rounded-xl border text-center flex items-center justify-center gap-2 font-bold text-xs sm:text-sm shadow-2xs relative z-10 ${
               isValid
                 ? 'bg-emerald-50 border-emerald-300 text-emerald-900' 
                 : 'bg-amber-50 border-amber-300 text-amber-900'
@@ -198,7 +211,7 @@ export default function PublicQrVerifyPage() {
             </div>
 
             {/* TABEL DATA KONTRAKTOR */}
-            <div className="border border-slate-900 rounded-sm text-xs overflow-hidden shadow-xs">
+            <div className="border border-slate-900 rounded-sm text-xs overflow-hidden shadow-xs relative z-10">
               <div className="bg-slate-200 px-3 py-2 font-bold uppercase tracking-wider text-slate-950 border-b border-slate-900 text-xs">
                 DATA KONTRAKTOR
               </div>
