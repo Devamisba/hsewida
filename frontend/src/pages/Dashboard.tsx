@@ -194,7 +194,7 @@ export default function DashboardPage() {
 {dashboardData.expiringSoonCount > 0 && (
   <div className="flex items-center gap-2 bg-rose-50 border border-rose-200 text-rose-600 p-3 rounded-md mb-4">
     <AlertTriangle size={20} />
-    <span className="font-medium">Ada izin yang akan berakhir dalam 3 hari ke depan. Segera periksa dan perpanjang!</span>
+    <span className="font-medium">Ada izin yang akan berakhir dalam 3 hari ke depan.</span>
     <button onClick={() => navigate(isVendorRole ? '/my-requests' : '/history', { state: { filterExpiringSoon: true } })} className="ml-auto text-rose-600 hover:underline font-semibold">
       Lihat Detail
     </button>
