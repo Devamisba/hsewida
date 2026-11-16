@@ -26,6 +26,14 @@ class Role extends Model
         return $this->belongsToMany(Permission::class, 'role_permissions');
     }
 
+    public function getNameAttribute($value)
+    {
+        if ($this->code === 'ga_dept_head' || $value === 'Head Dept HRD&GA') {
+            return 'Dept Head HRD&GA';
+        }
+        return $value;
+    }
+
     public function users()
     {
         return $this->hasMany(User::class);

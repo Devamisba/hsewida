@@ -296,7 +296,7 @@ export default function ProfilePage() {
                   <div>
                     <h2 className="text-2xl font-bold text-gray-900">{profile?.name || "Pengguna"}</h2>
                     <p className="text-gray-500 font-medium">
-                      {profile?.role?.name || profile?.role?.code || "User"} 
+                      {profile?.role?.code === 'ga_dept_head' || profile?.role?.name === 'Head Dept HRD&GA' ? 'Dept Head HRD&GA' : (profile?.role?.name || profile?.role?.code || "User")} 
                       {profile?.company_name ? ` • ${profile.company_name}` : ""}
                     </p>
                   </div>
@@ -401,7 +401,7 @@ export default function ProfilePage() {
                         <div>
                           <p className="text-sm text-gray-500 mb-1 flex items-center gap-2"><Briefcase size={16} className="text-gray-400" /> Hak Akses / Role</p>
                           <p className="font-semibold text-primary bg-primary/5 p-3 rounded-lg border border-primary/20">
-                            {profile?.role?.name || profile?.role?.code || "-"}
+                            {profile?.role?.code === 'ga_dept_head' || profile?.role?.name === 'Head Dept HRD&GA' ? 'Dept Head HRD&GA' : (profile?.role?.name || profile?.role?.code || "-")}
                           </p>
                         </div>
                       </div>

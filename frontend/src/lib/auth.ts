@@ -38,7 +38,12 @@ export const auth = {
     if (typeof window === 'undefined') return null;
     try {
       const raw = sessionStorage.getItem(USER_KEY);
-      return raw ? JSON.parse(raw) : null;
+      if (!raw) return null;
+      const user = JSON.parse(raw);
+      if (user?.role && (user.role.code === 'ga_dept_head' || user.role.name === 'Head Dept HRD&GA')) {
+        user.role.name = 'Dept Head HRD&GA';
+      }
+      return user;
     } catch {
       return null;
     }
@@ -46,6 +51,9 @@ export const auth = {
 
   setSession(token: string, user: any) {
     if (typeof window === 'undefined') return;
+    if (user?.role && (user.role.code === 'ga_dept_head' || user.role.name === 'Head Dept HRD&GA')) {
+      user.role.name = 'Dept Head HRD&GA';
+    }
     const roleCode = user?.role?.code || (typeof user?.role === 'string' ? user.role : 'admin');
     
     // Save strictly to sessionStorage for the active session
@@ -61,6 +69,9 @@ export const auth = {
 
   setUser(user: any) {
     if (typeof window === 'undefined') return;
+    if (user?.role && (user.role.code === 'ga_dept_head' || user.role.name === 'Head Dept HRD&GA')) {
+      user.role.name = 'Dept Head HRD&GA';
+    }
     const userStr = JSON.stringify(user);
     sessionStorage.setItem(USER_KEY, userStr);
     window.dispatchEvent(new CustomEvent('auth:user-updated', { detail: user }));

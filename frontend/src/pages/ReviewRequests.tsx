@@ -137,6 +137,7 @@ export default function ReviewRequestsPage() {
       case "Menunggu PIC Vendor": 
       case "Menunggu PIC Widatra": 
       case "Menunggu HSE": 
+      case "Menunggu Dept Head HRD&GA":
       case "Menunggu Head Dept HRD&GA":
       case "Menunggu Head Division HRD&GA":
       case "Menunggu GA Dept Head": 

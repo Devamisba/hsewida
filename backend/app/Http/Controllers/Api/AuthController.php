@@ -54,7 +54,7 @@ class AuthController extends Controller
                     'role' => $user->role ? [
                         'id' => $user->role->id,
                         'code' => $user->role->code,
-                        'name' => $user->role->name,
+                        'name' => ($user->role->code === 'ga_dept_head' || $user->role->name === 'Head Dept HRD&GA') ? 'Dept Head HRD&GA' : $user->role->name,
                     ] : null,
                     'permissions' => $user->role ? $user->role->permissions->pluck('code') : [],
                 ],
@@ -96,7 +96,7 @@ class AuthController extends Controller
                 'role' => $user->role ? [
                     'id' => $user->role->id,
                     'code' => $user->role->code,
-                    'name' => $user->role->name,
+                    'name' => ($user->role->code === 'ga_dept_head' || $user->role->name === 'Head Dept HRD&GA') ? 'Dept Head HRD&GA' : $user->role->name,
                 ] : null,
                 'permissions' => $user->role ? $user->role->permissions->pluck('code') : [],
             ],
@@ -155,7 +155,7 @@ class AuthController extends Controller
                 'role' => $freshUser->role ? [
                     'id' => $freshUser->role->id,
                     'code' => $freshUser->role->code,
-                    'name' => $freshUser->role->name,
+                    'name' => ($freshUser->role->code === 'ga_dept_head' || $freshUser->role->name === 'Head Dept HRD&GA') ? 'Dept Head HRD&GA' : $freshUser->role->name,
                 ] : null,
                 'permissions' => $freshUser->role ? $freshUser->role->permissions->pluck('code') : [],
             ],
