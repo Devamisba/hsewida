@@ -22,6 +22,7 @@ class WorkPermit extends Model
         'location_id',
         'start_date',
         'end_date',
+        'project_end_date',
         'daily_start_time',
         'daily_end_time',
         'pic_name',
@@ -40,6 +41,7 @@ class WorkPermit extends Model
     protected $casts = [
         'start_date' => 'date',
         'end_date' => 'date',
+        'project_end_date' => 'date',
         'total_workers' => 'integer',
         'extension_phase' => 'integer',
     ];

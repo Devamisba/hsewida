@@ -103,7 +103,7 @@ export default function CreateRequestPage() {
           if (!isNaN(baseEnd.getTime())) {
             const startD = addDays(baseEnd, 1);
             nextStart = format(startD, "yyyy-MM-dd");
-            nextEnd = format(addDays(startD, 4), "yyyy-MM-dd"); // 5 days extension
+            nextEnd = format(addDays(startD, 5), "yyyy-MM-dd"); // 6 hari per siklus tiket
           }
         } catch {}
       }
@@ -517,7 +517,7 @@ export default function CreateRequestPage() {
                     Mode Perpanjangan Izin Aktif &mdash; Fase {formData.extensionPhase || 1} (Perpanjangan Ke-{formData.extensionPhase || 1})
                   </p>
                   <p className="text-xs text-amber-700 mt-0.5">
-                    Data perusahaan, personel, APD, dan dokumen JSA dari izin <strong className="underline">{extendState.permitNumber || extendState.id}</strong> telah dimuat secara otomatis. Silakan periksa dan tentukan periode lanjutan kerja (maks. 6 hari).
+                    Data perusahaan, personel, APD, dan dokumen JSA dari izin <strong className="underline">{extendState.permitNumber || extendState.id}</strong> telah dimuat secara otomatis. Silakan tentukan periode lanjutan kerja (maks. 6 hari per tiket).
                   </p>
                 </div>
               </div>

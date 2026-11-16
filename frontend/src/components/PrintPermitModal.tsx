@@ -69,8 +69,9 @@ export function PrintPermitModal({ permit, onClose }: PrintPermitModalProps) {
   const workingHours = `${startTime} s.d. ${endTime} WIB`;
   
   const startDateStr = formatDateLongIndo(permit?.mulaiKerja || permit?.start_date);
-  const endDateStr = formatDateLongIndo(permit?.selesaiKerja || permit?.end_date);
-  const validUntilStr = endDateStr;
+  const projectEndDate = permit?.project_end_date || permit?.projectEndDate || permit?.selesaiKerja || permit?.end_date;
+  const projectEndDateStr = formatDateLongIndo(projectEndDate);
+  const validUntilStr = formatDateLongIndo(permit?.end_date || permit?.selesaiKerja);
 
   // URL yang dituju saat QR code discan
   const qrUrl = typeof window !== "undefined"
@@ -463,7 +464,7 @@ export function PrintPermitModal({ permit, onClose }: PrintPermitModalProps) {
                         Tanggal Selesai
                       </td>
                       <td className="px-3 py-1.5 text-slate-900">
-                        {endDateStr}
+                        {projectEndDateStr}
                       </td>
                     </tr>
                     <tr>
@@ -472,6 +473,11 @@ export function PrintPermitModal({ permit, onClose }: PrintPermitModalProps) {
                       </td>
                       <td colSpan={3} className="px-3 py-1.5 font-bold text-slate-950">
                         {validUntilStr}
+                        {(permit?.extension_phase || permit?.extensionPhase) ? (
+                          <span className="ml-2 text-[11px] font-semibold px-2 py-0.5 bg-blue-100 text-blue-800 rounded">
+                            Perpanjangan Ke-{permit.extension_phase || permit.extensionPhase}
+                          </span>
+                        ) : null}
                       </td>
                     </tr>
                   </tbody>

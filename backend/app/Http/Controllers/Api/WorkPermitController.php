@@ -399,24 +399,21 @@ class WorkPermitController extends Controller
             ], 422);
         }
 
-        // Rule Max Duration: end_date <= start_date + (maxPermitDays - 1)
-        // If $maxPermitDays <= 0, it means unlimited duration (tanpa batasan hari)
-        $end = Carbon::parse($validated['selesaiKerja'])->startOfDay();
-        if ($end->lt($start)) {
+        // Rule Project End Date & Ticket Expiry Cycle (Maks. 6 hari per siklus tiket K3)
+        $projectEnd = Carbon::parse($validated['selesaiKerja'])->startOfDay();
+        if ($projectEnd->lt($start)) {
             return response()->json([
                 'success' => false,
                 'message' => 'Tanggal selesai pekerjaan tidak boleh mendahului tanggal mulai pekerjaan.'
             ], 422);
         }
 
-        if ($maxPermitDays > 0) {
-            $maxEnd = $start->copy()->addDays($maxPermitDays - 1);
-            if ($end->gt($maxEnd)) {
-                return response()->json([
-                    'success' => false,
-                    'message' => "Aturan K3: Masa berlaku satu izin kerja maksimal adalah {$maxPermitDays} hari kalender (" . $maxEnd->toDateString() . ")."
-                ], 422);
-            }
+        $cycleDays = $maxPermitDays > 0 ? $maxPermitDays : 6;
+        $totalProjectDays = $start->diffInDays($projectEnd) + 1;
+        if ($totalProjectDays > $cycleDays) {
+            $ticketEnd = $start->copy()->addDays($cycleDays - 1);
+        } else {
+            $ticketEnd = $projectEnd;
         }
 
         // Resolve or create Vendor
@@ -492,7 +489,7 @@ class WorkPermitController extends Controller
         }
 
         // Execute Database Insertion in a Transaction
-        return DB::transaction(function () use ($validated, $user, $vendor, $locationId, $riskLevel, $rootPermitId, $extensionPhase) {
+        return DB::transaction(function () use ($validated, $user, $vendor, $locationId, $riskLevel, $rootPermitId, $extensionPhase, $start, $ticketEnd, $projectEnd) {
             $permitNumber = $this->generatePermitNumber();
             $qrToken = 'QR-' . $permitNumber . '-' . Str::random(8);
 
@@ -506,8 +503,9 @@ class WorkPermitController extends Controller
                 'extension_phase' => $extensionPhase,
                 'job_title' => $validated['jenisPekerjaan'],
                 'location_id' => $locationId,
-                'start_date' => $validated['mulaiKerja'],
-                'end_date' => $validated['selesaiKerja'],
+                'start_date' => $start->toDateString(),
+                'end_date' => $ticketEnd->toDateString(),
+                'project_end_date' => $projectEnd->toDateString(),
                 'daily_start_time' => $validated['jamKerjaMulai'],
                 'daily_end_time' => $validated['jamKerjaAkhir'],
                 'pic_name' => $validated['penanggungJawab'],
@@ -825,6 +823,12 @@ class WorkPermitController extends Controller
 
         $nextPhase = ($parent->extension_phase ?: 0) + 1;
         $rootPermit = $parent->root_permit_id ? WorkPermit::find($parent->root_permit_id) : $parent;
+        $parentProjectEnd = $parent->project_end_date ? Carbon::parse($parent->project_end_date)->startOfDay() : $endDate;
+        $nextStartDate = $endDate->copy()->addDay();
+        $maxNextEndDate = $nextStartDate->copy()->addDays($durationToAdd);
+        $suggestedEndDate = ($parentProjectEnd->gt($nextStartDate) && $parentProjectEnd->lt($maxNextEndDate)) 
+            ? $parentProjectEnd 
+            : $maxNextEndDate;
 
         return response()->json([
             'success' => true,
@@ -836,10 +840,12 @@ class WorkPermitController extends Controller
                     'permit_number' => $rootPermit->permit_number,
                     'start_date' => $rootPermit->start_date ? $rootPermit->start_date->format('Y-m-d') : null,
                     'end_date' => $rootPermit->end_date ? $rootPermit->end_date->format('Y-m-d') : null,
+                    'project_end_date' => $rootPermit->project_end_date ? $rootPermit->project_end_date->format('Y-m-d') : ($rootPermit->end_date ? $rootPermit->end_date->format('Y-m-d') : null),
                 ] : null,
                 'next_phase' => $nextPhase,
-                'suggested_start_date' => $endDate->copy()->addDay()->toDateString(),
-                'suggested_end_date' => $endDate->copy()->addDays(1 + $durationToAdd)->toDateString(),
+                'suggested_start_date' => $nextStartDate->toDateString(),
+                'suggested_end_date' => $suggestedEndDate->toDateString(),
+                'project_end_date' => $parentProjectEnd->toDateString(),
                 'project_chain' => $parent->project_chain,
             ]
         ]);

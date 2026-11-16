@@ -18,6 +18,7 @@ function mapApiToReview(item: any) {
   const rootEndDate = root?.end_date ? root.end_date.substring(0, 10) : (root?.endDate || null);
   const currentStart = item.start_date ? item.start_date.substring(0, 10) : item.mulaiKerja;
   const currentEnd = item.end_date ? item.end_date.substring(0, 10) : item.selesaiKerja;
+  const projectEndDate = item.project_end_date ? item.project_end_date.substring(0, 10) : (item.projectEndDate || currentEnd);
 
   const childPermits = item.child_permits || item.childPermits || [];
   const hasActiveChild = item.has_active_child_extension !== undefined
@@ -62,6 +63,7 @@ function mapApiToReview(item: any) {
     lokasi: item.location?.name || item.lokasi || "Area Pabrik",
     mulaiKerja: currentStart,
     selesaiKerja: currentEnd,
+    projectEndDate,
     jamKerjaMulai: item.daily_start_time || item.jamKerjaMulai || "08:00",
     jamKerjaAkhir: item.daily_end_time || item.jamKerjaAkhir || "17:00",
     penanggungJawab: item.pic_name || item.penanggungJawab || "-",
@@ -304,6 +306,11 @@ export default function ReviewRequestsPage() {
                         <td className="px-4 py-3.5">
                           <div className="text-gray-800 text-xs truncate max-w-[200px]" title={req.lokasi}>{req.lokasi}</div>
                           <div className="text-[11px] text-gray-500 mt-0.5 font-medium whitespace-nowrap">{formatDateDDMMYY(req.mulaiKerja)} s/d {formatDateDDMMYY(req.selesaiKerja)}</div>
+                          {req.projectEndDate && req.projectEndDate > req.selesaiKerja && (
+                            <div className="text-[10px] font-semibold text-blue-700 mt-0.5">
+                              Target Proyek: s/d {formatDateDDMMYY(req.projectEndDate)}
+                            </div>
+                          )}
                           {req.requestType === 'Perpanjangan' && req.cumulativeStartDate && (
                             <div className="text-[10px] font-semibold text-amber-700 mt-0.5">
                               Kumulatif: {formatDateDDMMYY(req.cumulativeStartDate)} s/d {formatDateDDMMYY(req.cumulativeEndDate)} ({calculateInclusiveDays(req.cumulativeStartDate, req.cumulativeEndDate)} Hari)

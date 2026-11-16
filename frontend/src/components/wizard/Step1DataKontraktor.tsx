@@ -71,30 +71,16 @@ export function Step1DataKontraktor({ data, updateData }: { data: any, updateDat
     const newStart = e.target.value;
     updateData({ mulaiKerja: newStart });
     
-    // Auto adjust end date if it's invalid or empty
+    // Ensure selesaiKerja does not precede start date
     if (newStart) {
       const start = new Date(newStart);
-      if (maxPermitDays > 0) {
-        const maxEnd = addDays(start, Math.max(0, maxPermitDays - 1));
-        
-        if (data.selesaiKerja) {
-          const currentEnd = new Date(data.selesaiKerja);
-          if (isBefore(maxEnd, currentEnd) || isBefore(currentEnd, start)) {
-            updateData({ selesaiKerja: format(maxEnd, 'yyyy-MM-dd') });
-          }
-        } else {
-          updateData({ selesaiKerja: format(maxEnd, 'yyyy-MM-dd') });
-        }
-      } else {
-        // Unlimited duration: ensure selesaiKerja does not precede start date
-        if (data.selesaiKerja) {
-          const currentEnd = new Date(data.selesaiKerja);
-          if (isBefore(currentEnd, start)) {
-            updateData({ selesaiKerja: newStart });
-          }
-        } else {
+      if (data.selesaiKerja) {
+        const currentEnd = new Date(data.selesaiKerja);
+        if (isBefore(currentEnd, start)) {
           updateData({ selesaiKerja: newStart });
         }
+      } else {
+        updateData({ selesaiKerja: format(addDays(start, 5), 'yyyy-MM-dd') });
       }
     }
   };
@@ -103,8 +89,16 @@ export function Step1DataKontraktor({ data, updateData }: { data: any, updateDat
     updateData({ selesaiKerja: e.target.value });
   };
 
-  const maxEndDate = (maxPermitDays > 0 && data.mulaiKerja) ? format(addDays(new Date(data.mulaiKerja), Math.max(0, maxPermitDays - 1)), 'yyyy-MM-dd') : undefined;
+  const maxEndDate = undefined; // Selesai kerja bebas/fleksibel (bisa 1 minggu, bulan, atau tahun)
   const minEndDate = data.mulaiKerja ? data.mulaiKerja : undefined;
+
+  const totalProjectDays = (data.mulaiKerja && data.selesaiKerja) 
+    ? calculateInclusiveDays(data.mulaiKerja, data.selesaiKerja) 
+    : 0;
+  const isMultiCycle = totalProjectDays > 6;
+  const cycleEndDate = (data.mulaiKerja) 
+    ? format(addDays(new Date(data.mulaiKerja), 5), 'yyyy-MM-dd') 
+    : '';
 
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -189,7 +183,7 @@ export function Step1DataKontraktor({ data, updateData }: { data: any, updateDat
             <div className="space-y-1.5">
               <div className="flex items-center justify-between">
                 <label className="block text-sm font-medium text-gray-700">
-                  Selesai Kerja {maxPermitDays > 0 ? `(maks. ${maxPermitDays} hari)` : "(Tanpa Batas Hari)"} <span className="text-red-500">*</span>
+                  Target Selesai Pekerjaan / Proyek <span className="text-red-500">*</span>
                 </label>
                 <span className="text-[10px] text-blue-600 font-medium">Format: dd/mm/yy</span>
               </div>
@@ -202,6 +196,41 @@ export function Step1DataKontraktor({ data, updateData }: { data: any, updateDat
                 placeholder="dd/mm/yy"
               />
             </div>
+
+            {/* Banner Edukasi Regulasi K3: Proyek Durasi Panjang & Siklus Tiket 6 Hari */}
+            {isMultiCycle && data.requestType !== "Perpanjangan" && (
+              <div className="md:col-span-2 p-3.5 bg-blue-50/90 border border-blue-200 rounded-xl space-y-2 animate-in fade-in duration-300">
+                <div className="flex items-center gap-2">
+                  <div className="p-1.5 bg-blue-200 text-blue-900 rounded-lg shrink-0">
+                    <CalendarClock size={16} />
+                  </div>
+                  <div>
+                    <h5 className="text-xs font-bold text-blue-950 uppercase tracking-wide">
+                      Regulasi K3: Siklus Masa Berlaku Tiket Izin Kerja (Maks. 6 Hari Kalender)
+                    </h5>
+                  </div>
+                </div>
+                <p className="text-xs text-slate-700 leading-relaxed">
+                  Target pekerjaan proyek Anda adalah <strong>{totalProjectDays} hari kalender</strong> ({formatDateDDMMYY(data.mulaiKerja)} s/d {formatDateDDMMYY(data.selesaiKerja)}). Sesuai standar K3 PT Widatra Bhakti, lembar tiket izin kerja aktif berlaku maksimal <strong>6 hari per siklus</strong>.
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-2 border-t border-blue-200/80 text-xs">
+                  <div className="bg-white/90 p-2 rounded-lg border border-blue-200">
+                    <span className="text-[10px] uppercase font-bold text-blue-700 block">Masa Berlaku Tiket Fase 1:</span>
+                    <strong className="text-blue-950 font-mono text-xs block">
+                      {formatDateDDMMYY(data.mulaiKerja)} s/d {formatDateDDMMYY(cycleEndDate)}
+                    </strong>
+                    <span className="text-[10px] text-slate-500 block mt-0.5">Berlaku sah selama 6 hari pertama</span>
+                  </div>
+                  <div className="bg-amber-50/90 p-2 rounded-lg border border-amber-200">
+                    <span className="text-[10px] uppercase font-bold text-amber-800 block">Kewajiban Perpanjangan:</span>
+                    <strong className="text-amber-950 text-xs block">
+                      Wajib diperpanjang berkala setiap 6 hari
+                    </strong>
+                    <span className="text-[10px] text-amber-700 block mt-0.5">Tombol perpanjang aktif pada H-3 sebelum tiket kedaluwarsa</span>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {data.requestType === "Perpanjangan" && (
               <div className="md:col-span-2 p-4 bg-amber-50/90 border border-amber-200 rounded-xl space-y-3 animate-in fade-in duration-300">

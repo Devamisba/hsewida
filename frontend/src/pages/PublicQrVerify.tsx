@@ -76,8 +76,9 @@ export default function PublicQrVerifyPage() {
   const isValid = data?.status === 'Disetujui' || data?.status === 'Selesai';
   const totalWorkers = Number(data?.total_workers || data?.workers?.length || 1);
   const startDateStr = formatDateLongIndo(data?.start_date);
-  const endDateStr = formatDateLongIndo(data?.end_date);
-  const validUntilStr = endDateStr;
+  const projectEndDate = data?.project_end_date || data?.projectEndDate || data?.end_date;
+  const projectEndDateStr = formatDateLongIndo(projectEndDate);
+  const validUntilStr = formatDateLongIndo(data?.end_date);
 
   return (
     <div className="min-h-screen bg-slate-100 flex flex-col justify-center items-center p-3 sm:p-6 font-sans antialiased">
@@ -322,7 +323,7 @@ export default function PublicQrVerifyPage() {
                         Tanggal Selesai
                       </td>
                       <td className="px-3 py-2 text-slate-900">
-                        {endDateStr}
+                        {projectEndDateStr}
                       </td>
                     </tr>
                     <tr>
@@ -331,6 +332,11 @@ export default function PublicQrVerifyPage() {
                       </td>
                       <td colSpan={3} className="px-3 py-2 font-bold text-slate-950">
                         {validUntilStr}
+                        {(data?.extension_phase || data?.extensionPhase) ? (
+                          <span className="ml-2 text-[11px] font-semibold px-2 py-0.5 bg-blue-100 text-blue-800 rounded">
+                            Perpanjangan Ke-{data.extension_phase || data.extensionPhase}
+                          </span>
+                        ) : null}
                       </td>
                     </tr>
                   </tbody>

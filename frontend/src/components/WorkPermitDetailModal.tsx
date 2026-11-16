@@ -66,6 +66,7 @@ export function mapApiToPermitDetail(item: any) {
   const rootEndDate = root?.end_date ? root.end_date.substring(0, 10) : (root?.endDate || null);
   const currentStart = item.start_date ? item.start_date.substring(0, 10) : item.mulaiKerja;
   const currentEnd = item.end_date ? item.end_date.substring(0, 10) : item.selesaiKerja;
+  const projectEndDate = item.project_end_date ? item.project_end_date.substring(0, 10) : (item.projectEndDate || currentEnd);
 
   const childPermits = item.child_permits || item.childPermits || [];
   const hasActiveChild = item.has_active_child_extension !== undefined
@@ -111,6 +112,7 @@ export function mapApiToPermitDetail(item: any) {
     lokasi: item.location?.name || item.lokasi || "Area Pabrik",
     mulaiKerja: currentStart,
     selesaiKerja: currentEnd,
+    projectEndDate,
     jamKerjaMulai: item.daily_start_time || item.jamKerjaMulai || "08:00",
     jamKerjaAkhir: item.daily_end_time || item.jamKerjaAkhir || "17:00",
     penanggungJawab: item.pic_name || item.penanggungJawab || "-",
@@ -305,7 +307,8 @@ export function WorkPermitDetailModal({
                   <div><span className="block text-xs text-gray-500">Tipe Request</span><span className="font-semibold text-gray-900">{permit.requestType}</span></div>
                   <div><span className="block text-xs text-gray-500">Nama Vendor</span><span className="font-semibold text-gray-900">{permit.namaKontraktor}</span></div>
                   <div><span className="block text-xs text-gray-500">Lokasi Kerja</span><span className="font-semibold text-gray-900">{permit.lokasi}</span></div>
-                  <div><span className="block text-xs text-gray-500">Tanggal Pelaksanaan</span><span className="font-semibold text-gray-900">{formatDateDDMMYY(permit.mulaiKerja)} s/d {formatDateDDMMYY(permit.selesaiKerja)}</span></div>
+                  <div><span className="block text-xs text-gray-500">Masa Berlaku Izin Aktif</span><span className="font-semibold text-gray-900">{formatDateDDMMYY(permit.mulaiKerja)} s/d {formatDateDDMMYY(permit.selesaiKerja)}</span></div>
+                  <div><span className="block text-xs text-gray-500">Target Selesai Pekerjaan</span><span className="font-semibold text-blue-900">{formatDateDDMMYY(permit.projectEndDate || permit.selesaiKerja)}</span></div>
                   <div><span className="block text-xs text-gray-500">Jam Kerja</span><span className="font-semibold text-gray-900">{permit.jamKerjaMulai} - {permit.jamKerjaAkhir}</span></div>
                   <div><span className="block text-xs text-gray-500">Total Tenaga Kerja</span><span className="font-semibold text-gray-900">{permit.totalTenagaKerja} Orang</span></div>
                   
