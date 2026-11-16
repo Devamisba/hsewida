@@ -164,6 +164,7 @@ export default function HistoryPage() {
   const user = auth.getUser();
   const userRole = (auth.getRole() || user?.role?.code || "").toLowerCase().trim();
   const isVendorRole = ["pemohon", "vendor", "kontraktor", "contractor"].includes((userRole || "").toLowerCase().trim());
+  const isPicWidatra = userRole === "pic_vendor" || userRole === "pic";
 
   // Vendor role now has access to History for viewing completed/expired permits
 
@@ -453,7 +454,9 @@ export default function HistoryPage() {
                 <p className="text-sm font-semibold text-rose-700">
                   {expiringItems.length} izin akan berakhir dalam 3 hari ke depan!
                 </p>
-                <p className="text-xs text-rose-500 mt-0.5">Segera ajukan perpanjangan sebelum izin habis masa berlakunya.</p>
+                {!isPicWidatra && (
+                  <p className="text-xs text-rose-500 mt-0.5">Segera ajukan perpanjangan sebelum izin habis masa berlakunya.</p>
+                )}
               </div>
               <button
                 onClick={() => setShowExpiringOnly(!showExpiringOnly)}
