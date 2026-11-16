@@ -21,6 +21,7 @@ export default function ProfilePage() {
   const [loading, setLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
   const [editName, setEditName] = useState("");
+  const [editEmail, setEditEmail] = useState("");
   const [editPhone, setEditPhone] = useState("");
   const [editPassword, setEditPassword] = useState("");
   const [previewAvatar, setPreviewAvatar] = useState<string | null>(null);
@@ -37,6 +38,7 @@ export default function ProfilePage() {
       if (res.success && res.data) {
         setProfile(res.data);
         setEditName(res.data.name || "");
+        setEditEmail(res.data.email || "");
         setEditPhone(res.data.phone_number || "");
         setPreviewAvatar(res.data.avatar || null);
         auth.setUser(res.data);
@@ -45,6 +47,7 @@ export default function ProfilePage() {
         if (stored) {
           setProfile(stored);
           setEditName(stored.name || "");
+          setEditEmail(stored.email || "");
           setEditPhone(stored.phone_number || "");
           setPreviewAvatar(stored.avatar || null);
         }
@@ -54,6 +57,7 @@ export default function ProfilePage() {
       if (stored) {
         setProfile(stored);
         setEditName(stored.name || "");
+        setEditEmail(stored.email || "");
         setEditPhone(stored.phone_number || "");
         setPreviewAvatar(stored.avatar || null);
       }
@@ -148,6 +152,7 @@ export default function ProfilePage() {
   const handleCancelEdit = () => {
     setIsEditing(false);
     setEditName(profile?.name || "");
+    setEditEmail(profile?.email || "");
     setEditPhone(profile?.phone_number || "");
     setEditPassword("");
     setPreviewAvatar(profile?.avatar || null);
@@ -163,6 +168,7 @@ export default function ProfilePage() {
     try {
       const payload: any = {
         name: editName,
+        email: editEmail,
         phone_number: editPhone,
       };
       if (editPassword) {
@@ -175,6 +181,7 @@ export default function ProfilePage() {
       const res = await api.updateProfile(payload);
       if (res.success && res.data) {
         setProfile(res.data);
+        setEditEmail(res.data.email || "");
         setPreviewAvatar(res.data.avatar || null);
         auth.setUser(res.data);
         setIsEditing(false);
@@ -312,6 +319,17 @@ export default function ProfilePage() {
                           required
                           value={editName}
                           onChange={(e) => setEditName(e.target.value)}
+                          className="w-full p-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-primary/20 outline-none"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-gray-600 uppercase mb-1">Email Akun / Gmail</label>
+                        <input 
+                          type="email" 
+                          required
+                          value={editEmail}
+                          onChange={(e) => setEditEmail(e.target.value)}
+                          placeholder="nama@email.com"
                           className="w-full p-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-primary/20 outline-none"
                         />
                       </div>

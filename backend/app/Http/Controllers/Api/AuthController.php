@@ -112,9 +112,14 @@ class AuthController extends Controller
 
         $validated = $request->validate([
             'name' => 'sometimes|string|max:255',
+            'email' => 'sometimes|email|max:255|unique:users,email,' . $user->id,
             'phone_number' => 'sometimes|nullable|string|max:30',
             'password' => 'sometimes|nullable|string|min:6',
             'avatar' => 'sometimes|nullable|string',
+        ], [
+            'email.email' => 'Format alamat email tidak valid.',
+            'email.unique' => 'Alamat email ini sudah digunakan oleh akun lain.',
+            'password.min' => 'Password minimal terdiri dari 6 karakter.',
         ]);
 
         if ($request->hasFile('avatar')) {
