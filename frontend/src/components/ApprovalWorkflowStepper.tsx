@@ -48,10 +48,10 @@ const STEPS: StepDef[] = [
   {
     key: "ga_dept_head",
     stepNumber: 3,
-    title: "Head Dept HRD&GA",
+    title: "Dept Head HRD&GA",
     subtitle: "Validasi Area & Fasilitas",
     roleCode: "ga_dept_head",
-    roleName: "Head Dept HRD&GA",
+    roleName: "Dept Head HRD&GA",
   },
   {
     key: "ga_div_head",
@@ -75,6 +75,7 @@ export function ApprovalWorkflowStepper({
       case "Menunggu PIC Vendor": 
       case "Menunggu PIC Widatra": return 1;
       case "Menunggu HSE": return 2;
+      case "Menunggu Dept Head HRD&GA":
       case "Menunggu Head Dept HRD&GA":
       case "Menunggu GA Dept Head": return 3;
       case "Menunggu Head Division HRD&GA":

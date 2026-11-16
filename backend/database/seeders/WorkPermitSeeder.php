@@ -98,7 +98,7 @@ class WorkPermitSeeder extends Seeder
             'action_date' => now(),
         ]);
 
-        // Permit 2: WP-2608-062 (Menunggu Head Dept HRD&GA)
+        // Permit 2: WP-2608-062 (Menunggu Dept Head HRD&GA)
         $wp2 = WorkPermit::updateOrCreate(
             ['permit_number' => 'WP-2608-062'],
             [
@@ -119,7 +119,7 @@ class WorkPermitSeeder extends Seeder
                 'hse_officer_phone' => '083344556677',
                 'total_workers' => 2,
                 'risk_level' => 'Rendah',
-                'status' => 'Menunggu Head Dept HRD&GA',
+                'status' => 'Menunggu Dept Head HRD&GA',
                 'qr_code_token' => 'QR-WP-2608-062-' . bin2hex(random_bytes(6)),
             ]
         );

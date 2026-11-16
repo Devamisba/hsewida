@@ -267,9 +267,9 @@ class MasterDataController extends Controller
             [
                 'step' => 4,
                 'stage_code' => 'ga_dept_review',
-                'status_name' => 'Menunggu Head Dept HRD&GA',
+                'status_name' => 'Menunggu Dept Head HRD&GA',
                 'reviewer_role' => 'ga_dept_head',
-                'role_name' => 'Head Dept HRD&GA',
+                'role_name' => 'Dept Head HRD&GA',
                 'sla_hours' => 24,
                 'sla_label' => '24 Jam Kerja',
                 'description' => 'Validasi ketersediaan area kerja pabrik, izin akses fasilitas industri, serta koordinasi utilitas dan personil pengawas operasional.',

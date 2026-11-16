@@ -11,7 +11,7 @@ const DEMO_ACCOUNTS = [
   { role: "pic_vendor", label: "PIC Widatra (Internal)", nip: "K302", name: "PIC Widatra" },
   { role: "hse", label: "Tim K3 / HSE", nip: "K301", name: "Tim K3 / HSE" },
   { role: "pic_k3", label: "PIC K3 (Monitoring)", nip: "PK10006", name: "PIC K3 Widatra" },
-  { role: "ga_dept_head", label: "Head Dept HRD&GA", nip: "GA10004", name: "P. Andaru" },
+  { role: "ga_dept_head", label: "Dept Head HRD&GA", nip: "GA10004", name: "P. Andaru" },
   { role: "ga_div_head", label: "Head Division HRD&GA", nip: "GA10005", name: "P. Effendy" },
 ];
 

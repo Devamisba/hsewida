@@ -45,6 +45,7 @@ class DashboardController extends Controller
                 'Menunggu PIC Widatra',
                 'Menunggu PIC Vendor', 
                 'Menunggu HSE', 
+                'Menunggu Dept Head HRD&GA',
                 'Menunggu Head Dept HRD&GA', 
                 'Menunggu Head Division HRD&GA',
                 'Menunggu GA Dept Head', 
@@ -322,7 +323,7 @@ class DashboardController extends Controller
         $roleCode = ($user && $user->role) ? $user->role->code : '';
         $targetStatuses = ($roleCode === 'ga_div_head') 
             ? ['Menunggu Head Division HRD&GA', 'Menunggu GA Div Head'] 
-            : ['Menunggu Head Dept HRD&GA', 'Menunggu GA Dept Head'];
+            : ['Menunggu Dept Head HRD&GA', 'Menunggu Head Dept HRD&GA', 'Menunggu GA Dept Head'];
 
         $pendingValidation = WorkPermit::with(['vendor', 'workers'])
             ->whereIn('status', $targetStatuses)

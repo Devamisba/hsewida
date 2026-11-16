@@ -153,7 +153,7 @@ export default function ReviewRequestsPage() {
     if (role === 'admin') return true;
     if (role === 'pic_vendor') return req.status === "Menunggu PIC Vendor" || req.status === "Menunggu PIC Widatra";
     if (role === 'hse' || role === 'pic_k3') return req.status === "Menunggu HSE";
-    if (role === 'ga_dept_head') return req.status === "Menunggu Head Dept HRD&GA" || req.status === "Menunggu GA Dept Head";
+    if (role === 'ga_dept_head') return req.status === "Menunggu Dept Head HRD&GA" || req.status === "Menunggu Head Dept HRD&GA" || req.status === "Menunggu GA Dept Head";
     if (role === 'ga_div_head') return req.status === "Menunggu Head Division HRD&GA" || req.status === "Menunggu GA Div Head";
     return false; // Strict isolation: only recognized roles get their active queue!
   });
@@ -163,8 +163,9 @@ export default function ReviewRequestsPage() {
       case "Menunggu PIC Vendor": 
       case "Menunggu PIC Widatra": return { role: "pic_vendor", label: "PIC Widatra", step: 1 };
       case "Menunggu HSE": return { role: "hse", label: "HSE Officer / PIC K3", step: 2 };
+      case "Menunggu Dept Head HRD&GA":
       case "Menunggu Head Dept HRD&GA":
-      case "Menunggu GA Dept Head": return { role: "ga_dept_head", label: "Head Dept HRD&GA", step: 3 };
+      case "Menunggu GA Dept Head": return { role: "ga_dept_head", label: "Dept Head HRD&GA", step: 3 };
       case "Menunggu Head Division HRD&GA":
       case "Menunggu GA Div Head": return { role: "ga_div_head", label: "Head Division HRD&GA", step: 4 };
       default: return null;
@@ -229,14 +230,14 @@ export default function ReviewRequestsPage() {
 
   return (
     <div className="flex-1 flex flex-col h-full bg-background overflow-hidden relative">
-      <Header title={role === 'hse' || role === 'pic_k3' ? "Review Izin (HSE / K3)" : role === 'ga_dept_head' ? "Persetujuan (Head Dept HRD&GA)" : role === 'ga_div_head' ? "Persetujuan Akhir (Head Division HRD&GA)" : "Review PIC Widatra"} />
+      <Header title={role === 'hse' || role === 'pic_k3' ? "Review Izin (HSE / K3)" : role === 'ga_dept_head' ? "Persetujuan (Dept Head HRD&GA)" : role === 'ga_div_head' ? "Persetujuan Akhir (Head Division HRD&GA)" : "Review PIC Widatra"} />
       
       <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8">
         <div className="max-w-7xl mx-auto space-y-6">
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
             <div>
               <h2 className="text-2xl font-bold text-gray-900">
-                {role === 'hse' || role === 'pic_k3' ? 'Review Keselamatan (HSE / K3)' : role === 'ga_dept_head' ? 'Persetujuan Head Dept HRD&GA' : role === 'ga_div_head' ? 'Validasi Akhir Head Division HRD&GA' : 'Review PIC Widatra (Internal)'}
+                {role === 'hse' || role === 'pic_k3' ? 'Review Keselamatan (HSE / K3)' : role === 'ga_dept_head' ? 'Persetujuan Dept Head HRD&GA' : role === 'ga_div_head' ? 'Validasi Akhir Head Division HRD&GA' : 'Review PIC Widatra (Internal)'}
               </h2>
               <p className="text-sm text-gray-500 mt-1">
                 Daftar izin kerja yang membutuhkan persetujuan Anda.
