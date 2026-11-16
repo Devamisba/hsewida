@@ -20,14 +20,19 @@ import {
   ArrowRight,
   Activity,
   Layers,
-  Sparkles
+  Sparkles,
+  Loader2
 } from "lucide-react";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from "recharts";
 import { cn } from "@/lib/utils";
 import { api } from "@/services/api";
+import { WorkPermitDetailModal, mapApiToPermitDetail } from "@/components/WorkPermitDetailModal";
 
 export default function DashboardHSEPage() {
   const [loading, setLoading] = useState(true);
+  const [selectedPermit, setSelectedPermit] = useState<any | null>(null);
+  const [loadingPermitId, setLoadingPermitId] = useState<string | number | null>(null);
+  const [extensionWindowDays, setExtensionWindowDays] = useState(3);
   const [dashboardData, setDashboardData] = useState<any>({
     pendingReviewCount: 0,
     pendingReview: [],
@@ -55,6 +60,35 @@ export default function DashboardHSEPage() {
     },
   });
   const navigate = useNavigate();
+
+  useEffect(() => {
+    api.getSettings().then(sRes => {
+      if (sRes?.success && sRes.data?.map?.extension_window_days) {
+        setExtensionWindowDays(Number(sRes.data.map.extension_window_days) || 3);
+      }
+    }).catch(() => {});
+  }, []);
+
+  const handleOpenPermit = async (job: any) => {
+    const permitIdentifier = job.permit_id || job.raw_id || job.id;
+    if (!permitIdentifier) return;
+
+    setLoadingPermitId(job.id);
+    try {
+      const res = await api.getPermitDetail(permitIdentifier);
+      if (res?.success && res.data) {
+        const mapped = mapApiToPermitDetail(res.data);
+        setSelectedPermit(mapped);
+      } else {
+        alert("Gagal memuat rincian izin kerja.");
+      }
+    } catch (err: any) {
+      console.error("Error opening permit detail:", err);
+      alert("Gagal memuat rincian izin kerja: " + (err.message || "Terjadi kesalahan server"));
+    } finally {
+      setLoadingPermitId(null);
+    }
+  };
 
   useEffect(() => {
     const fetchDashboard = async () => {
@@ -391,17 +425,31 @@ export default function DashboardHSEPage() {
                   {dashboardData.activeHighRisk && dashboardData.activeHighRisk.length > 0 ? (
                     <ul className="divide-y divide-gray-100">
                       {dashboardData.activeHighRisk.map((job: any) => (
-                        <li key={job.id} className="p-4 hover:bg-gray-50/50 transition-colors flex justify-between items-center">
+                        <li key={job.id} className="p-4 hover:bg-gray-50/50 transition-colors flex justify-between items-center gap-4">
                           <div>
                             <p className="text-sm font-bold text-gray-900">{job.id} • {job.jenis}</p>
                             <p className="text-xs text-gray-500 mt-1">Lokasi: {job.lokasi}</p>
                           </div>
-                          <div className="text-right flex flex-col items-end gap-2">
-                            <div className="flex gap-1">
+                          <div className="text-right flex flex-col sm:flex-row items-end sm:items-center gap-2 shrink-0">
+                            <div className="flex gap-1 flex-wrap justify-end">
                               {job.permitTypes && job.permitTypes.map((pt: string) => (
                                 <span key={pt} className="inline-flex w-max items-center justify-center bg-rose-50 text-rose-700 border border-rose-200 px-3 py-0.5 rounded-full text-xs font-bold">{pt}</span>
                               ))}
                             </div>
+                            <button 
+                              type="button"
+                              disabled={loadingPermitId === job.id}
+                              onClick={() => handleOpenPermit(job)}
+                              className="text-xs font-semibold text-primary hover:text-primary/80 bg-primary-container/20 hover:bg-primary-container/30 px-3 py-1.5 rounded-lg cursor-pointer transition-colors inline-flex items-center gap-1.5 disabled:opacity-60 shrink-0"
+                            >
+                              {loadingPermitId === job.id ? (
+                                <>
+                                  <Loader2 size={12} className="animate-spin" /> Memuat...
+                                </>
+                              ) : (
+                                "Buka Permit"
+                              )}
+                            </button>
                           </div>
                         </li>
                       ))}
@@ -514,6 +562,13 @@ export default function DashboardHSEPage() {
           </div>
         </div>
       </main>
+
+      {/* Modal Detail Izin Kerja Aktif */}
+      <WorkPermitDetailModal
+        permit={selectedPermit}
+        onClose={() => setSelectedPermit(null)}
+        extensionWindowDays={extensionWindowDays}
+      />
     </div>
   );
 }

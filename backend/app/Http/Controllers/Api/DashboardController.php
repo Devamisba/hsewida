@@ -297,6 +297,8 @@ class DashboardController extends Controller
                 'activeHighRiskCount' => $activeHighRisk->count(),
                 'activeHighRisk' => $activeHighRisk->map(fn($p) => [
                     'id' => $p->permit_number,
+                    'permit_id' => $p->id,
+                    'raw_id' => $p->id,
                     'jenis' => $p->job_title,
                     'lokasi' => $p->location ? $p->location->name : '-',
                     'permitTypes' => $p->permitTypes->pluck('name'),
