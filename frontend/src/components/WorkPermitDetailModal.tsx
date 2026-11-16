@@ -168,7 +168,7 @@ export function WorkPermitDetailModal({
 
   const handleOpenPrint = (p: any) => {
     if (!canPrintPermit(p.status)) {
-      alert("Dokumen Izin Kerja resmi hanya dapat dicetak setelah disetujui penuh oleh seluruh pihak berwenang (hingga Head Division HRD&GA).");
+      alert("Dokumen Izin Kerja resmi hanya dapat dicetak setelah disetujui penuh oleh seluruh pihak berwenang (hingga HRD&GA Division Head).");
       return;
     }
     setPrintModalPermit(p);
@@ -477,7 +477,7 @@ export function WorkPermitDetailModal({
                     <>
                       <Lock size={14} className="shrink-0 text-amber-600" />
                       <span>
-                        Dokumen resmi baru dapat dicetak setelah disetujui penuh oleh <strong>Head Division HRD&GA</strong>.
+                        Dokumen resmi baru dapat dicetak setelah disetujui penuh oleh <strong>HRD&GA Division Head</strong>.
                       </span>
                     </>
                   )}
@@ -533,7 +533,7 @@ export function WorkPermitDetailModal({
                   type="button"
                   disabled
                   className="px-5 py-2.5 text-sm font-medium text-gray-400 bg-gray-100 border border-gray-200 rounded-lg flex items-center gap-2 cursor-not-allowed opacity-75 whitespace-nowrap"
-                  title={permit.status === "Ditolak" ? "Izin kerja ditolak dan tidak dapat dicetak" : "Izin kerja belum dapat dicetak karena belum disetujui penuh oleh Head Division HRD&GA"}
+                  title={permit.status === "Ditolak" ? "Izin kerja ditolak dan tidak dapat dicetak" : "Izin kerja belum dapat dicetak karena belum disetujui penuh oleh HRD&GA Division Head"}
                 >
                   <Lock size={16} /> {permit.status === "Ditolak" ? "Izin Ditolak (Tidak Dapat Dicetak)" : "Menunggu Approval Akhir (Terkunci)"}
                 </button>

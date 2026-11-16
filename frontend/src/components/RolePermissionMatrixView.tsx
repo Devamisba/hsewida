@@ -79,7 +79,7 @@ const MATRIX_MODULES: MatrixModuleDef[] = [
   {
     id: "workflow",
     name: "Review & Otorisasi Berjenjang",
-    description: "Alur verifikasi bertahap PIC Widatra, HSE, Dept Head HRD&GA, dan Head Division HRD&GA",
+    description: "Alur verifikasi bertahap PIC Widatra, HSE, HRD&GA Dept Head, dan HRD&GA Division Head",
     icon: GitFork,
     actions: {
       view: ["permits.view_all"],

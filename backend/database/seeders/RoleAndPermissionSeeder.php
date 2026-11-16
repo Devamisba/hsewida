@@ -34,12 +34,12 @@ class RoleAndPermissionSeeder extends Seeder
             ],
             [
                 'code' => 'ga_dept_head',
-                'name' => 'Dept Head HRD&GA',
+                'name' => 'HRD&GA Dept Head',
                 'description' => 'Melakukan review administratif tahap 3 (validasi data pekerja eksternal, asuransi/BPJS, akses area).',
             ],
             [
                 'code' => 'ga_div_head',
-                'name' => 'Head Division HRD&GA',
+                'name' => 'HRD&GA Division Head',
                 'description' => 'Melakukan validasi akhir tahap 4 (Final Sign-off) yang mengaktifkan status ijin kerja resmi.',
             ],
             [
@@ -64,8 +64,8 @@ class RoleAndPermissionSeeder extends Seeder
             ['code' => 'permits.view_own', 'name' => 'Lihat Ijin Kerja Milik Sendiri', 'group' => 'Work Permit'],
             ['code' => 'permits.review_pic', 'name' => 'Review Permit Tahap 1 (PIC Widatra)', 'group' => 'Work Permit'],
             ['code' => 'permits.review_hse', 'name' => 'Review Permit Tahap 2 (HSE)', 'group' => 'Work Permit'],
-            ['code' => 'permits.review_ga_dept', 'name' => 'Review Permit Tahap 3 (Dept Head HRD&GA)', 'group' => 'Work Permit'],
-            ['code' => 'permits.review_ga_div', 'name' => 'Review Permit Tahap 4 (Head Division HRD&GA)', 'group' => 'Work Permit'],
+            ['code' => 'permits.review_ga_dept', 'name' => 'Review Permit Tahap 3 (HRD&GA Dept Head)', 'group' => 'Work Permit'],
+            ['code' => 'permits.review_ga_div', 'name' => 'Review Permit Tahap 4 (HRD&GA Division Head)', 'group' => 'Work Permit'],
             ['code' => 'permits.view_all', 'name' => 'Lihat Seluruh Ijin Kerja & Riwayat', 'group' => 'Work Permit'],
             ['code' => 'permits.verify_qr', 'name' => 'Verifikasi Validitas Permit via QR Code', 'group' => 'Work Permit'],
             

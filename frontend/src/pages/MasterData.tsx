@@ -938,7 +938,11 @@ export default function MasterDataPage() {
                                   u.role?.code === 'ga_dept_head' || u.role?.code === 'ga_div_head' ? 'bg-amber-100 text-amber-800' :
                                   u.role?.code === 'pic_vendor' ? 'bg-indigo-100 text-indigo-800' : 'bg-blue-100 text-blue-800'
                                 }`}>
-                                  {u.role ? (u.role.code === 'ga_dept_head' || u.role.name === 'Head Dept HRD&GA' ? 'Dept Head HRD&GA' : u.role.name) : "Tanpa Role"}
+                                  {u.role ? (
+                                    u.role.code === 'ga_dept_head' || u.role.name === 'Head Dept HRD&GA' || u.role.name === 'Dept Head HRD&GA' ? 'HRD&GA Dept Head' :
+                                    u.role.code === 'ga_div_head' || u.role.name === 'Head Division HRD&GA' ? 'HRD&GA Division Head' :
+                                    u.role.name
+                                  ) : "Tanpa Role"}
                                 </span>
                               </td>
                               <td className="px-5 py-4 text-slate-700">

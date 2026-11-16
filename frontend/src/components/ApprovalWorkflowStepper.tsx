@@ -48,18 +48,18 @@ const STEPS: StepDef[] = [
   {
     key: "ga_dept_head",
     stepNumber: 3,
-    title: "Dept Head HRD&GA",
+    title: "HRD&GA Dept Head",
     subtitle: "Validasi Area & Fasilitas",
     roleCode: "ga_dept_head",
-    roleName: "Dept Head HRD&GA",
+    roleName: "HRD&GA Dept Head",
   },
   {
     key: "ga_div_head",
     stepNumber: 4,
-    title: "Head Division HRD&GA",
+    title: "HRD&GA Division Head",
     subtitle: "Otorisasi Final Izin",
     roleCode: "ga_div_head",
-    roleName: "Head Division HRD&GA",
+    roleName: "HRD&GA Division Head",
   },
 ];
 

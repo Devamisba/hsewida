@@ -29,9 +29,11 @@ export function Header({ title = "HSE Portal" }: HeaderProps) {
 
   const displayName = user?.name || 'Pengguna';
   const getDisplayRole = () => {
-    if (role === 'ga_dept_head' || user?.role?.code === 'ga_dept_head') return 'Dept Head HRD&GA';
+    if (role === 'ga_dept_head' || user?.role?.code === 'ga_dept_head') return 'HRD&GA Dept Head';
+    if (role === 'ga_div_head' || user?.role?.code === 'ga_div_head') return 'HRD&GA Division Head';
     const roleName = user?.role?.name;
-    if (roleName === 'Head Dept HRD&GA' || roleName === 'ga_dept_head') return 'Dept Head HRD&GA';
+    if (roleName === 'Head Dept HRD&GA' || roleName === 'Dept Head HRD&GA' || roleName === 'ga_dept_head') return 'HRD&GA Dept Head';
+    if (roleName === 'Head Division HRD&GA' || roleName === 'Division Head HRD&GA' || roleName === 'ga_div_head') return 'HRD&GA Division Head';
     if (roleName) return roleName;
     if (user?.company_name) return user.company_name;
     return role || 'User';

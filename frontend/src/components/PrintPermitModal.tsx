@@ -100,7 +100,7 @@ export function PrintPermitModal({ permit, onClose }: PrintPermitModalProps) {
     if (!printContentRef.current || isGenerating) return;
     
     if (!isApproved) {
-      alert("Peringatan K3: Dokumen Izin Kerja ini belum disetujui resmi oleh Head Division HRD&GA dan belum dapat diunduh.");
+      alert("Peringatan K3: Dokumen Izin Kerja ini belum disetujui resmi oleh HRD&GA Division Head dan belum dapat diunduh.");
       return;
     }
 
@@ -141,7 +141,7 @@ export function PrintPermitModal({ permit, onClose }: PrintPermitModalProps) {
 
   const handlePrint = () => {
     if (!isApproved) {
-      alert("Peringatan K3: Dokumen Izin Kerja ini belum disetujui resmi oleh Head Division HRD&GA dan belum dapat dicetak.");
+      alert("Peringatan K3: Dokumen Izin Kerja ini belum disetujui resmi oleh HRD&GA Division Head dan belum dapat dicetak.");
       return;
     }
     window.print();
@@ -203,7 +203,7 @@ export function PrintPermitModal({ permit, onClose }: PrintPermitModalProps) {
                     ? "bg-slate-700 text-slate-400 cursor-not-allowed opacity-60"
                     : "bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 cursor-pointer"
                 )}
-                title={!isApproved ? "Cetak terkunci: Menunggu persetujuan akhir dari Head Division HRD&GA" : "Unduh PDF"}
+                title={!isApproved ? "Cetak terkunci: Menunggu persetujuan akhir dari HRD&GA Division Head" : "Unduh PDF"}
               >
                 {isGenerating ? (
                   <>

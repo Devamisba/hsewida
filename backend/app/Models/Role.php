@@ -28,8 +28,11 @@ class Role extends Model
 
     public function getNameAttribute($value)
     {
-        if ($this->code === 'ga_dept_head' || $value === 'Head Dept HRD&GA') {
-            return 'Dept Head HRD&GA';
+        if ($this->code === 'ga_dept_head' || in_array($value, ['Head Dept HRD&GA', 'Dept Head HRD&GA', 'HRD & GA Dept Head'])) {
+            return 'HRD&GA Dept Head';
+        }
+        if ($this->code === 'ga_div_head' || in_array($value, ['Head Division HRD&GA', 'Division Head HRD&GA', 'HRD & GA Division Head'])) {
+            return 'HRD&GA Division Head';
         }
         return $value;
     }

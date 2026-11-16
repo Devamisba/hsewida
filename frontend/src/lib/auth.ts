@@ -40,8 +40,12 @@ export const auth = {
       const raw = sessionStorage.getItem(USER_KEY);
       if (!raw) return null;
       const user = JSON.parse(raw);
-      if (user?.role && (user.role.code === 'ga_dept_head' || user.role.name === 'Head Dept HRD&GA')) {
-        user.role.name = 'Dept Head HRD&GA';
+      if (user?.role) {
+        if (user.role.code === 'ga_dept_head' || user.role.name === 'Head Dept HRD&GA' || user.role.name === 'Dept Head HRD&GA') {
+          user.role.name = 'HRD&GA Dept Head';
+        } else if (user.role.code === 'ga_div_head' || user.role.name === 'Head Division HRD&GA') {
+          user.role.name = 'HRD&GA Division Head';
+        }
       }
       return user;
     } catch {
@@ -51,8 +55,12 @@ export const auth = {
 
   setSession(token: string, user: any) {
     if (typeof window === 'undefined') return;
-    if (user?.role && (user.role.code === 'ga_dept_head' || user.role.name === 'Head Dept HRD&GA')) {
-      user.role.name = 'Dept Head HRD&GA';
+    if (user?.role) {
+      if (user.role.code === 'ga_dept_head' || user.role.name === 'Head Dept HRD&GA' || user.role.name === 'Dept Head HRD&GA') {
+        user.role.name = 'HRD&GA Dept Head';
+      } else if (user.role.code === 'ga_div_head' || user.role.name === 'Head Division HRD&GA') {
+        user.role.name = 'HRD&GA Division Head';
+      }
     }
     const roleCode = user?.role?.code || (typeof user?.role === 'string' ? user.role : 'admin');
     
@@ -69,8 +77,12 @@ export const auth = {
 
   setUser(user: any) {
     if (typeof window === 'undefined') return;
-    if (user?.role && (user.role.code === 'ga_dept_head' || user.role.name === 'Head Dept HRD&GA')) {
-      user.role.name = 'Dept Head HRD&GA';
+    if (user?.role) {
+      if (user.role.code === 'ga_dept_head' || user.role.name === 'Head Dept HRD&GA' || user.role.name === 'Dept Head HRD&GA') {
+        user.role.name = 'HRD&GA Dept Head';
+      } else if (user.role.code === 'ga_div_head' || user.role.name === 'Head Division HRD&GA') {
+        user.role.name = 'HRD&GA Division Head';
+      }
     }
     const userStr = JSON.stringify(user);
     sessionStorage.setItem(USER_KEY, userStr);

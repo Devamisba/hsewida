@@ -217,7 +217,7 @@ export default function HistoryPage() {
 
   const handleOpenPrintModal = (permit: any) => {
     if (!canPrintPermit(permit.status)) {
-      alert("Dokumen Izin Kerja resmi hanya dapat dicetak setelah disetujui penuh oleh seluruh pihak berwenang (hingga Head Division HRD&GA).");
+      alert("Dokumen Izin Kerja resmi hanya dapat dicetak setelah disetujui penuh oleh seluruh pihak berwenang (hingga HRD&GA Division Head).");
       return;
     }
     setPrintModalPermit(permit);
@@ -860,7 +860,7 @@ export default function HistoryPage() {
                               <button 
                                 disabled
                                 className="p-2 text-gray-300 bg-gray-50 rounded-lg cursor-not-allowed opacity-60" 
-                                title={`Cetak Terkunci: Menunggu persetujuan akhir dari Head Division HRD&GA (Status: ${formatPermitStatus(req.status)})`}
+                                title={`Cetak Terkunci: Menunggu persetujuan akhir dari HRD&GA Division Head (Status: ${formatPermitStatus(req.status)})`}
                               >
                                 <Lock size={18} className="text-gray-400" />
                               </button>
@@ -993,7 +993,7 @@ export default function HistoryPage() {
                         <button 
                           disabled
                           className="p-2 text-gray-300 bg-gray-50 rounded-lg cursor-not-allowed opacity-60"
-                          title="Cetak Terkunci: Menunggu persetujuan akhir Head Division HRD&GA"
+                          title="Cetak Terkunci: Menunggu persetujuan akhir HRD&GA Division Head"
                         >
                           <Lock size={16} className="text-gray-400" />
                         </button>
@@ -1314,7 +1314,7 @@ export default function HistoryPage() {
                     {selectedRequest.status === "Ditolak" ? (
                       <span>Izin kerja ini <strong>ditolak</strong> dan tidak dapat diterbitkan sebagai dokumen resmi.</span>
                     ) : (
-                      <span>Dokumen resmi baru dapat dicetak setelah disetujui penuh oleh <strong>Head Division HRD&GA</strong>.</span>
+                      <span>Dokumen resmi baru dapat dicetak setelah disetujui penuh oleh <strong>HRD&GA Division Head</strong>.</span>
                     )}
                   </div>
                 )}
@@ -1350,7 +1350,7 @@ export default function HistoryPage() {
                   <button 
                     disabled
                     className="px-5 py-2.5 text-sm font-medium text-gray-400 bg-gray-100 border border-gray-200 rounded-lg flex items-center gap-2 cursor-not-allowed opacity-75 whitespace-nowrap"
-                    title="Izin kerja belum dapat dicetak karena belum disetujui penuh oleh Head Division HRD&GA"
+                    title="Izin kerja belum dapat dicetak karena belum disetujui penuh oleh HRD&GA Division Head"
                   >
                     <Lock size={16} /> {selectedRequest.status === "Ditolak" ? "Izin Ditolak (Tidak Dapat Dicetak)" : "Menunggu Approval Akhir (Terkunci)"}
                   </button>
