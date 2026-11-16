@@ -295,21 +295,26 @@ export function PrintPermitModal({ permit, onClose }: PrintPermitModalProps) {
                     </p>
                   </div>
 
-                  {/* Kanan: Logo Widatra (hanya simbol lingkaran tanpa teks) & Logo Otsuka Resmi */}
-                  <div className="flex items-center justify-end gap-3 w-48">
-                    <img 
-                      src="/logo-widatra-symbol.png" 
-                      alt="Logo PT Widatra Bhakti" 
-                      className="h-10 w-auto object-contain"
-                      onError={(e) => {
-                        (e.target as HTMLElement).style.display = 'none';
-                      }}
-                    />
-                    <div className="h-8 w-[1px] bg-slate-300"></div>
+                  {/* Kanan: Logo Widatra (dengan teks PT Widatra Bhakti) & Logo Otsuka Resmi */}
+                  <div className="flex items-center justify-end gap-3 w-52">
+                    <div className="flex flex-col items-center text-center">
+                      <img 
+                        src="/logo-widatra-symbol.png" 
+                        alt="Logo PT Widatra Bhakti" 
+                        className="h-8 sm:h-9 w-auto object-contain"
+                        onError={(e) => {
+                          (e.target as HTMLElement).style.display = 'none';
+                        }}
+                      />
+                      <span className="text-[8px] font-bold text-blue-950 uppercase tracking-tight mt-0.5 whitespace-nowrap">
+                        PT Widatra Bhakti
+                      </span>
+                    </div>
+                    <div className="h-9 w-[1px] bg-slate-300 mx-0.5"></div>
                     <img 
                       src="/logo-otsuka.png" 
                       alt="Logo Otsuka" 
-                      className="h-10 w-auto object-contain"
+                      className="h-9 sm:h-10 w-auto object-contain"
                       onError={(e) => {
                         (e.target as HTMLElement).style.display = 'none';
                       }}
