@@ -116,64 +116,74 @@ export default function PublicQrVerifyPage() {
         {data && !loading && (
           <div className="p-4 sm:p-7 space-y-5">
             
-            {/* KOP RESMI: 4 KOLOM DENGAN GARIS PEMBAGI VERTIKAL */}
-            <div className="flex items-center justify-between pb-3 border-b-2 border-slate-900 gap-1.5 sm:gap-2.5">
-              {/* 1. Logo K3 (Hanya Lambang) */}
-              <div className="flex items-center justify-center w-16 sm:w-20 shrink-0">
-                <img 
-                  src="/k3-logo-symbol.png" 
-                  alt="Logo K3" 
-                  className="w-10 h-10 sm:w-12 sm:h-12 object-contain"
-                  onError={(e) => {
-                    (e.target as HTMLElement).style.display = 'none';
-                  }}
-                />
+            {/* KOP RESMI: SIMETRIS 100% PUSAT (JUDUL IZIN KERJA DEAD-CENTER) DENGAN 3 GARIS PEMBAGI VERTIKAL */}
+            <div className="flex items-center justify-between pb-3 border-b-2 border-slate-900">
+              {/* SAYAP KIRI (flex-1): Logo K3 + Slogan Resmi K3 */}
+              <div className="flex-1 flex items-center justify-between min-w-0 pr-1.5 sm:pr-3">
+                <div className="flex-1 flex flex-col items-center justify-center text-center">
+                  <img 
+                    src="/k3-logo-symbol.png" 
+                    alt="Logo K3" 
+                    className="w-8 h-8 sm:w-10 sm:h-10 object-contain"
+                    onError={(e) => {
+                      (e.target as HTMLElement).style.display = 'none';
+                    }}
+                  />
+                  <span className="text-[6px] sm:text-[7.5px] font-black uppercase text-slate-800 leading-tight tracking-tight mt-0.5 sm:mt-1 text-center">
+                    UTAMAKAN KESELAMATAN<br />DAN KESEHATAN KERJA
+                  </span>
+                </div>
+
+                {/* Garis Pembagi 1: Antara Logo K3 dan IZIN KERJA */}
+                <div className="h-9 sm:h-11 w-[1px] bg-slate-300 shrink-0"></div>
               </div>
 
-              {/* Garis Pembagi 1 */}
-              <div className="h-8 sm:h-9 w-[1px] bg-slate-300 shrink-0"></div>
-
-              {/* 2. Judul Dokumen (IZIN KERJA Work Permit) */}
-              <div className="flex-1 text-center px-1">
+              {/* PUSAT (shrink-0): JUDUL DOKUMEN IZIN KERJA (DIJAMIN TEPAT DI TENGAH HORIZONTAL) */}
+              <div className="shrink-0 px-2 sm:px-4 text-center">
                 <h1 className="text-lg sm:text-2xl font-black uppercase tracking-tight text-slate-950 leading-none">
                   IZIN KERJA
                 </h1>
-                <p className="text-[11px] sm:text-xs italic font-serif text-slate-700 mt-1 font-medium">
+                <p className="text-[10px] sm:text-xs italic font-serif text-slate-700 mt-0.5 sm:mt-1 font-medium">
                   Work Permit
                 </p>
               </div>
 
-              {/* Garis Pembagi 2 */}
-              <div className="h-8 sm:h-9 w-[1px] bg-slate-300 shrink-0"></div>
+              {/* SAYAP KANAN (flex-1): Lebar persis sama dengan Sayap Kiri */}
+              <div className="flex-1 flex items-center justify-between min-w-0 pl-1.5 sm:pl-3">
+                {/* Garis Pembagi 2: Antara IZIN KERJA dan Widatra */}
+                <div className="h-9 sm:h-11 w-[1px] bg-slate-300 shrink-0"></div>
 
-              {/* 3. Logo Widatra + PT Widatra Bhakti */}
-              <div className="flex flex-col items-center justify-center text-center w-24 sm:w-28 shrink-0">
-                <img 
-                  src="/logo-widatra-symbol.png" 
-                  alt="Logo PT Widatra Bhakti" 
-                  className="h-7 sm:h-8 w-auto object-contain"
-                  onError={(e) => {
-                    (e.target as HTMLElement).style.display = 'none';
-                  }}
-                />
-                <span className="text-[7px] sm:text-[8px] font-bold text-blue-950 uppercase tracking-tight mt-0.5 whitespace-nowrap">
-                  PT Widatra Bhakti
-                </span>
-              </div>
+                <div className="flex-1 flex items-center justify-evenly gap-1.5 sm:gap-3 px-0.5 sm:px-1">
+                  {/* 3. Logo Widatra + Teks WIDATRA */}
+                  <div className="flex flex-col items-center justify-center text-center">
+                    <img 
+                      src="/logo-widatra-symbol.png" 
+                      alt="Logo Widatra" 
+                      className="h-6 sm:h-8 w-auto object-contain"
+                      onError={(e) => {
+                        (e.target as HTMLElement).style.display = 'none';
+                      }}
+                    />
+                    <span className="text-[7.5px] sm:text-[9px] font-black text-blue-900 uppercase tracking-wider mt-0.5 whitespace-nowrap">
+                      WIDATRA
+                    </span>
+                  </div>
 
-              {/* Garis Pembagi 3 */}
-              <div className="h-8 sm:h-9 w-[1px] bg-slate-300 shrink-0"></div>
+                  {/* Garis Pembagi 3: Antara Widatra dan Otsuka */}
+                  <div className="h-8 sm:h-10 w-[1px] bg-slate-300 shrink-0"></div>
 
-              {/* 4. Logo Otsuka */}
-              <div className="flex items-center justify-center w-20 sm:w-24 shrink-0">
-                <img 
-                  src="/logo-otsuka.png" 
-                  alt="Logo Otsuka" 
-                  className="h-7 sm:h-8 w-auto object-contain"
-                  onError={(e) => {
-                    (e.target as HTMLElement).style.display = 'none';
-                  }}
-                />
+                  {/* 4. Logo Otsuka */}
+                  <div className="flex items-center justify-center">
+                    <img 
+                      src="/logo-otsuka.png" 
+                      alt="Logo Otsuka" 
+                      className="h-6 sm:h-8 w-auto object-contain"
+                      onError={(e) => {
+                        (e.target as HTMLElement).style.display = 'none';
+                      }}
+                    />
+                  </div>
+                </div>
               </div>
             </div>
 
