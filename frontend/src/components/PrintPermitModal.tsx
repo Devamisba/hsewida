@@ -255,69 +255,67 @@ export function PrintPermitModal({ permit, onClose }: PrintPermitModalProps) {
           )}
 
           {/* 2. Scrollable Body: Paper Sheet Container */}
-          <div className="overflow-y-auto flex-1 p-3 sm:p-6 bg-slate-100 flex justify-center">
+          <div className="overflow-y-auto flex-1 p-3 sm:p-6 bg-slate-100 flex flex-col items-center">
             
             {/* Printable Paper Document (Single Page A4, Format Standar Lampiran) */}
             <div 
               ref={printContentRef} 
               id="printable-permit-content"
-              className="w-full max-w-[760px] bg-white text-slate-900 font-sans p-6 sm:p-8 border border-slate-900 shadow-md space-y-4 print:border-none print:shadow-none print:p-0"
-              style={{ minHeight: "1020px" }}
+              className="w-full max-w-[760px] bg-white text-slate-900 font-sans p-6 sm:p-8 shadow-xl my-2 flex flex-col justify-between print:border-none print:shadow-none print:p-0 print:my-0"
+              style={{ minHeight: "1050px" }}
             >
               
-              {/* KOP HEADER: LOGO K3 (Kiri) | IZIN KERJA Work Permit (Tengah) | LOGO WIDATRA & OTSUKA (Kanan) */}
-              <div className="flex items-center justify-between pb-3 border-b-2 border-slate-900">
-                {/* Kiri: Logo K3 */}
-                <div className="flex flex-col items-center justify-center w-40 text-center">
-                  <img 
-                    src="/k3-logo.png" 
-                    alt="Logo K3" 
-                    className="w-14 h-14 object-contain mb-1"
-                    onError={(e) => {
-                      (e.target as HTMLElement).style.display = 'none';
-                    }}
-                  />
-                  <span className="text-[8px] font-black uppercase text-slate-800 leading-tight tracking-tight">
-                    UTAMAKAN KESELAMATAN<br />DAN KESEHATAN KERJA
-                  </span>
-                </div>
-
-                {/* Tengah: Judul IZIN KERJA (Work Permit) */}
-                <div className="flex-1 text-center px-4">
-                  <h1 className="text-2xl sm:text-3xl font-black uppercase tracking-tight text-slate-950 leading-none">
-                    IZIN KERJA
-                  </h1>
-                  <p className="text-sm sm:text-base italic font-serif text-slate-700 mt-1 font-medium">
-                    Work Permit
-                  </p>
-                </div>
-
-                {/* Kanan: Logo Widatra & Otsuka */}
-                <div className="flex items-center justify-end gap-2 w-44">
-                  <div className="flex flex-col items-center">
+              {/* BINGKAI HITAM DOKUMEN (PERSIS SEPERTI IKWB2.pdf) */}
+              <div className="border-2 border-slate-900 p-4 sm:p-5 flex-1 flex flex-col justify-between space-y-3.5">
+                
+                {/* KOP HEADER: LOGO K3 (Kiri) | IZIN KERJA Work Permit (Tengah) | LOGO WIDATRA & OTSUKA (Kanan) */}
+                <div className="flex items-center justify-between pb-3 border-b-2 border-slate-900">
+                  {/* Kiri: Logo K3 */}
+                  <div className="flex flex-col items-center justify-center w-36 text-center">
                     <img 
-                      src="/logo-widatra.png" 
+                      src="/k3-logo.png" 
+                      alt="Logo K3" 
+                      className="w-14 h-14 object-contain mb-1"
+                      onError={(e) => {
+                        (e.target as HTMLElement).style.display = 'none';
+                      }}
+                    />
+                    <span className="text-[8px] font-black uppercase text-slate-800 leading-tight tracking-tight">
+                      UTAMAKAN KESELAMATAN<br />DAN KESEHATAN KERJA
+                    </span>
+                  </div>
+
+                  {/* Tengah: Judul IZIN KERJA (Work Permit) */}
+                  <div className="flex-1 text-center px-4">
+                    <h1 className="text-2xl sm:text-3xl font-black uppercase tracking-tight text-slate-950 leading-none">
+                      IZIN KERJA
+                    </h1>
+                    <p className="text-sm sm:text-base italic font-serif text-slate-700 mt-1 font-medium">
+                      Work Permit
+                    </p>
+                  </div>
+
+                  {/* Kanan: Logo Widatra (hanya simbol lingkaran tanpa teks) & Logo Otsuka Resmi */}
+                  <div className="flex items-center justify-end gap-3 w-48">
+                    <img 
+                      src="/logo-widatra-symbol.png" 
                       alt="Logo PT Widatra Bhakti" 
                       className="h-10 w-auto object-contain"
                       onError={(e) => {
                         (e.target as HTMLElement).style.display = 'none';
                       }}
                     />
-                    <span className="text-[9px] font-extrabold text-blue-900 uppercase tracking-tight mt-0.5">
-                      WIDATRA
-                    </span>
-                  </div>
-                  <div className="h-8 w-[1px] bg-slate-300 mx-1"></div>
-                  <div className="flex items-center gap-1">
-                    <div className="w-4 h-4 rounded-full bg-blue-500 flex items-center justify-center text-[9px] font-bold text-white shadow-2xs">
-                      ●
-                    </div>
-                    <span className="text-sm font-black text-slate-800 tracking-tight font-sans">
-                      Otsuka
-                    </span>
+                    <div className="h-8 w-[1px] bg-slate-300"></div>
+                    <img 
+                      src="/logo-otsuka.png" 
+                      alt="Logo Otsuka" 
+                      className="h-10 w-auto object-contain"
+                      onError={(e) => {
+                        (e.target as HTMLElement).style.display = 'none';
+                      }}
+                    />
                   </div>
                 </div>
-              </div>
 
               {/* 1. TABEL DATA PEKERJAAN */}
               <div className="border border-slate-900 text-xs overflow-hidden">
@@ -507,32 +505,34 @@ export function PrintPermitModal({ permit, onClose }: PrintPermitModalProps) {
                 </div>
               </div>
 
-              {/* 4. BAGIAN BAWAH: 4 PRINSIP K3 (Kiri) & QR CODE BOX (Kanan) */}
-              <div className="grid grid-cols-12 gap-3 pt-1">
-                {/* 4 Pedoman Keselamatan */}
-                <div className="col-span-8 border border-slate-900 p-3.5 flex flex-col justify-center text-xs space-y-1.5 font-bold text-slate-900">
-                  <p>1. Utamakan Keselamatan dan Kesehatan Kerja</p>
-                  <p>2. Kenali Bahaya di Tempat Kerja</p>
-                  <p>3. Ingat, Kecelakaan Dapat Dicegah</p>
-                  <p>4. Keselamatan Adalah Tanggung Jawab Semua Orang</p>
+                {/* 4. BAGIAN BAWAH: SATU KOTAK UTUH DENGAN GARIS PEMISAH VERTIKAL (PERSIS SEPERTI IKWB2.pdf) */}
+                <div className="border border-slate-900 grid grid-cols-12 overflow-hidden bg-white">
+                  {/* 4 Pedoman Keselamatan (Kiri) */}
+                  <div className="col-span-8 p-3.5 flex flex-col justify-center text-xs space-y-1 font-bold text-slate-900 border-r border-slate-900">
+                    <p>1. Utamakan Keselamatan dan Kesehatan Kerja</p>
+                    <p>2. Kenali Bahaya di Tempat Kerja</p>
+                    <p>3. Ingat, Kecelakaan Dapat Dicegah</p>
+                    <p>4. Keselamatan Adalah Tanggung Jawab Semua Orang</p>
+                  </div>
+
+                  {/* Kotak QR Code (Kanan) */}
+                  <div className="col-span-4 p-2.5 flex flex-col items-center justify-center text-center">
+                    <span className="text-xs font-bold text-slate-900 mb-1 uppercase tracking-wide">
+                      QR Code
+                    </span>
+                    <div className="bg-white p-1 rounded-sm border border-slate-300 shadow-2xs">
+                      <QRCodeSVG value={qrUrl} size={84} />
+                    </div>
+                    <div className="text-[10px] text-slate-600 mt-1 leading-tight font-medium">
+                      Data izin kerja:<br />
+                      Nomor &ndash; Masa Berlaku
+                    </div>
+                  </div>
                 </div>
 
-                {/* Kotak QR Code */}
-                <div className="col-span-4 border border-slate-900 p-3 flex flex-col items-center justify-center text-center">
-                  <span className="text-xs font-bold text-slate-900 mb-1.5 uppercase tracking-wide">
-                    QR Code
-                  </span>
-                  <div className="bg-white p-1 rounded-sm border border-slate-300 shadow-2xs">
-                    <QRCodeSVG value={qrUrl} size={88} />
-                  </div>
-                  <div className="text-[10px] text-slate-600 mt-1.5 leading-tight font-medium">
-                    Data izin kerja:<br />
-                    Nomor &ndash; Masa Berlaku
-                  </div>
-                </div>
-              </div>
+              </div>{/* Closes BINGKAI HITAM DOKUMEN */}
 
-              {/* FOOTER RESMI DOKUMEN */}
+              {/* FOOTER RESMI DOKUMEN (DI LUAR BINGKAI HITAM, DI TENGAH MARGIN BAWAH PERSIS IKWB2.pdf) */}
               <div className="pt-2 text-center text-[10px] text-slate-500 font-mono">
                 Dokumen Izin Kerja Nomor {permitNo} | {contractorName}
               </div>

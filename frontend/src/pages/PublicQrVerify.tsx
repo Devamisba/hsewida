@@ -143,30 +143,25 @@ export default function PublicQrVerifyPage() {
                 </p>
               </div>
 
-              {/* Kanan: Logo Widatra & Otsuka */}
-              <div className="flex items-center justify-end gap-1.5 sm:gap-2 w-32 sm:w-40">
-                <div className="flex flex-col items-center">
-                  <img 
-                    src="/logo-widatra.png" 
-                    alt="Logo PT Widatra Bhakti" 
-                    className="h-8 sm:h-10 w-auto object-contain"
-                    onError={(e) => {
-                      (e.target as HTMLElement).style.display = 'none';
-                    }}
-                  />
-                  <span className="text-[8px] sm:text-[9px] font-extrabold text-blue-900 uppercase tracking-tight mt-0.5">
-                    WIDATRA
-                  </span>
-                </div>
-                <div className="h-7 w-[1px] bg-slate-300 mx-0.5"></div>
-                <div className="flex items-center gap-1">
-                  <div className="w-3.5 h-3.5 rounded-full bg-blue-500 flex items-center justify-center text-[8px] font-bold text-white shadow-2xs">
-                    ●
-                  </div>
-                  <span className="text-xs sm:text-sm font-black text-slate-800 tracking-tight font-sans">
-                    Otsuka
-                  </span>
-                </div>
+              {/* Kanan: Logo Widatra (hanya simbol lingkaran tanpa teks) & Logo Otsuka */}
+              <div className="flex items-center justify-end gap-2.5 sm:gap-3 w-36 sm:w-44">
+                <img 
+                  src="/logo-widatra-symbol.png" 
+                  alt="Logo PT Widatra Bhakti" 
+                  className="h-8 sm:h-9 w-auto object-contain"
+                  onError={(e) => {
+                    (e.target as HTMLElement).style.display = 'none';
+                  }}
+                />
+                <div className="h-7 w-[1px] bg-slate-300"></div>
+                <img 
+                  src="/logo-otsuka.png" 
+                  alt="Logo Otsuka" 
+                  className="h-8 sm:h-9 w-auto object-contain"
+                  onError={(e) => {
+                    (e.target as HTMLElement).style.display = 'none';
+                  }}
+                />
               </div>
             </div>
 
