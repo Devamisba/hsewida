@@ -1130,7 +1130,7 @@ export default function HistoryPage() {
                         <span className="text-gray-500 text-[11px] block mt-1">
                           {selectedRequest.parentPermit?.permitNumber && selectedRequest.parentPermit.permitNumber !== (selectedRequest.rootPermit?.permitNumber || '')
                             ? `Fase sebelumnya: ${selectedRequest.parentPermit.permitNumber}`
-                            : `Mulai Awal: ${selectedRequest.cumulativeStartDate || '-'}`}
+                            : `Mulai Awal: ${formatDateDDMMYY(selectedRequest.cumulativeStartDate)}`}
                         </span>
                       </div>
                       <div className="bg-white/90 p-3 rounded-lg border border-amber-200">

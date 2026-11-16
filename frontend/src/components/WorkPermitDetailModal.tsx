@@ -267,7 +267,7 @@ export function WorkPermitDetailModal({
                       <span className="text-gray-500 text-[11px] block mt-1">
                         {permit.parentPermit?.permitNumber && permit.parentPermit.permitNumber !== (permit.rootPermit?.permitNumber || '')
                           ? `Fase sebelumnya: ${permit.parentPermit.permitNumber}`
-                          : `Mulai Awal: ${permit.cumulativeStartDate || '-'}`}
+                          : `Mulai Awal: ${formatDateDDMMYY(permit.cumulativeStartDate)}`}
                       </span>
                     </div>
                     <div className="bg-white/90 p-3 rounded-lg border border-amber-200">

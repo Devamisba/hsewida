@@ -1,5 +1,5 @@
 import { CalendarClock, CheckCircle2, Clock, AlertCircle } from 'lucide-react';
-import { cn, calculateInclusiveDays, formatPermitStatus } from '@/lib/utils';
+import { cn, calculateInclusiveDays, formatPermitStatus, formatDateDDMMYY } from '@/lib/utils';
 
 export interface ProjectPhase {
   id: number;
@@ -87,7 +87,7 @@ export function ProjectPhaseTimeline({
         <div className="bg-white/90 border border-amber-300 px-3.5 py-1.5 rounded-lg shadow-xs flex items-center gap-2">
           <span className="text-[11px] uppercase font-bold text-amber-800">Total Akumulasi:</span>
           <strong className="text-xs font-mono text-amber-950">
-            {effectiveStart} s/d {effectiveEnd}
+            {formatDateDDMMYY(effectiveStart)} s/d {formatDateDDMMYY(effectiveEnd)}
           </strong>
           <span className="text-[11px] font-bold bg-amber-100 text-amber-900 px-1.5 py-0.5 rounded border border-amber-300">
             {totalDays} Hari Kalender
@@ -140,7 +140,7 @@ export function ProjectPhaseTimeline({
                     {phase.permit_number}
                   </strong>
                   <span className="text-slate-600 text-[11px] block mt-0.5">
-                    {phaseStart} s/d {phaseEnd}
+                    {formatDateDDMMYY(phaseStart)} s/d {formatDateDDMMYY(phaseEnd)}
                   </span>
                   <span className="text-[10px] text-slate-500">
                     Durasi: <strong className="text-slate-700">{phaseDays} Hari</strong> (Maks. 6)

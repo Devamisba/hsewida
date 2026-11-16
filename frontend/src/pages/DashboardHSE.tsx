@@ -24,7 +24,7 @@ import {
   Loader2
 } from "lucide-react";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from "recharts";
-import { cn } from "@/lib/utils";
+import { cn, formatDateDDMMYY } from "@/lib/utils";
 import { api } from "@/services/api";
 import { WorkPermitDetailModal, mapApiToPermitDetail } from "@/components/WorkPermitDetailModal";
 
@@ -388,7 +388,7 @@ export default function DashboardHSEPage() {
                               <div className="text-gray-500 mt-0.5">{req.jenis}</div>
                             </td>
                             <td className="px-4 py-3 text-gray-700">{req.kontraktor}</td>
-                            <td className="px-4 py-3 text-gray-700">{req.mulai}</td>
+                            <td className="px-4 py-3 text-gray-700">{formatDateDDMMYY(req.mulai)}</td>
                             <td className="px-4 py-3 text-right">
                               <button 
                                 onClick={() => navigate('/review')}
