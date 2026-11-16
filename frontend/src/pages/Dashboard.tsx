@@ -65,7 +65,7 @@ export default function DashboardPage() {
   const userRole = (auth.getRole() || user?.role?.code || "").toLowerCase().trim();
   const isVendorRole = ["pemohon", "vendor", "kontraktor", "contractor"].includes(userRole);
   const canCreatePermit = isVendorRole || ["admin", "hse", "pic_k3"].includes(userRole);
-  const canViewMonitoring = ["admin", "hse", "pic_k3"].includes(userRole) || !isVendorRole;
+  const canViewMonitoring = ["admin", "hse", "pic_k3"].includes(userRole);
 
   useEffect(() => {
     api.getSettings().then(sRes => {
