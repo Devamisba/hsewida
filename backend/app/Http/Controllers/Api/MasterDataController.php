@@ -293,7 +293,7 @@ class MasterDataController extends Controller
         $terminalStatuses = [
             ['code' => 'Disetujui', 'name' => 'Izin Kerja Disetujui (Aktif)', 'type' => 'active', 'description' => 'Permit aktif dan pekerjaan di lapangan diizinkan berjalan sesuai tanggal & jam kerja.'],
             ['code' => 'Ditolak', 'name' => 'Permohonan Ditolak', 'type' => 'rejected', 'description' => 'Izin kerja ditolak pada salah satu tahap verifikasi disertai alasan penolakan wajib.'],
-            ['code' => 'Perpanjangan', 'name' => 'Pengajuan Perpanjangan Berfase', 'type' => 'extension', 'description' => 'Permohonan penambahan durasi kerja berfase (maksimal 6 hari kalender per lembar SIKA).'],
+            ['code' => 'Perpanjangan', 'name' => 'Pengajuan Perpanjangan Berfase', 'type' => 'extension', 'description' => 'Permohonan penambahan durasi kerja berfase (maksimal 6 hari kalender per lembar Izin Kerja).'],
             ['code' => 'Selesai', 'name' => 'Izin Kerja Ditutup / Selesai', 'type' => 'closed', 'description' => 'Pekerjaan fisik selesai, area telah dibersihkan (housekeeping), dan inspeksi akhir HSE terpenuhi.'],
             ['code' => 'Kadaluwarsa', 'name' => 'Masa Berlaku Habis', 'type' => 'expired', 'description' => 'Tanggal selesai permit telah terlewati otomatis tanpa perpanjangan.'],
         ];

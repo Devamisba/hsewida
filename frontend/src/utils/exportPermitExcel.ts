@@ -94,7 +94,7 @@ export function exportWorkPermitsToExcel(
       "Kontraktor External / Internal",
       "Pekerjaan",
       "Lokasi Kerja",
-      "No. Izin SIKA",
+      "No. Izin Kerja",
       "Status"
     ],
     ...rows
@@ -117,7 +117,7 @@ export function exportWorkPermitsToExcel(
     { wch: 38 },  // Kontraktor External / Internal
     { wch: 32 },  // Pekerjaan
     { wch: 24 },  // Lokasi Kerja
-    { wch: 18 },  // No. Izin SIKA
+    { wch: 18 },  // No. Izin Kerja
     { wch: 20 },  // Status
   ];
 

@@ -655,7 +655,7 @@ export default function MasterDataPage() {
           setPolicySettingsMap(res.data.map);
           syncGeofenceFromSettingsMap(res.data.map);
         }
-        showFeedback("success", "Pengaturan Kebijakan SIKA & Master Geofence K3 berhasil disimpan.");
+        showFeedback("success", "Pengaturan Kebijakan Izin Kerja & Master Geofence K3 berhasil disimpan.");
       } else {
         showFeedback("error", res?.message || "Gagal menyimpan pengaturan.");
       }
@@ -823,7 +823,7 @@ export default function MasterDataPage() {
                   activeTab === "policy_settings" ? "bg-blue-600 text-white shadow-sm ring-2 ring-blue-600/20" : "text-slate-600 hover:bg-slate-100"
                 }`}
               >
-                <SlidersHorizontal size={18} /> Kebijakan SIKA & Geofence K3
+                <SlidersHorizontal size={18} /> Kebijakan Izin Kerja & Geofence K3
               </button>
               <button
                 onClick={() => setActiveTab("branding")}
@@ -1558,7 +1558,7 @@ export default function MasterDataPage() {
           )}
 
           {/* ========================================================================= */}
-          {/* TAB 6: KEBIJAKAN & ATURAN SIKA (PERMIT POLICIES & DURATIONS) */}
+          {/* TAB 6: KEBIJAKAN & ATURAN IZIN KERJA (PERMIT POLICIES & DURATIONS) */}
           {/* ========================================================================= */}
           {activeTab === "policy_settings" && (
             <div className="space-y-6">
@@ -1566,7 +1566,7 @@ export default function MasterDataPage() {
               <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
                   <div className="flex items-center gap-2">
-                    <h3 className="text-lg font-bold text-slate-900">Pengaturan Kebijakan & Durasi SIKA</h3>
+                    <h3 className="text-lg font-bold text-slate-900">Pengaturan Kebijakan & Durasi Izin Kerja</h3>
                     <span className="px-2.5 py-0.5 bg-blue-100 text-blue-800 text-xs font-bold rounded-full">
                       Regulasi K3 PT Widatra Bhakti
                     </span>
@@ -1595,11 +1595,11 @@ export default function MasterDataPage() {
                         <Clock size={22} />
                       </div>
                       <span className="px-2.5 py-0.5 bg-blue-100 text-blue-800 text-[10px] font-bold rounded-full">
-                        Masa Berlaku SIKA
+                        Masa Berlaku Izin Kerja
                       </span>
                     </div>
                     <div>
-                      <h4 className="text-sm font-bold text-slate-900">Masa Berlaku Maksimal SIKA</h4>
+                      <h4 className="text-sm font-bold text-slate-900">Masa Berlaku Maksimal Izin Kerja</h4>
                       <p className="text-xs text-slate-500 mt-1 leading-relaxed">
                         Batas maksimal rentang hari kalender untuk satu lembar izin kerja (selesai dikurangi mulai). Anda dapat membatasi hari atau mengizinkan tanpa batas.
                       </p>
@@ -1609,7 +1609,7 @@ export default function MasterDataPage() {
                   <div className="pt-4 border-t border-slate-100 space-y-3">
                     <div className="flex items-center justify-between">
                       <label className="block text-xs font-bold text-slate-700 uppercase">
-                        Durasi Maksimal SIKA
+                        Durasi Maksimal Izin Kerja
                       </label>
                       <label className="inline-flex items-center gap-1.5 text-xs font-semibold text-blue-700 cursor-pointer select-none">
                         <input

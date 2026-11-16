@@ -130,7 +130,7 @@ export function Step1DataKontraktor({ data, updateData }: { data: any, updateDat
                   Permohonan Perpanjangan Izin Kerja &mdash; Fase {data.extensionPhase || 1}
                 </p>
                 <p className="text-xs text-amber-800 mt-0.5">
-                  Mengacu pada SIKA Induk: <strong className="font-mono text-slate-900">{data.rootPermitNumber || data.parentPermitNumber || "SIKA Sebelumnya"}</strong>
+                  Mengacu pada Izin Induk: <strong className="font-mono text-slate-900">{data.rootPermitNumber || data.parentPermitNumber || "Izin Sebelumnya"}</strong>
                 </p>
               </div>
             </div>
@@ -214,7 +214,7 @@ export function Step1DataKontraktor({ data, updateData }: { data: any, updateDat
                       Regulasi K3: Perpanjangan Izin Kerja {data.extensionPhase ? `Ke-${data.extensionPhase} (Fase ${data.extensionPhase})` : "Lanjutan"}
                     </h5>
                     <p className="text-[11px] text-amber-800 leading-relaxed">
-                      Berdasarkan standar K3 PT Widatra Bhakti, tiap 1 surat izin kerja berlaku maksimal <strong>{maxPermitDays > 0 ? `${maxPermitDays} hari kalender` : "fleksibel"}</strong> per lembar pengajuan. Proyek ini dapat diperpanjang berfase-fase, dan sistem menghitung akumulasi total hari kalender sejak SIKA Induk pertama secara otomatis.
+                      Berdasarkan standar K3 PT Widatra Bhakti, tiap 1 surat izin kerja berlaku maksimal <strong>{maxPermitDays > 0 ? `${maxPermitDays} hari kalender` : "fleksibel"}</strong> per lembar pengajuan. Proyek ini dapat diperpanjang berfase-fase, dan sistem menghitung akumulasi total hari kalender sejak Izin Induk pertama secara otomatis.
                     </p>
                   </div>
                 </div>
@@ -222,10 +222,10 @@ export function Step1DataKontraktor({ data, updateData }: { data: any, updateDat
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 border-t border-amber-200/80">
                   <div className="bg-white/90 p-2.5 rounded-lg border border-amber-200">
                     <span className="text-[10px] uppercase font-bold text-amber-700 block">
-                      {data.extensionPhase && data.extensionPhase > 1 ? "SIKA Induk & Acuan" : "Izin Acuan Induk"}
+                      {data.extensionPhase && data.extensionPhase > 1 ? "Izin Induk & Acuan" : "Izin Acuan Induk"}
                     </span>
                     <strong className="text-slate-800 font-mono text-xs block truncate">
-                      {data.rootPermitNumber || data.parentPermitNumber || "SIKA Sebelumnya"}
+                      {data.rootPermitNumber || data.parentPermitNumber || "Izin Sebelumnya"}
                     </strong>
                     <span className="text-[10px] text-slate-500 block mt-0.5">
                       {data.extensionPhase && data.extensionPhase > 1 && data.parentPermitNumber && data.parentPermitNumber !== data.rootPermitNumber

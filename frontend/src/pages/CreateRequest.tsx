@@ -484,7 +484,7 @@ export default function CreateRequestPage() {
             </h2>
             <p className="text-sm text-gray-500 mt-1">
               {extendState?.extendMode 
-                ? `Pengajuan perpanjangan masa berlaku untuk Surat Izin Kerja ${extendState.permitNumber || extendState.id || ""} (SIKA Induk: ${formData.rootPermitNumber || extendState.permitNumber}).`
+                ? `Pengajuan perpanjangan masa berlaku untuk Dokumen Izin Kerja ${extendState.permitNumber || extendState.id || ""} (Izin Induk: ${formData.rootPermitNumber || extendState.permitNumber}).`
                 : "Formulir digital Izin Kerja, Safety Induction & JSA untuk rekanan dan tim operasional."}
             </p>
           </div>

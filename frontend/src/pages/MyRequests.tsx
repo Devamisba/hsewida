@@ -277,7 +277,7 @@ export default function MyRequestsPage() {
 
   const handleOpenPrintModal = (permit: any) => {
     if (!canPrintPermit(permit.status)) {
-      alert("Surat Izin Kerja Aman (SIKA) resmi hanya dapat dicetak setelah disetujui penuh oleh seluruh pihak berwenang (hingga Head Division HRD&GA).");
+      alert("Dokumen Izin Kerja resmi hanya dapat dicetak setelah disetujui penuh oleh seluruh pihak berwenang (hingga Head Division HRD&GA).");
       return;
     }
     setPrintModalPermit(permit);
@@ -780,15 +780,15 @@ export default function MyRequestsPage() {
                           Informasi Audit Perpanjangan Izin Kerja Ke-{selectedRequest.extensionPhase || 1}
                         </h4>
                         <p className="text-xs text-amber-800 mt-0.5">
-                          Izin ini diterbitkan sebagai kelanjutan legal Fase {selectedRequest.extensionPhase || 1} dari proyek SIKA.
+                          Izin ini diterbitkan sebagai kelanjutan legal Fase {selectedRequest.extensionPhase || 1} dari proyek izin kerja.
                         </p>
                       </div>
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 border-t border-amber-200/70 text-xs">
                       <div className="bg-white/90 p-3 rounded-lg border border-amber-200">
-                        <span className="text-gray-500 block font-medium">SIKA Induk & Acuan:</span>
+                        <span className="text-gray-500 block font-medium">Izin Induk & Acuan:</span>
                         <strong className="text-sm text-gray-900 block font-mono mt-0.5">
-                          {selectedRequest.rootPermit?.permitNumber || selectedRequest.parentPermit?.permitNumber || "SIKA Induk"}
+                          {selectedRequest.rootPermit?.permitNumber || selectedRequest.parentPermit?.permitNumber || "Izin Induk"}
                         </strong>
                         <span className="text-gray-500 text-[11px] block mt-1">
                           {selectedRequest.parentPermit?.permitNumber && selectedRequest.parentPermit.permitNumber !== (selectedRequest.rootPermit?.permitNumber || '')

@@ -134,7 +134,7 @@ export function Step2PermitType({ data, updateData }: { data: any, updateData: a
                     Jenis Izin Kerja Terkunci (Mode Perpanjangan)
                   </p>
                   <p className="text-amber-800 leading-relaxed">
-                    Kategori izin kerja diwarisi langsung dari izin kerja acuan (<strong className="font-mono text-slate-900">{data.rootPermitNumber || data.parentPermitNumber || "SIKA Induk"}</strong>) dan tidak dapat diubah selama proses perpanjangan proyek.
+                    Kategori izin kerja diwarisi langsung dari izin kerja acuan (<strong className="font-mono text-slate-900">{data.rootPermitNumber || data.parentPermitNumber || "Izin Induk"}</strong>) dan tidak dapat diubah selama proses perpanjangan proyek.
                   </p>
                 </div>
               </div>

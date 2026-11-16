@@ -79,7 +79,7 @@ export function ProjectPhaseTimeline({
               </span>
             </h4>
             <p className="text-xs text-amber-800 mt-0.5">
-              SIKA Induk Awal: <strong className="font-mono text-slate-900">{rootPermitNumber || firstPhase?.permit_number}</strong>
+              Izin Induk Awal: <strong className="font-mono text-slate-900">{rootPermitNumber || firstPhase?.permit_number}</strong>
             </p>
           </div>
         </div>

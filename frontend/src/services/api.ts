@@ -323,7 +323,7 @@ export const api = {
     return apiRequest('/master/workflow-stages');
   },
 
-  // 9b. System & Policy Settings (SIKA Rules)
+  // 9b. System & Policy Settings (Permit Policy Rules)
   getSettings: async (group?: string) => {
     return apiRequest(`/master/settings${group ? '?group=' + group : ''}`);
   },

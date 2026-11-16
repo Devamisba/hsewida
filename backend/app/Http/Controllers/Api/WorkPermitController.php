@@ -901,6 +901,7 @@ class WorkPermitController extends Controller
     {
         $permit = WorkPermit::with(['location', 'vendor', 'permitTypes', 'ppes', 'workers'])
             ->where('qr_code_token', $token)
+            ->orWhere('permit_number', $token)
             ->first();
 
         if (!$permit) {
@@ -910,20 +911,40 @@ class WorkPermitController extends Controller
             ], 404);
         }
 
+        $contractorName = $permit->vendor ? $permit->vendor->company_name : ($permit->user ? $permit->user->company_name : $permit->pic_name);
+
         return response()->json([
             'success' => true,
             'message' => 'Izin kerja terverifikasi resmi oleh sistem HSE PT Widatra Bhakti.',
             'data' => [
                 'permit_number' => $permit->permit_number,
-                'job_title' => $permit->job_title,
-                'contractor' => $permit->vendor ? $permit->vendor->company_name : $permit->pic_name,
-                'location' => $permit->location ? $permit->location->name : '-',
-                'period' => $permit->start_date->format('d M Y') . ' s/d ' . $permit->end_date->format('d M Y'),
-                'working_hours' => $permit->daily_start_time . ' - ' . $permit->daily_end_time,
-                'risk_level' => $permit->risk_level,
+                'contractor' => $contractorName ?: '-',
+                'job_title' => $permit->job_title ?: '-',
+                'pic_name' => $permit->pic_name ?: '-',
+                'pic_phone' => $permit->pic_phone ?: '-',
+                'supervisor_name' => $permit->supervisor_name ?: '-',
+                'supervisor_phone' => $permit->supervisor_phone ?: '-',
+                'hse_officer_name' => $permit->hse_officer_name ?: '-',
+                'hse_officer_phone' => $permit->hse_officer_phone ?: '-',
+                'location' => $permit->location ? $permit->location->name : ($permit->lokasi ?: '-'),
+                'daily_start_time' => $permit->daily_start_time ?: '08:00',
+                'daily_end_time' => $permit->daily_end_time ?: '17:00',
+                'working_hours' => ($permit->daily_start_time ?: '08:00') . ' s.d. ' . ($permit->daily_end_time ?: '17:00') . ' WIB',
+                'start_date' => $permit->start_date ? $permit->start_date->format('Y-m-d') : null,
+                'end_date' => $permit->end_date ? $permit->end_date->format('Y-m-d') : null,
+                'period' => ($permit->start_date ? $permit->start_date->format('d/m/y') : '-') . ' s/d ' . ($permit->end_date ? $permit->end_date->format('d/m/y') : '-'),
+                'total_workers' => $permit->total_workers ?: ($permit->workers ? $permit->workers->count() : 1),
+                'risk_level' => $permit->risk_level ?: 'Sedang',
                 'status' => $permit->status,
-                'total_workers' => $permit->total_workers,
-                'workers' => $permit->workers->pluck('worker_name'),
+                'permit_types' => $permit->permitTypes ? $permit->permitTypes->pluck('name') : [],
+                'ppes' => $permit->ppes ? $permit->ppes->pluck('name') : [],
+                'workers' => $permit->workers ? $permit->workers->map(function ($w) {
+                    return [
+                        'name' => $w->worker_name,
+                        'position' => $w->position ?: '-',
+                        'id_card_photo' => $w->id_card_photo,
+                    ];
+                }) : [],
             ]
         ]);
     }
