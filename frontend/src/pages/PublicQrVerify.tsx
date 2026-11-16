@@ -116,53 +116,60 @@ export default function PublicQrVerifyPage() {
         {data && !loading && (
           <div className="p-4 sm:p-7 space-y-5">
             
-            {/* KOP RESMI: LOGO K3 | IZIN KERJA (Work Permit) | LOGO WIDATRA & OTSUKA */}
-            <div className="flex items-center justify-between pb-3 border-b-2 border-slate-900">
-              {/* Kiri: Logo K3 */}
-              <div className="flex flex-col items-center justify-center w-28 sm:w-36 text-center">
+            {/* KOP RESMI: 4 KOLOM DENGAN GARIS PEMBAGI VERTIKAL */}
+            <div className="flex items-center justify-between pb-3 border-b-2 border-slate-900 gap-1.5 sm:gap-2.5">
+              {/* 1. Logo K3 (Hanya Lambang) */}
+              <div className="flex items-center justify-center w-16 sm:w-20 shrink-0">
                 <img 
-                  src="/k3-logo.png" 
+                  src="/k3-logo-symbol.png" 
                   alt="Logo K3" 
-                  className="w-12 h-12 sm:w-14 sm:h-14 object-contain mb-1"
+                  className="w-10 h-10 sm:w-12 sm:h-12 object-contain"
                   onError={(e) => {
                     (e.target as HTMLElement).style.display = 'none';
                   }}
                 />
-                <span className="text-[7px] sm:text-[8px] font-black uppercase text-slate-800 leading-tight tracking-tight">
-                  UTAMAKAN KESELAMATAN<br />DAN KESEHATAN KERJA
-                </span>
               </div>
 
-              {/* Tengah: Judul IZIN KERJA (Work Permit) */}
-              <div className="flex-1 text-center px-2">
-                <h1 className="text-xl sm:text-2xl font-black uppercase tracking-tight text-slate-950 leading-none">
+              {/* Garis Pembagi 1 */}
+              <div className="h-8 sm:h-9 w-[1px] bg-slate-300 shrink-0"></div>
+
+              {/* 2. Judul Dokumen (IZIN KERJA Work Permit) */}
+              <div className="flex-1 text-center px-1">
+                <h1 className="text-lg sm:text-2xl font-black uppercase tracking-tight text-slate-950 leading-none">
                   IZIN KERJA
                 </h1>
-                <p className="text-xs sm:text-sm italic font-serif text-slate-700 mt-1 font-medium">
+                <p className="text-[11px] sm:text-xs italic font-serif text-slate-700 mt-1 font-medium">
                   Work Permit
                 </p>
               </div>
 
-              {/* Kanan: Logo Widatra (dengan teks PT Widatra Bhakti) & Logo Otsuka */}
-              <div className="flex items-center justify-end gap-2.5 sm:gap-3 w-40 sm:w-48">
-                <div className="flex flex-col items-center text-center">
-                  <img 
-                    src="/logo-widatra-symbol.png" 
-                    alt="Logo PT Widatra Bhakti" 
-                    className="h-7 sm:h-8 w-auto object-contain"
-                    onError={(e) => {
-                      (e.target as HTMLElement).style.display = 'none';
-                    }}
-                  />
-                  <span className="text-[7px] sm:text-[8px] font-bold text-blue-950 uppercase tracking-tight mt-0.5 whitespace-nowrap">
-                    PT Widatra Bhakti
-                  </span>
-                </div>
-                <div className="h-8 w-[1px] bg-slate-300 mx-0.5"></div>
+              {/* Garis Pembagi 2 */}
+              <div className="h-8 sm:h-9 w-[1px] bg-slate-300 shrink-0"></div>
+
+              {/* 3. Logo Widatra + PT Widatra Bhakti */}
+              <div className="flex flex-col items-center justify-center text-center w-24 sm:w-28 shrink-0">
+                <img 
+                  src="/logo-widatra-symbol.png" 
+                  alt="Logo PT Widatra Bhakti" 
+                  className="h-7 sm:h-8 w-auto object-contain"
+                  onError={(e) => {
+                    (e.target as HTMLElement).style.display = 'none';
+                  }}
+                />
+                <span className="text-[7px] sm:text-[8px] font-bold text-blue-950 uppercase tracking-tight mt-0.5 whitespace-nowrap">
+                  PT Widatra Bhakti
+                </span>
+              </div>
+
+              {/* Garis Pembagi 3 */}
+              <div className="h-8 sm:h-9 w-[1px] bg-slate-300 shrink-0"></div>
+
+              {/* 4. Logo Otsuka */}
+              <div className="flex items-center justify-center w-20 sm:w-24 shrink-0">
                 <img 
                   src="/logo-otsuka.png" 
                   alt="Logo Otsuka" 
-                  className="h-8 sm:h-9 w-auto object-contain"
+                  className="h-7 sm:h-8 w-auto object-contain"
                   onError={(e) => {
                     (e.target as HTMLElement).style.display = 'none';
                   }}
@@ -180,10 +187,10 @@ export default function PublicQrVerifyPage() {
               <span>{isValid ? 'IZIN KERJA RESMI & TERVERIFIKASI SISTEM' : `STATUS IZIN: ${data.status?.toUpperCase()}`}</span>
             </div>
 
-            {/* TABEL DATA PEKERJAAN (SESUAI GAMBAR LAMPIRAN) */}
+            {/* TABEL DATA KONTRAKTOR */}
             <div className="border border-slate-900 rounded-sm text-xs overflow-hidden shadow-xs">
               <div className="bg-slate-200 px-3 py-2 font-bold uppercase tracking-wider text-slate-950 border-b border-slate-900 text-xs">
-                DATA PEKERJAAN
+                DATA KONTRAKTOR
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse text-xs">

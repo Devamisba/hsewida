@@ -268,25 +268,25 @@ export function PrintPermitModal({ permit, onClose }: PrintPermitModalProps) {
               {/* BINGKAI HITAM DOKUMEN (PERSIS SEPERTI IKWB2.pdf) */}
               <div className="border-2 border-slate-900 p-4 sm:p-5 flex-1 flex flex-col justify-between space-y-3.5">
                 
-                {/* KOP HEADER: LOGO K3 (Kiri) | IZIN KERJA Work Permit (Tengah) | LOGO WIDATRA & OTSUKA (Kanan) */}
-                <div className="flex items-center justify-between pb-3 border-b-2 border-slate-900">
-                  {/* Kiri: Logo K3 */}
-                  <div className="flex flex-col items-center justify-center w-36 text-center">
+                {/* KOP HEADER: 4 KOLOM DENGAN GARIS PEMBAGI VERTIKAL */}
+                <div className="flex items-center justify-between pb-3 border-b-2 border-slate-900 gap-2 sm:gap-3">
+                  {/* 1. Logo K3 (Hanya Lambang) */}
+                  <div className="flex items-center justify-center w-20 sm:w-24 shrink-0">
                     <img 
-                      src="/k3-logo.png" 
+                      src="/k3-logo-symbol.png" 
                       alt="Logo K3" 
-                      className="w-14 h-14 object-contain mb-1"
+                      className="w-12 h-12 sm:w-14 sm:h-14 object-contain"
                       onError={(e) => {
                         (e.target as HTMLElement).style.display = 'none';
                       }}
                     />
-                    <span className="text-[8px] font-black uppercase text-slate-800 leading-tight tracking-tight">
-                      UTAMAKAN KESELAMATAN<br />DAN KESEHATAN KERJA
-                    </span>
                   </div>
 
-                  {/* Tengah: Judul IZIN KERJA (Work Permit) */}
-                  <div className="flex-1 text-center px-4">
+                  {/* Garis Pembagi 1 */}
+                  <div className="h-10 w-[1px] bg-slate-300 shrink-0"></div>
+
+                  {/* 2. Judul Dokumen (IZIN KERJA Work Permit) */}
+                  <div className="flex-1 text-center px-2">
                     <h1 className="text-2xl sm:text-3xl font-black uppercase tracking-tight text-slate-950 leading-none">
                       IZIN KERJA
                     </h1>
@@ -295,22 +295,29 @@ export function PrintPermitModal({ permit, onClose }: PrintPermitModalProps) {
                     </p>
                   </div>
 
-                  {/* Kanan: Logo Widatra (dengan teks PT Widatra Bhakti) & Logo Otsuka Resmi */}
-                  <div className="flex items-center justify-end gap-3 w-52">
-                    <div className="flex flex-col items-center text-center">
-                      <img 
-                        src="/logo-widatra-symbol.png" 
-                        alt="Logo PT Widatra Bhakti" 
-                        className="h-8 sm:h-9 w-auto object-contain"
-                        onError={(e) => {
-                          (e.target as HTMLElement).style.display = 'none';
-                        }}
-                      />
-                      <span className="text-[8px] font-bold text-blue-950 uppercase tracking-tight mt-0.5 whitespace-nowrap">
-                        PT Widatra Bhakti
-                      </span>
-                    </div>
-                    <div className="h-9 w-[1px] bg-slate-300 mx-0.5"></div>
+                  {/* Garis Pembagi 2 */}
+                  <div className="h-10 w-[1px] bg-slate-300 shrink-0"></div>
+
+                  {/* 3. Logo Widatra + PT Widatra Bhakti */}
+                  <div className="flex flex-col items-center justify-center text-center w-28 sm:w-32 shrink-0">
+                    <img 
+                      src="/logo-widatra-symbol.png" 
+                      alt="Logo PT Widatra Bhakti" 
+                      className="h-8 sm:h-9 w-auto object-contain"
+                      onError={(e) => {
+                        (e.target as HTMLElement).style.display = 'none';
+                      }}
+                    />
+                    <span className="text-[8px] font-bold text-blue-950 uppercase tracking-tight mt-0.5 whitespace-nowrap">
+                      PT Widatra Bhakti
+                    </span>
+                  </div>
+
+                  {/* Garis Pembagi 3 */}
+                  <div className="h-10 w-[1px] bg-slate-300 shrink-0"></div>
+
+                  {/* 4. Logo Otsuka */}
+                  <div className="flex items-center justify-center w-24 sm:w-28 shrink-0">
                     <img 
                       src="/logo-otsuka.png" 
                       alt="Logo Otsuka" 
@@ -322,10 +329,10 @@ export function PrintPermitModal({ permit, onClose }: PrintPermitModalProps) {
                   </div>
                 </div>
 
-              {/* 1. TABEL DATA PEKERJAAN */}
+              {/* 1. TABEL DATA KONTRAKTOR */}
               <div className="border border-slate-900 text-xs overflow-hidden">
                 <div className="bg-slate-200 px-3 py-1.5 font-bold uppercase tracking-wider text-slate-900 border-b border-slate-900 text-[11px]">
-                  DATA PEKERJAAN
+                  DATA KONTRAKTOR
                 </div>
                 <table className="w-full text-left border-collapse text-xs">
                   <tbody>
