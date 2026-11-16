@@ -268,16 +268,19 @@ export function PrintPermitModal({ permit, onClose }: PrintPermitModalProps) {
               {/* BINGKAI HITAM DOKUMEN (PERSIS SEPERTI IKWB2.pdf) */}
               <div className="border-2 border-slate-900 p-4 sm:p-5 flex-1 flex flex-col justify-between space-y-3.5 relative overflow-hidden">
                 
-                {/* WATERMARK BACKGROUND LOGO WIDATRA (PERSIS SEPERTI DOKUMEN RESMI IKWB2.pdf) */}
+                {/* WATERMARK BACKGROUND LOGO WIDATRA (VEKTOR RESMI ANTI-PECAH PERSIS SEPERTI DOKUMEN ASLI) */}
                 <div 
                   className="absolute top-[48%] left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none z-0 select-none flex items-center justify-center w-[520px] max-w-[82%]"
                   aria-hidden="true"
                 >
                   <img 
-                    src="/widatra-watermark.png" 
+                    src="/widatra-watermark.svg" 
                     alt="" 
                     className="w-full h-auto object-contain opacity-[0.15]"
                     style={{ opacity: 0.15 }}
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src = '/widatra-watermark.png';
+                    }}
                   />
                 </div>
                 

@@ -116,16 +116,19 @@ export default function PublicQrVerifyPage() {
         {data && !loading && (
           <div className="p-4 sm:p-7 space-y-5 relative overflow-hidden">
             
-            {/* WATERMARK BACKGROUND LOGO WIDATRA (PERSIS SEPERTI DOKUMEN RESMI IKWB2.pdf) */}
+            {/* WATERMARK BACKGROUND LOGO WIDATRA (VEKTOR RESMI ANTI-PECAH PERSIS SEPERTI DOKUMEN ASLI) */}
             <div 
               className="absolute top-[42%] left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none z-0 select-none flex items-center justify-center w-[450px] max-w-[85%]"
               aria-hidden="true"
             >
               <img 
-                src="/widatra-watermark.png" 
+                src="/widatra-watermark.svg" 
                 alt="" 
                 className="w-full h-auto object-contain opacity-[0.14]"
                 style={{ opacity: 0.14 }}
+                onError={(e) => {
+                  (e.target as HTMLImageElement).src = '/widatra-watermark.png';
+                }}
               />
             </div>
             
