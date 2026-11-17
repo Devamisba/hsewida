@@ -366,10 +366,10 @@ export default function ReviewRequestsPage() {
           </div>
 
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-            {/* Header Panel Antrean */}
+            {/* Header Panel */}
             <div className="flex items-center gap-2 px-5 py-3.5 border-b border-gray-200 bg-gray-50/50">
               <Clock className="text-primary" size={18} />
-              <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider">Antrean Review Izin Kerja</h3>
+              <h3 className="text-sm font-bold text-gray-900">Perlu Persetujuan Anda</h3>
               <span className="px-2 py-0.5 rounded-full text-xs font-mono font-bold bg-primary text-white">
                 {filteredRequests.length}
               </span>
