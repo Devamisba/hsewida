@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Header } from "@/components/Header";
-import { CheckCircle, XCircle, Clock, Eye, CheckSquare, Search, RotateCcw, ShieldCheck, Briefcase, AlertTriangle, Users, FileCheck, X, Shield, Printer, Lock, CalendarPlus } from "lucide-react";
+import { CheckCircle, XCircle, Clock, Eye, CheckSquare, Search, RotateCcw, Briefcase, AlertTriangle, Users, FileCheck, X, Shield, Printer, Lock, CalendarPlus, History as HistoryIcon } from "lucide-react";
 import { cn, calculateInclusiveDays, formatPermitStatus, formatDateDDMMYY } from "@/lib/utils";
 import { api } from "@/services/api";
 import { auth } from "@/lib/auth";
@@ -98,14 +99,9 @@ function mapApiToReview(item: any) {
   };
 }
 
-const canPrintPermit = (status: string) => {
-  return status === "Disetujui" || status === "Selesai";
-};
-
 export default function ReviewRequestsPage() {
+  const navigate = useNavigate();
   const [requests, setRequests] = useState<any[]>([]);
-  const [approvedRequests, setApprovedRequests] = useState<any[]>([]);
-  const [reviewTab, setReviewTab] = useState<"pending" | "approved_by_me">("pending");
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
   const [selectedRequest, setSelectedRequest] = useState<any>(null);
@@ -146,37 +142,19 @@ export default function ReviewRequestsPage() {
       if (matchRole) return matchRole;
     }
 
-    // 3. Fallback jika sedang di tab 'approved_by_me'
-    if (reviewTab === "approved_by_me") {
-      const approvalsList = permit.approvals.filter((a: any) => a.action === "Approve");
-      if (approvalsList.length > 0) return approvalsList[approvalsList.length - 1];
-    }
-
     return null;
   };
 
   const fetchQueue = async (silent = false) => {
     if (!silent) setLoading(true);
     try {
-      const [resPending, resApproved] = await Promise.all([
-        api.getReviewQueue('pending'),
-        api.getReviewQueue('approved_by_me')
-      ]);
-
+      const resPending = await api.getReviewQueue('pending');
       if (resPending.success && resPending.data) {
         const mappedPending = resPending.data.map(mapApiToReview);
         mappedPending.sort((a: any, b: any) => (b.rawId || 0) - (a.rawId || 0));
         setRequests(mappedPending);
       } else {
         setRequests([]);
-      }
-
-      if (resApproved.success && resApproved.data) {
-        const mappedApproved = resApproved.data.map(mapApiToReview);
-        mappedApproved.sort((a: any, b: any) => (b.rawId || 0) - (a.rawId || 0));
-        setApprovedRequests(mappedApproved);
-      } else {
-        setApprovedRequests([]);
       }
     } catch (err: any) {
       console.warn("Could not fetch review queue from API:", err.message);
@@ -210,7 +188,6 @@ export default function ReviewRequestsPage() {
         const freshApproval = getMyApproval(updated);
         setDisclaimerChecked(!!freshApproval);
         setRequests(prev => prev.map(item => (item.rawId || item.id) === targetId ? updated : item));
-        setApprovedRequests(prev => prev.map(item => (item.rawId || item.id) === targetId ? updated : item));
       }
     } catch (err) {
       console.warn("Could not fetch fresh permit detail:", err);
@@ -233,7 +210,6 @@ export default function ReviewRequestsPage() {
             setDisclaimerChecked(true);
           }
           setRequests(prev => prev.map(item => (item.rawId || item.id) === targetId ? updated : item));
-          setApprovedRequests(prev => prev.map(item => (item.rawId || item.id) === targetId ? updated : item));
         }
       } catch (err) {
         console.warn("Background detail polling error:", err);
@@ -271,8 +247,7 @@ export default function ReviewRequestsPage() {
     return false;
   });
 
-  const activeRawList = reviewTab === "pending" ? filteredRequests : approvedRequests;
-  const activeList = activeRawList.filter(req => {
+  const activeList = filteredRequests.filter(req => {
     if (!searchQuery.trim()) return true;
     const term = searchQuery.toLowerCase();
     return (
@@ -393,46 +368,22 @@ export default function ReviewRequestsPage() {
           </div>
 
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-            {/* Tab Navigation: Perlu Persetujuan vs Riwayat Approval Saya */}
-            <div className="flex border-b border-gray-200 bg-gray-50/50">
-              <button
-                type="button"
-                onClick={() => setReviewTab("pending")}
-                className={cn(
-                  "flex items-center gap-2 px-5 py-3.5 text-xs sm:text-sm font-bold border-b-2 transition-all cursor-pointer",
-                  reviewTab === "pending"
-                    ? "border-primary text-primary bg-white shadow-2xs"
-                    : "border-transparent text-gray-500 hover:text-gray-800 hover:bg-gray-100/60"
-                )}
-              >
-                <Clock size={16} />
-                <span>Perlu Persetujuan Anda</span>
-                <span className={cn(
-                  "px-2 py-0.5 rounded-full text-xs font-mono font-bold",
-                  reviewTab === "pending" ? "bg-primary text-white" : "bg-gray-200 text-gray-700"
-                )}>
+            {/* Header Panel Antrean */}
+            <div className="flex items-center justify-between px-5 py-3.5 border-b border-gray-200 bg-gray-50/50">
+              <div className="flex items-center gap-2">
+                <Clock className="text-primary" size={18} />
+                <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider">Antrean Review Izin Kerja</h3>
+                <span className="px-2 py-0.5 rounded-full text-xs font-mono font-bold bg-primary text-white">
                   {filteredRequests.length}
                 </span>
-              </button>
-
+              </div>
               <button
                 type="button"
-                onClick={() => setReviewTab("approved_by_me")}
-                className={cn(
-                  "flex items-center gap-2 px-5 py-3.5 text-xs sm:text-sm font-bold border-b-2 transition-all cursor-pointer",
-                  reviewTab === "approved_by_me"
-                    ? "border-primary text-primary bg-white shadow-2xs"
-                    : "border-transparent text-gray-500 hover:text-gray-800 hover:bg-gray-100/60"
-                )}
+                onClick={() => navigate("/history")}
+                className="inline-flex items-center gap-1.5 text-xs font-semibold text-primary hover:underline cursor-pointer"
               >
-                <ShieldCheck size={16} />
-                <span>Riwayat Approval Saya</span>
-                <span className={cn(
-                  "px-2 py-0.5 rounded-full text-xs font-mono font-bold",
-                  reviewTab === "approved_by_me" ? "bg-primary text-white" : "bg-gray-200 text-gray-700"
-                )}>
-                  {approvedRequests.length}
-                </span>
+                <span>Buka Menu Riwayat</span>
+                <span>&rarr;</span>
               </button>
             </div>
 
@@ -498,53 +449,32 @@ export default function ReviewRequestsPage() {
                           </span>
                         </td>
                         <td className="px-5 py-4 text-right whitespace-nowrap">
-                          {reviewTab === "pending" ? (
-                            <div className="flex items-center justify-end">
-                              <button 
-                                onClick={() => handleOpenDetail(req)}
-                                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-primary hover:opacity-90 text-white transition cursor-pointer shadow-2xs"
-                              >
-                                <Eye size={13} />
-                                <span>Review</span>
-                              </button>
-                            </div>
-                          ) : (
-                            <div className="flex items-center justify-end gap-2">
-                              <button 
-                                onClick={() => handleOpenDetail(req)}
-                                className="p-2 text-gray-400 hover:text-primary hover:bg-primary-container/50 rounded-lg transition-colors cursor-pointer" 
-                                title="Lihat Detail"
-                              >
-                                <Eye size={18} />
-                              </button>
-                              {canPrintPermit(req.status) ? (
-                                <button 
-                                  onClick={() => setPrintPermit(req)}
-                                  className="p-2 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 rounded-lg transition-colors cursor-pointer" 
-                                  title="Cetak & Unduh Surat Izin Kerja Resmi"
-                                >
-                                  <Printer size={18} />
-                                </button>
-                              ) : (
-                                <button 
-                                  disabled
-                                  className="p-2 text-gray-300 bg-gray-50/80 rounded-lg cursor-not-allowed opacity-60" 
-                                  title={`Cetak Belum Tersedia: Menunggu persetujuan (Status: ${formatPermitStatus(req.status)})`}
-                                >
-                                  <Printer size={18} className="text-gray-400" />
-                                </button>
-                              )}
-                            </div>
-                          )}
+                          <button 
+                            onClick={() => handleOpenDetail(req)}
+                            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-bold bg-primary hover:opacity-90 text-white transition cursor-pointer shadow-2xs active:scale-98"
+                          >
+                            <Eye size={14} />
+                            <span>Review</span>
+                          </button>
                         </td>
                       </tr>
                     ))
                   ) : (
                     <tr>
-                      <td colSpan={5} className="px-6 py-12 text-center text-gray-500">
-                        <CheckSquare size={40} className="mx-auto mb-3 opacity-20" />
-                        <p className="text-base font-medium">{reviewTab === "pending" ? "Semua Bersih!" : "Belum Ada Riwayat"}</p>
-                        <p className="text-sm">{reviewTab === "pending" ? "Tidak ada izin kerja yang perlu di-review saat ini." : "Izin kerja yang telah Anda setujui akan tercatat di sini dan dapat dipantau alurnya."}</p>
+                      <td colSpan={5} className="px-6 py-16 text-center text-gray-500">
+                        <CheckSquare size={44} className="mx-auto mb-3 text-emerald-500/40" />
+                        <p className="text-base font-bold text-gray-800">Semua Bersih! Tidak Ada Antrean Review</p>
+                        <p className="text-sm text-gray-500 mt-1 max-w-md mx-auto">
+                          Tidak ada izin kerja yang membutuhkan persetujuan Anda saat ini. Seluruh riwayat dan arsip izin kerja dapat dipantau langsung di menu Riwayat.
+                        </p>
+                        <button
+                          type="button"
+                          onClick={() => navigate("/history")}
+                          className="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold text-primary bg-primary-container/40 hover:bg-primary-container/70 border border-primary/20 transition cursor-pointer"
+                        >
+                          <HistoryIcon size={14} />
+                          <span>Buka Menu Riwayat</span>
+                        </button>
                       </td>
                     </tr>
                   )}
@@ -594,51 +524,29 @@ export default function ReviewRequestsPage() {
                     </div>
 
                     <div className="flex items-center gap-2 pt-1">
-                      {reviewTab === "pending" ? (
-                        <button 
-                          type="button"
-                          onClick={() => handleOpenDetail(req)}
-                          className="flex-1 inline-flex items-center justify-center gap-2 py-2.5 px-4 rounded-lg text-xs font-bold bg-primary text-on-primary hover:opacity-90 transition-all shadow-xs cursor-pointer active:scale-98"
-                        >
-                          <Eye size={15} /> Buka & Review
-                        </button>
-                      ) : (
-                        <div className="flex items-center justify-between w-full">
-                          <button 
-                            type="button"
-                            onClick={() => handleOpenDetail(req)}
-                            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 transition-colors cursor-pointer"
-                          >
-                            <Eye size={15} /> Lihat Detail
-                          </button>
-                          {canPrintPermit(req.status) ? (
-                            <button
-                              type="button"
-                              onClick={() => setPrintPermit(req)}
-                              title="Cetak Dokumen Permit"
-                              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 transition-colors cursor-pointer"
-                            >
-                              <Printer size={15} /> Cetak Permit
-                            </button>
-                          ) : (
-                            <button
-                              disabled
-                              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold text-gray-400 bg-gray-50 cursor-not-allowed opacity-60"
-                              title={`Cetak Belum Tersedia: Menunggu persetujuan (Status: ${formatPermitStatus(req.status)})`}
-                            >
-                              <Printer size={15} /> Cetak Permit
-                            </button>
-                          )}
-                        </div>
-                      )}
+                      <button 
+                        type="button"
+                        onClick={() => handleOpenDetail(req)}
+                        className="flex-1 inline-flex items-center justify-center gap-2 py-2.5 px-4 rounded-lg text-xs font-bold bg-primary text-on-primary hover:opacity-90 transition-all shadow-xs cursor-pointer active:scale-98"
+                      >
+                        <Eye size={15} /> Buka & Review
+                      </button>
                     </div>
                   </div>
                 ))
               ) : (
                 <div className="p-8 text-center text-gray-500">
-                  <CheckSquare size={36} className="mx-auto mb-2 opacity-20" />
-                  <p className="text-sm font-medium text-gray-800">{reviewTab === "pending" ? "Semua Bersih!" : "Belum Ada Riwayat"}</p>
-                  <p className="text-xs text-gray-500 mt-0.5">{reviewTab === "pending" ? "Tidak ada izin kerja yang perlu di-review saat ini." : "Izin kerja yang telah Anda setujui akan tercatat di sini."}</p>
+                  <CheckSquare size={36} className="mx-auto mb-2 text-emerald-500/40" />
+                  <p className="text-sm font-bold text-gray-800">Semua Bersih!</p>
+                  <p className="text-xs text-gray-500 mt-0.5">Tidak ada izin kerja yang perlu di-review saat ini.</p>
+                  <button
+                    type="button"
+                    onClick={() => navigate("/history")}
+                    className="mt-3 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-primary bg-primary-container/40 border border-primary/20 cursor-pointer"
+                  >
+                    <HistoryIcon size={13} />
+                    <span>Buka Menu Riwayat</span>
+                  </button>
                 </div>
               )}
             </div>
