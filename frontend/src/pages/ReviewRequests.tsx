@@ -251,21 +251,9 @@ export default function ReviewRequestsPage() {
       case "Menunggu GA Div Head": 
         return "bg-warning-container text-on-warning-container";
       case "Disetujui": return "bg-success-container text-on-success-container";
-      case "Selesai": return "bg-blue-100 text-blue-800 border border-blue-200";
       case "Ditolak": return "bg-error-container text-on-error-container";
-      default: return "bg-gray-100 text-gray-600";
-    }
-  };
-
-  const getStatusIcon = (status: string, size = 12) => {
-    switch (status) {
-      case "Disetujui":
-      case "Selesai":
-        return <CheckCircle size={size} />;
-      case "Ditolak":
-        return <XCircle size={size} />;
-      default:
-        return <Clock size={size} />;
+      case "Selesai": return "bg-blue-100 text-blue-800";
+      default: return "bg-gray-100 text-gray-700";
     }
   };
 
@@ -501,8 +489,8 @@ export default function ReviewRequestsPage() {
                           )}
                         </td>
                         <td className="px-4 py-3.5 text-center whitespace-nowrap">
-                          <span className={cn("inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold", getStatusBadge(req.status))}>
-                            {getStatusIcon(req.status, 12)} {formatPermitStatus(req.status)}
+                          <span className={cn("px-2.5 py-1 rounded-full text-xs font-bold tracking-wide uppercase inline-block", getStatusBadge(req.status))}>
+                            {formatPermitStatus(req.status)}
                           </span>
                         </td>
                         <td className="px-5 py-3.5 text-right whitespace-nowrap">
@@ -563,8 +551,8 @@ export default function ReviewRequestsPage() {
                           </span>
                         )}
                       </div>
-                      <span className={cn("inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold shrink-0", getStatusBadge(req.status))}>
-                        {getStatusIcon(req.status, 11)} {formatPermitStatus(req.status)}
+                      <span className={cn("px-2 py-1 rounded-full text-[10px] font-bold tracking-wide uppercase shrink-0", getStatusBadge(req.status))}>
+                        {formatPermitStatus(req.status)}
                       </span>
                     </div>
 
@@ -637,8 +625,8 @@ export default function ReviewRequestsPage() {
                     <FileCheck className="text-primary" size={24} />
                     {selectedRequest.id}
                   </h3>
-                  <span className={cn("inline-flex items-center gap-1 self-start sm:self-auto px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider", getStatusBadge(selectedRequest.status))}>
-                    {getStatusIcon(selectedRequest.status, 11)} {formatPermitStatus(selectedRequest.status)}
+                  <span className={cn("inline-flex self-start sm:self-auto px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider", getStatusBadge(selectedRequest.status))}>
+                    {formatPermitStatus(selectedRequest.status)}
                   </span>
                 </div>
                 <p className="text-sm font-medium text-gray-500 mt-1">{selectedRequest.jenisPekerjaan} - {selectedRequest.kontraktor}</p>
