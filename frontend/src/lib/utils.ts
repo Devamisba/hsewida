@@ -49,3 +49,33 @@ export function formatDateDDMMYY(dateStr?: string | null): string {
     return dateStr || "-";
   }
 }
+
+/**
+ * Safely parse a date string from API/DB without unwanted UTC offset additions.
+ * If a string represents local time (WIB) but has ISO 'Z' or microseconds,
+ * this function parses the literal year, month, day, hours, and minutes as intended.
+ */
+export function parseLocalDate(dateStr?: string | null): Date | null {
+  if (!dateStr) return null;
+  try {
+    const normalized = String(dateStr).trim().replace(/Z$/i, "").replace("T", " ").split(".")[0];
+    const [datePart, timePart] = normalized.split(" ");
+    if (!datePart) return null;
+    const dateParts = datePart.split("-").map(Number);
+    if (dateParts.length !== 3 || dateParts.some(isNaN)) {
+      const fallback = new Date(dateStr);
+      return isNaN(fallback.getTime()) ? null : fallback;
+    }
+    const timeParts = timePart ? timePart.split(":").map(Number) : [0, 0, 0];
+    return new Date(
+      dateParts[0],
+      dateParts[1] - 1,
+      dateParts[2],
+      timeParts[0] || 0,
+      timeParts[1] || 0,
+      timeParts[2] || 0
+    );
+  } catch {
+    return null;
+  }
+}

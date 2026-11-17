@@ -21,7 +21,7 @@ class PermitApproval extends Model
     ];
 
     protected $casts = [
-        'action_date' => 'datetime',
+        'action_date' => 'datetime:Y-m-d H:i:s',
     ];
 
     public function workPermit()

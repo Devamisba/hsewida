@@ -23,6 +23,7 @@ import {
   Trash2
 } from "lucide-react";
 import { SafetyFacility, api } from "@/services/api";
+import { parseLocalDate } from "@/lib/utils";
 import { QRCodeSVG } from "./QRCodeSVG";
 import { getFacilityCoordinates } from "@/utils/facilityCoordinates";
 
@@ -192,7 +193,8 @@ export function FacilityDetailActionModal({
   const formatDate = (dateStr?: string | null) => {
     if (!dateStr) return "-";
     try {
-      const d = new Date(dateStr);
+      const d = parseLocalDate(dateStr);
+      if (!d) return dateStr;
       return d.toLocaleDateString("id-ID", {
         day: "numeric",
         month: "short",
@@ -206,7 +208,8 @@ export function FacilityDetailActionModal({
   const formatDateTime = (dateStr?: string | null) => {
     if (!dateStr) return "-";
     try {
-      const d = new Date(dateStr);
+      const d = parseLocalDate(dateStr);
+      if (!d) return dateStr;
       return d.toLocaleDateString("id-ID", {
         day: "numeric",
         month: "short",

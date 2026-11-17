@@ -23,6 +23,7 @@ import {
 import { api, SafetyFacility } from "@/services/api";
 import { auth } from "@/lib/auth";
 import { exportInspectionsToExcel } from "@/utils/exportInspectionExcel";
+import { parseLocalDate } from "@/lib/utils";
 import { cn } from "@/lib/utils";
 
 interface InspectionDataTableProps {
@@ -206,7 +207,8 @@ export function InspectionDataTable({
   const formatDateTime = (dateStr?: string) => {
     if (!dateStr) return "-";
     try {
-      const d = new Date(dateStr);
+      const d = parseLocalDate(dateStr);
+      if (!d) return dateStr;
       const hasTime = dateStr.includes(":") || (dateStr.includes("T") && dateStr.length > 10);
       if (!hasTime) {
         return d.toLocaleDateString("id-ID", {

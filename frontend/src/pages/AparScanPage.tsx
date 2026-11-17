@@ -16,7 +16,7 @@ import {
   Inbox,
   AlertTriangle
 } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, parseLocalDate } from "@/lib/utils";
 import { api, SafetyFacility } from "@/services/api";
 import { PLANT_CENTER, syncGeofenceFromSettingsMap } from "@/utils/facilityCoordinates";
 import { auth } from "@/lib/auth";
@@ -26,8 +26,8 @@ type ViewMode = "CHOICE" | "PENGECEKAN";
 const formatDateTime = (dateStr?: string | null) => {
   if (!dateStr) return "-";
   try {
-    const d = new Date(dateStr);
-    if (isNaN(d.getTime())) return dateStr;
+    const d = parseLocalDate(dateStr);
+    if (!d || isNaN(d.getTime())) return dateStr;
     return d.toLocaleDateString("id-ID", {
       day: "numeric",
       month: "short",

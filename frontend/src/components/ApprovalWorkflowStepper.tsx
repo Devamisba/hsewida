@@ -1,5 +1,5 @@
 import { CheckCircle2, Clock, Lock, XCircle, ShieldCheck } from "lucide-react";
-import { cn, formatPermitStatus } from "@/lib/utils";
+import { cn, formatPermitStatus, parseLocalDate } from "@/lib/utils";
 
 interface ApprovalRecord {
   id?: number;
@@ -102,7 +102,8 @@ export function ApprovalWorkflowStepper({
   const formatApprovalDate = (dateStr?: string) => {
     if (!dateStr) return "";
     try {
-      const d = new Date(dateStr);
+      const d = parseLocalDate(dateStr);
+      if (!d) return String(dateStr).slice(0, 16);
       return d.toLocaleDateString("id-ID", {
         day: "numeric",
         month: "short",
