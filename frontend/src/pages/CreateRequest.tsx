@@ -21,6 +21,16 @@ const createEmptyWorker = (idx: number) => ({
   photoName: "",
 });
 
+// Helper to create blank JSA row
+const createEmptyJsa = (idx: number = 1) => ({
+  id: Date.now() + Math.floor(Math.random() * 1000) + idx,
+  tahapan: "",
+  peralatan: "",
+  potensi: "",
+  pengendalian: "",
+  tanggapDarurat: "",
+});
+
 // Helper to expand or truncate worker rows while preserving existing data
 const syncWorkersWithCount = (existingWorkers: any[], targetCount: number): any[] => {
   const count = Math.max(1, Math.min(50, targetCount));
@@ -89,7 +99,7 @@ export default function CreateRequestPage() {
         pekerja: extendState.pekerja?.length ? extendState.pekerja : [createEmptyWorker(1)],
 
         // Step 4
-        jsa: extendState.jsa?.length ? extendState.jsa : [],
+        jsa: extendState.jsa?.length ? extendState.jsa : [createEmptyJsa(1)],
         disclaimerAccepted: false,
       };
     }
@@ -153,7 +163,7 @@ export default function CreateRequestPage() {
         pekerja: extendState.pekerja?.length ? extendState.pekerja : [createEmptyWorker(1)],
 
         // Step 4
-        jsa: extendState.jsa?.length ? extendState.jsa : [],
+        jsa: extendState.jsa?.length ? extendState.jsa : [createEmptyJsa(1)],
         disclaimerAccepted: false,
       };
     }
@@ -194,8 +204,8 @@ export default function CreateRequestPage() {
       // Step 3 (Initialized with 1 blank worker matching totalTenagaKerja = 1)
       pekerja: [createEmptyWorker(1)] as any[],
 
-      // Step 4
-      jsa: [] as any[],
+      // Step 4 (Initialized with 1 blank JSA step)
+      jsa: [createEmptyJsa(1)] as any[],
     };
   });
 
@@ -394,15 +404,37 @@ export default function CreateRequestPage() {
 
     // Validasi Step 4 (JSA)
     if (!formData.jsa || formData.jsa.length === 0) {
+      setCurrentStep(4);
       focusAndScrollToField("jsa-section", "Mohon isi data Job Safety Analysis (JSA) minimal 1 tahapan kerja.");
       setIsSubmitting(false);
       return;
     }
-    const emptyJsaIdx = formData.jsa.findIndex((j: any) => !j.tahapan?.trim() || !j.potensi?.trim() || !j.pengendalian?.trim() || !j.tanggapDarurat?.trim());
-    if (emptyJsaIdx !== -1) {
-      focusAndScrollToField(`jsa-tahapan-${emptyJsaIdx}`, `Mohon lengkapi seluruh kolom JSA pada baris ke-${emptyJsaIdx + 1}.`);
-      setIsSubmitting(false);
-      return;
+    for (let i = 0; i < formData.jsa.length; i++) {
+      const j = formData.jsa[i];
+      if (!j.tahapan?.trim()) {
+        setCurrentStep(4);
+        focusAndScrollToField(`jsa-tahapan-${i}`, `Mohon lengkapi Tahapan Pekerjaan JSA pada baris ke-${i + 1}.`);
+        setIsSubmitting(false);
+        return;
+      }
+      if (!j.potensi?.trim()) {
+        setCurrentStep(4);
+        focusAndScrollToField(`jsa-potensi-${i}`, `Mohon lengkapi Potensi Bahaya/Risiko JSA pada baris ke-${i + 1}.`);
+        setIsSubmitting(false);
+        return;
+      }
+      if (!j.pengendalian?.trim()) {
+        setCurrentStep(4);
+        focusAndScrollToField(`jsa-pengendalian-${i}`, `Mohon lengkapi Pengendalian Bahaya JSA pada baris ke-${i + 1}.`);
+        setIsSubmitting(false);
+        return;
+      }
+      if (!j.tanggapDarurat?.trim()) {
+        setCurrentStep(4);
+        focusAndScrollToField(`jsa-tanggapDarurat-${i}`, `Mohon lengkapi Tanggap Darurat JSA pada baris ke-${i + 1}.`);
+        setIsSubmitting(false);
+        return;
+      }
     }
 
     try {
