@@ -137,7 +137,7 @@ export function Step1DataKontraktor({ data, updateData }: { data: any, updateDat
         {/* 1. Detail Pekerjaan & Jadwal */}
         <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm space-y-5">
           <div className="border-b border-gray-100 pb-3">
-            <h4 className="text-sm font-bold text-gray-900">Informasi Umum & Jadwal Pekerjaan</h4>
+            <h4 className="text-base sm:text-lg font-bold text-gray-900">Informasi Umum & Jadwal Pekerjaan</h4>
             <p className="text-xs text-gray-500 mt-0.5">Informasi instansi vendor pelaksana dan waktu pelaksanaan kerja.</p>
           </div>
 
