@@ -416,7 +416,7 @@ export default function ReviewRequestsPage() {
                 className={cn(
                   "flex items-center gap-2 px-5 py-3.5 text-xs sm:text-sm font-bold border-b-2 transition-all cursor-pointer",
                   reviewTab === "approved_by_me"
-                    ? "border-emerald-600 text-emerald-700 bg-white shadow-2xs"
+                    ? "border-primary text-primary bg-white shadow-2xs"
                     : "border-transparent text-gray-500 hover:text-gray-800 hover:bg-gray-100/60"
                 )}
               >
@@ -424,7 +424,7 @@ export default function ReviewRequestsPage() {
                 <span>Riwayat Approval Saya</span>
                 <span className={cn(
                   "px-2 py-0.5 rounded-full text-xs font-mono font-bold",
-                  reviewTab === "approved_by_me" ? "bg-emerald-600 text-white" : "bg-gray-200 text-gray-700"
+                  reviewTab === "approved_by_me" ? "bg-primary text-white" : "bg-gray-200 text-gray-700"
                 )}>
                   {approvedRequests.length}
                 </span>
@@ -508,8 +508,8 @@ export default function ReviewRequestsPage() {
                               className={cn(
                                 "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer shadow-2xs",
                                 reviewTab === "pending"
-                                  ? "bg-slate-900 hover:bg-slate-800 text-white"
-                                  : "bg-emerald-50 text-emerald-800 border border-emerald-300 hover:bg-emerald-100"
+                                  ? "bg-primary hover:opacity-90 text-white font-bold"
+                                  : "bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 hover:border-blue-300"
                               )}
                             >
                               <Eye size={13} />
@@ -590,11 +590,11 @@ export default function ReviewRequestsPage() {
                         className={cn(
                           "flex-1 inline-flex items-center justify-center gap-2 py-2.5 px-4 rounded-lg text-xs font-bold transition-all shadow-xs cursor-pointer active:scale-98",
                           reviewTab === "pending"
-                            ? "bg-primary text-on-primary"
-                            : "bg-emerald-700 text-white hover:bg-emerald-800"
+                            ? "bg-primary text-on-primary hover:opacity-90"
+                            : "bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100"
                         )}
                       >
-                        <Eye size={15} /> {reviewTab === "pending" ? "Buka & Review" : "Lihat Progres Alur"}
+                        <Eye size={15} /> {reviewTab === "pending" ? "Buka & Review" : "Lihat Progres"}
                       </button>
                     </div>
                   </div>
