@@ -251,7 +251,7 @@ export default function ReviewRequestsPage() {
       case "Menunggu GA Div Head": 
         return "bg-warning-container text-on-warning-container";
       case "Disetujui": return "bg-success-container text-on-success-container";
-      case "Selesai": return "bg-emerald-100 text-emerald-800 border border-emerald-300";
+      case "Selesai": return "bg-blue-100 text-blue-800 border border-blue-200";
       case "Ditolak": return "bg-error-container text-on-error-container";
       default: return "bg-gray-100 text-gray-600";
     }
