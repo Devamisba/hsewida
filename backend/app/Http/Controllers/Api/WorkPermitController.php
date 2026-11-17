@@ -155,34 +155,58 @@ class WorkPermitController extends Controller
             'childPermits:id,parent_permit_id,permit_number,status,request_type,extension_phase'
         ]);
 
-        switch ($roleCode) {
-            case 'pic_vendor':
-                $query->whereIn('status', ['Menunggu PIC Widatra', 'Menunggu PIC Vendor']);
-                break;
-            case 'hse':
-            case 'pic_k3':
-                $query->where('status', 'Menunggu HSE');
-                break;
-            case 'ga_dept_head':
-                $query->whereIn('status', ['Menunggu Dept Head HRD&GA', 'Menunggu Head Dept HRD&GA', 'Menunggu GA Dept Head']);
-                break;
-            case 'ga_div_head':
-                $query->whereIn('status', ['Menunggu Head Division HRD&GA', 'Menunggu GA Div Head']);
-                break;
-            case 'admin':
-                $query->whereIn('status', [
-                    'Menunggu PIC Widatra',
-                    'Menunggu PIC Vendor', 
-                    'Menunggu HSE', 
-                    'Menunggu Dept Head HRD&GA',
-                    'Menunggu Head Dept HRD&GA', 
-                    'Menunggu Head Division HRD&GA',
-                    'Menunggu GA Dept Head', 
-                    'Menunggu GA Div Head'
-                ]);
-                break;
-            default:
-                return response()->json(['success' => true, 'data' => []]);
+        $tab = $request->query('tab', 'pending');
+
+        if ($tab === 'approved_by_me') {
+            if ($roleCode === 'admin') {
+                $query->whereHas('approvals', function ($aq) {
+                    $aq->where('action', 'Approve');
+                });
+            } else {
+                $query->whereHas('approvals', function ($aq) use ($roleCode, $user) {
+                    $aq->where('action', 'Approve')
+                       ->where(function ($sub) use ($roleCode, $user) {
+                           $sub->where('user_id', $user->id)
+                               ->orWhere('role_at_action', $roleCode);
+                           if ($roleCode === 'pic_vendor') {
+                               $sub->orWhere('role_at_action', 'pic_widatra');
+                           }
+                           if (in_array($roleCode, ['hse', 'pic_k3'])) {
+                               $sub->orWhereIn('role_at_action', ['hse', 'pic_k3']);
+                           }
+                       });
+                });
+            }
+        } else {
+            switch ($roleCode) {
+                case 'pic_vendor':
+                    $query->whereIn('status', ['Menunggu PIC Widatra', 'Menunggu PIC Vendor']);
+                    break;
+                case 'hse':
+                case 'pic_k3':
+                    $query->where('status', 'Menunggu HSE');
+                    break;
+                case 'ga_dept_head':
+                    $query->whereIn('status', ['Menunggu Dept Head HRD&GA', 'Menunggu Head Dept HRD&GA', 'Menunggu GA Dept Head']);
+                    break;
+                case 'ga_div_head':
+                    $query->whereIn('status', ['Menunggu Head Division HRD&GA', 'Menunggu GA Div Head']);
+                    break;
+                case 'admin':
+                    $query->whereIn('status', [
+                        'Menunggu PIC Widatra',
+                        'Menunggu PIC Vendor', 
+                        'Menunggu HSE', 
+                        'Menunggu Dept Head HRD&GA',
+                        'Menunggu Head Dept HRD&GA', 
+                        'Menunggu Head Division HRD&GA',
+                        'Menunggu GA Dept Head', 
+                        'Menunggu GA Div Head'
+                    ]);
+                    break;
+                default:
+                    return response()->json(['success' => true, 'data' => []]);
+            }
         }
 
         $permits = $query->orderBy('created_at', 'desc')
@@ -230,32 +254,51 @@ class WorkPermitController extends Controller
                 }
             })->whereIn('status', ['Disetujui', 'Selesai', 'Ditolak']);
         } elseif ($roleCode === 'pic_vendor') {
-            // PIC Widatra: Menangani Tahap 1. Melihat seluruh izin yang disetujui, selesai, atau ditolak
-            // (termasuk izin yang ditolak di level PIC Widatra agar dapat dipantau di arsip PIC Widatra)
-            $query->whereIn('status', ['Disetujui', 'Selesai', 'Ditolak']);
+            // PIC Widatra: Menangani Tahap 1. Melihat izin final (Disetujui, Selesai, Ditolak)
+            // PLUS izin yang sedang berjalan (Menunggu HSE, Menunggu Dept Head, dll) yang sudah disetujui PIC Widatra
+            $query->where(function ($q) use ($user, $roleCode) {
+                $q->whereIn('status', ['Disetujui', 'Selesai', 'Ditolak'])
+                  ->orWhere(function ($inProgQ) use ($user, $roleCode) {
+                      $inProgQ->where('status', 'like', 'Menunggu%')
+                              ->whereHas('approvals', function ($aq) use ($user, $roleCode) {
+                                  $aq->where('action', 'Approve')
+                                     ->where(function ($sub) use ($user, $roleCode) {
+                                         $sub->where('user_id', $user->id)
+                                             ->orWhere('role_at_action', $roleCode)
+                                             ->orWhere('role_at_action', 'pic_vendor')
+                                             ->orWhere('role_at_action', 'pic_widatra');
+                                     });
+                              });
+                  });
+            });
         } elseif (in_array($roleCode, ['hse', 'pic_k3'])) {
             // Tim K3 / HSE Officer: Menangani Tahap 2.
-            // Izin yang ditolak oleh PIC Widatra pada Tahap 1 BERHENTI di PIC Widatra dan TIDAK PERNAH sampai ke Tim K3.
-            // Tim K3 hanya melihat izin yang disetujui/selesai, ATAU izin ditolak yang pernah lolos masuk ke tahap HSE ke atas.
-            $query->where(function ($q) {
+            $query->where(function ($q) use ($user) {
                 $q->whereIn('status', ['Disetujui', 'Selesai'])
                   ->orWhere(function ($rejectQ) {
                       $rejectQ->where('status', 'Ditolak')
                           ->whereHas('approvals', function ($aq) {
                               $aq->where(function ($subAq) {
-                                  // Pernah disetujui oleh PIC Widatra sehingga lolos ke tahap HSE
                                   $subAq->where('role_at_action', 'pic_vendor')->where('action', 'Approve');
                               })->orWhere(function ($subAq) {
-                                  // ATAU ditolak langsung oleh Tim K3 / HSE
                                   $subAq->whereIn('role_at_action', ['hse', 'pic_k3']);
                               });
                           });
+                  })
+                  ->orWhere(function ($inProgQ) use ($user) {
+                      $inProgQ->where('status', 'like', 'Menunggu%')
+                              ->whereHas('approvals', function ($aq) use ($user) {
+                                  $aq->where('action', 'Approve')
+                                     ->where(function ($sub) use ($user) {
+                                         $sub->where('user_id', $user->id)
+                                             ->orWhereIn('role_at_action', ['hse', 'pic_k3']);
+                                     });
+                              });
                   });
             });
         } elseif ($roleCode === 'ga_dept_head') {
             // Head Dept HRD&GA: Menangani Tahap 3.
-            // Hanya melihat izin yang lolos sampai ke tahap GA Dept Head
-            $query->where(function ($q) {
+            $query->where(function ($q) use ($user) {
                 $q->whereIn('status', ['Disetujui', 'Selesai'])
                   ->orWhere(function ($rejectQ) {
                       $rejectQ->where('status', 'Ditolak')
@@ -266,12 +309,21 @@ class WorkPermitController extends Controller
                                   $subAq->where('role_at_action', 'ga_dept_head');
                               });
                           });
+                  })
+                  ->orWhere(function ($inProgQ) use ($user) {
+                      $inProgQ->where('status', 'like', 'Menunggu%')
+                              ->whereHas('approvals', function ($aq) use ($user) {
+                                  $aq->where('action', 'Approve')
+                                     ->where(function ($sub) use ($user) {
+                                         $sub->where('user_id', $user->id)
+                                             ->orWhere('role_at_action', 'ga_dept_head');
+                                     });
+                              });
                   });
             });
         } elseif ($roleCode === 'ga_div_head') {
             // Head Division HRD&GA: Menangani Tahap 4.
-            // Hanya melihat izin yang lolos sampai ke tahap GA Div Head
-            $query->where(function ($q) {
+            $query->where(function ($q) use ($user) {
                 $q->whereIn('status', ['Disetujui', 'Selesai'])
                   ->orWhere(function ($rejectQ) {
                       $rejectQ->where('status', 'Ditolak')
@@ -280,18 +332,32 @@ class WorkPermitController extends Controller
                           })->orWhere(function ($subAq) {
                               $subAq->where('role_at_action', 'ga_div_head');
                           });
+                  })
+                  ->orWhere(function ($inProgQ) use ($user) {
+                      $inProgQ->where('status', 'like', 'Menunggu%')
+                              ->whereHas('approvals', function ($aq) use ($user) {
+                                  $aq->where('action', 'Approve')
+                                     ->where(function ($sub) use ($user) {
+                                         $sub->where('user_id', $user->id)
+                                             ->orWhere('role_at_action', 'ga_div_head');
+                                     });
+                              });
                   });
             });
         } else {
-            // Untuk Admin / Master Oversight:
-            // Menampilkan seluruh izin kerja final/arsip (Disetujui, Selesai, Ditolak)
-            $query->whereIn('status', ['Disetujui', 'Selesai', 'Ditolak']);
+            // Admin: Menampilkan seluruh izin final maupun yang sedang berjalan dalam alur approval
+            $query->where(function ($q) {
+                $q->whereIn('status', ['Disetujui', 'Selesai', 'Ditolak'])
+                  ->orWhere('status', 'like', 'Menunggu%');
+            });
         }
 
         // Filter tab tambahan jika disediakan
         if ($request->has('status') && !empty($request->status) && $request->status !== 'ALL') {
             if ($request->status === 'Habis Kontrak' || $request->status === 'Expired') {
                 $query->where('status', 'Disetujui')->where('end_date', '<', $today);
+            } elseif ($request->status === 'Menunggu' || $request->status === 'Sedang Berjalan') {
+                $query->where('status', 'like', 'Menunggu%');
             } else {
                 $query->where('status', $request->status);
             }

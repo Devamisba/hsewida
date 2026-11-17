@@ -94,8 +94,9 @@ export const api = {
     return apiRequest('/permits/my-requests');
   },
 
-  getReviewQueue: async () => {
-    return apiRequest('/permits/review-queue');
+  getReviewQueue: async (tab?: string) => {
+    const query = tab ? `?tab=${encodeURIComponent(tab)}` : '';
+    return apiRequest(`/permits/review-queue${query}`);
   },
 
   getHistory: async () => {

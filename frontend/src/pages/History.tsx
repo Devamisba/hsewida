@@ -24,7 +24,8 @@ import {
   ShieldCheck,
   FileSpreadsheet,
   Search,
-  RotateCcw
+  RotateCcw,
+  Clock
 } from "lucide-react";
 import { cn, calculateInclusiveDays, formatPermitStatus, formatDateDDMMYY } from "@/lib/utils";
 import { api } from "@/services/api";
@@ -226,8 +227,8 @@ export default function HistoryPage() {
   };
 
   useEffect(() => {
-    const fetchHistory = async () => {
-      setLoading(true);
+    const fetchHistory = async (silent = false) => {
+      if (!silent) setLoading(true);
       try {
         const res = await api.getPermitHistory();
         if (res.success && res.data) {
@@ -241,11 +242,55 @@ export default function HistoryPage() {
         console.warn("Could not fetch history:", err.message);
         setRequests([]);
       } finally {
-        setLoading(false);
+        if (!silent) setLoading(false);
       }
     };
     fetchHistory();
+
+    // Background auto-polling setiap 12 detik agar tabel selalu real-time
+    const pollInterval = setInterval(() => {
+      fetchHistory(true);
+    }, 12000);
+
+    return () => clearInterval(pollInterval);
   }, []);
+
+  const handleOpenDetail = async (req: any) => {
+    setSelectedRequest(req);
+    try {
+      const targetId = req.rawId || req.id;
+      const res = await api.getPermitDetail(targetId);
+      if (res.success && res.data) {
+        const updated = mapApiToHistory(res.data);
+        setSelectedRequest(updated);
+        setRequests(prev => prev.map(item => (item.rawId || item.id) === targetId ? updated : item));
+      }
+    } catch (err) {
+      console.warn("Could not fetch fresh permit detail:", err);
+    }
+  };
+
+  // Polling real-time alur persetujuan saat modal detail terbuka
+  useEffect(() => {
+    if (!selectedRequest) return;
+    const targetId = selectedRequest.rawId || selectedRequest.id;
+    if (!targetId) return;
+
+    const interval = setInterval(async () => {
+      try {
+        const res = await api.getPermitDetail(targetId);
+        if (res.success && res.data) {
+          const updated = mapApiToHistory(res.data);
+          setSelectedRequest(updated);
+          setRequests(prev => prev.map(item => (item.rawId || item.id) === targetId ? updated : item));
+        }
+      } catch (err) {
+        console.warn("Background detail polling error:", err);
+      }
+    }, 6000);
+
+    return () => clearInterval(interval);
+  }, [selectedRequest?.rawId, selectedRequest?.id]);
 
   // Hitung izin yang akan berakhir dalam 3 hari (hanya untuk role internal; untuk vendor di menu Izin Saya)
   const today = new Date();
@@ -260,7 +305,7 @@ export default function HistoryPage() {
 
   // Filter States sesuai Foto Referensi
   const [timePeriod, setTimePeriod] = useState<"all" | "today" | "this_week" | "this_month" | "last_month" | "custom">("all");
-  const [statusFilter, setStatusFilter] = useState<"ALL" | "Selesai" | "Disetujui" | "Ditolak">("ALL");
+  const [statusFilter, setStatusFilter] = useState<"ALL" | "Selesai" | "Disetujui" | "Ditolak" | "Menunggu">("ALL");
   const [customStartDate, setCustomStartDate] = useState<string>("");
   const [customEndDate, setCustomEndDate] = useState<string>("");
   const [searchQuery, setSearchQuery] = useState<string>("");
@@ -293,7 +338,11 @@ export default function HistoryPage() {
 
       // 2. Filter Status Izin Kerja
       if (statusFilter !== "ALL") {
-        if (req.status !== statusFilter) return false;
+        if (statusFilter === "Menunggu") {
+          if (!req.status || !req.status.startsWith("Menunggu")) return false;
+        } else if (req.status !== statusFilter) {
+          return false;
+        }
       }
 
       // 3. Filter Periode Waktu
@@ -657,6 +706,27 @@ export default function HistoryPage() {
                   </span>
                 </button>
 
+                {/* Sedang Berjalan / Proses Approval */}
+                <button
+                  type="button"
+                  onClick={() => setStatusFilter("Menunggu")}
+                  className={cn(
+                    "inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer",
+                    statusFilter === "Menunggu"
+                      ? "bg-[#162f65] text-white shadow-xs"
+                      : "bg-white text-slate-700 border border-slate-200 hover:bg-slate-50"
+                  )}
+                >
+                  <Clock size={13} className={statusFilter === "Menunggu" ? "text-white" : "text-amber-600"} />
+                  <span>Sedang Berjalan</span>
+                  <span className={cn(
+                    "px-1.5 py-0.2 rounded-full text-[10px] font-mono font-bold",
+                    statusFilter === "Menunggu" ? "bg-white/20 text-white" : "bg-slate-100 text-slate-600"
+                  )}>
+                    {statusCounts.pending}
+                  </span>
+                </button>
+
                 {/* Disetujui */}
                   <button
                     type="button"
@@ -854,7 +924,7 @@ export default function HistoryPage() {
                               </button>
                             )}
                             <button 
-                              onClick={() => setSelectedRequest(req)}
+                              onClick={() => handleOpenDetail(req)}
                               className="p-2 text-gray-400 hover:text-primary hover:bg-primary-container/50 rounded-lg transition-colors cursor-pointer" 
                               title="Lihat Detail"
                             >
@@ -993,7 +1063,7 @@ export default function HistoryPage() {
                         </button>
                       )}
                       <button 
-                        onClick={() => setSelectedRequest(req)}
+                        onClick={() => handleOpenDetail(req)}
                         className="p-2 text-gray-500 hover:text-primary bg-gray-50 hover:bg-primary-container/30 rounded-lg transition-colors cursor-pointer"
                       >
                         <Eye size={16} />

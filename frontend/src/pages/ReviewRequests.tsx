@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Header } from "@/components/Header";
-import { CheckCircle, XCircle, Clock, Eye, CheckSquare, Search, Briefcase, AlertTriangle, Users, FileCheck, X, Shield, Printer, Lock, CalendarPlus } from "lucide-react";
+import { CheckCircle, XCircle, Clock, Eye, CheckSquare, Search, RotateCcw, ShieldCheck, Briefcase, AlertTriangle, Users, FileCheck, X, Shield, Printer, Lock, CalendarPlus } from "lucide-react";
 import { cn, calculateInclusiveDays, formatPermitStatus, formatDateDDMMYY } from "@/lib/utils";
 import { api } from "@/services/api";
 import { auth } from "@/lib/auth";
@@ -100,6 +100,9 @@ function mapApiToReview(item: any) {
 
 export default function ReviewRequestsPage() {
   const [requests, setRequests] = useState<any[]>([]);
+  const [approvedRequests, setApprovedRequests] = useState<any[]>([]);
+  const [reviewTab, setReviewTab] = useState<"pending" | "approved_by_me">("pending");
+  const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
   const [selectedRequest, setSelectedRequest] = useState<any>(null);
   const [rejectModal, setRejectModal] = useState<{isOpen: boolean, id: string | null, rawId?: any}>({isOpen: false, id: null});
@@ -111,28 +114,86 @@ export default function ReviewRequestsPage() {
   const [disclaimerChecked, setDisclaimerChecked] = useState(false);
   const role = auth.getRole(); // 'pic_vendor', 'hse', 'ga_dept_head', 'ga_div_head', 'admin'
 
-  const fetchQueue = async () => {
-    setLoading(true);
+  const fetchQueue = async (silent = false) => {
+    if (!silent) setLoading(true);
     try {
-      const res = await api.getReviewQueue();
-      if (res.success && res.data) {
-        const mapped = res.data.map(mapApiToReview);
-        mapped.sort((a: any, b: any) => (b.rawId || 0) - (a.rawId || 0));
-        setRequests(mapped);
+      const [resPending, resApproved] = await Promise.all([
+        api.getReviewQueue('pending'),
+        api.getReviewQueue('approved_by_me')
+      ]);
+
+      if (resPending.success && resPending.data) {
+        const mappedPending = resPending.data.map(mapApiToReview);
+        mappedPending.sort((a: any, b: any) => (b.rawId || 0) - (a.rawId || 0));
+        setRequests(mappedPending);
       } else {
         setRequests([]);
       }
+
+      if (resApproved.success && resApproved.data) {
+        const mappedApproved = resApproved.data.map(mapApiToReview);
+        mappedApproved.sort((a: any, b: any) => (b.rawId || 0) - (a.rawId || 0));
+        setApprovedRequests(mappedApproved);
+      } else {
+        setApprovedRequests([]);
+      }
     } catch (err: any) {
       console.warn("Could not fetch review queue from API:", err.message);
-      setRequests([]);
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
 
   useEffect(() => {
     fetchQueue();
+
+    // Background auto-polling setiap 12 detik agar antrean review selalu real-time
+    const interval = setInterval(() => {
+      fetchQueue(true);
+    }, 12000);
+
+    return () => clearInterval(interval);
   }, [role]);
+
+  // Live open & auto-polling detail modal
+  const handleOpenDetail = async (req: any) => {
+    setSelectedRequest(req);
+    setDisclaimerChecked(false);
+    try {
+      const targetId = req.rawId || req.id;
+      const res = await api.getPermitDetail(targetId);
+      if (res.success && res.data) {
+        const updated = mapApiToReview(res.data);
+        setSelectedRequest(updated);
+        setRequests(prev => prev.map(item => (item.rawId || item.id) === targetId ? updated : item));
+        setApprovedRequests(prev => prev.map(item => (item.rawId || item.id) === targetId ? updated : item));
+      }
+    } catch (err) {
+      console.warn("Could not fetch fresh permit detail:", err);
+    }
+  };
+
+  useEffect(() => {
+    if (!selectedRequest) return;
+    const targetId = selectedRequest.rawId || selectedRequest.id;
+    if (!targetId) return;
+
+    const interval = setInterval(async () => {
+      try {
+        const res = await api.getPermitDetail(targetId);
+        if (res.success && res.data) {
+          const updated = mapApiToReview(res.data);
+          setSelectedRequest(updated);
+          setRequests(prev => prev.map(item => (item.rawId || item.id) === targetId ? updated : item));
+          setApprovedRequests(prev => prev.map(item => (item.rawId || item.id) === targetId ? updated : item));
+        }
+      } catch (err) {
+        console.warn("Background detail polling error:", err);
+      }
+    }, 6000);
+
+    return () => clearInterval(interval);
+  }, [selectedRequest?.rawId, selectedRequest?.id]);
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -158,7 +219,19 @@ export default function ReviewRequestsPage() {
     if (role === 'hse' || role === 'pic_k3') return req.status === "Menunggu HSE";
     if (role === 'ga_dept_head') return req.status === "Menunggu Dept Head HRD&GA" || req.status === "Menunggu Head Dept HRD&GA" || req.status === "Menunggu GA Dept Head";
     if (role === 'ga_div_head') return req.status === "Menunggu Head Division HRD&GA" || req.status === "Menunggu GA Div Head";
-    return false; // Strict isolation: only recognized roles get their active queue!
+    return false;
+  });
+
+  const activeRawList = reviewTab === "pending" ? filteredRequests : approvedRequests;
+  const activeList = activeRawList.filter(req => {
+    if (!searchQuery.trim()) return true;
+    const term = searchQuery.toLowerCase();
+    return (
+      req.id.toLowerCase().includes(term) ||
+      (req.kontraktor && req.kontraktor.toLowerCase().includes(term)) ||
+      (req.jenisPekerjaan && req.jenisPekerjaan.toLowerCase().includes(term)) ||
+      (req.lokasi && req.lokasi.toLowerCase().includes(term))
+    );
   });
 
   const getRequiredRoleForStatus = (st: string) => {
@@ -248,19 +321,72 @@ export default function ReviewRequestsPage() {
               </p>
             </div>
             
-            <div className="flex gap-2">
+            <div className="flex items-center gap-2">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
                 <input 
                   type="text" 
-                  placeholder="Cari ID Permit..." 
-                  className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-primary focus:border-primary"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Cari No. Izin, Vendor, Pekerjaan..." 
+                  className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-primary focus:border-primary w-full sm:w-64"
                 />
               </div>
+              <button
+                type="button"
+                onClick={() => fetchQueue(false)}
+                title="Segarkan Antrean"
+                className="p-2 border border-gray-300 rounded-lg text-gray-600 hover:text-primary hover:bg-gray-50 transition-colors cursor-pointer"
+              >
+                <RotateCcw size={18} className={loading ? "animate-spin" : ""} />
+              </button>
             </div>
           </div>
 
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+            {/* Tab Navigation: Perlu Persetujuan vs Riwayat Approval Saya */}
+            <div className="flex border-b border-gray-200 bg-gray-50/50">
+              <button
+                type="button"
+                onClick={() => setReviewTab("pending")}
+                className={cn(
+                  "flex items-center gap-2 px-5 py-3.5 text-xs sm:text-sm font-bold border-b-2 transition-all cursor-pointer",
+                  reviewTab === "pending"
+                    ? "border-primary text-primary bg-white shadow-2xs"
+                    : "border-transparent text-gray-500 hover:text-gray-800 hover:bg-gray-100/60"
+                )}
+              >
+                <Clock size={16} />
+                <span>Perlu Persetujuan Anda</span>
+                <span className={cn(
+                  "px-2 py-0.5 rounded-full text-xs font-mono font-bold",
+                  reviewTab === "pending" ? "bg-primary text-white" : "bg-gray-200 text-gray-700"
+                )}>
+                  {filteredRequests.length}
+                </span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setReviewTab("approved_by_me")}
+                className={cn(
+                  "flex items-center gap-2 px-5 py-3.5 text-xs sm:text-sm font-bold border-b-2 transition-all cursor-pointer",
+                  reviewTab === "approved_by_me"
+                    ? "border-emerald-600 text-emerald-700 bg-white shadow-2xs"
+                    : "border-transparent text-gray-500 hover:text-gray-800 hover:bg-gray-100/60"
+                )}
+              >
+                <ShieldCheck size={16} />
+                <span>Riwayat Approval Saya</span>
+                <span className={cn(
+                  "px-2 py-0.5 rounded-full text-xs font-mono font-bold",
+                  reviewTab === "approved_by_me" ? "bg-emerald-600 text-white" : "bg-gray-200 text-gray-700"
+                )}>
+                  {approvedRequests.length}
+                </span>
+              </button>
+            </div>
+
             {/* Desktop Table (>= lg) */}
             <div className="hidden lg:block overflow-x-auto">
               <table className="w-full text-left text-xs border-collapse">
@@ -280,8 +406,8 @@ export default function ReviewRequestsPage() {
                         <K3Loader size="md" text="Memuat antrean review izin kerja..." />
                       </td>
                     </tr>
-                  ) : filteredRequests.length > 0 ? (
-                    filteredRequests.map((req) => (
+                  ) : activeList.length > 0 ? (
+                    activeList.map((req) => (
                       <tr key={req.id} className="hover:bg-gray-50/70 transition-colors group">
                         <td className="px-5 py-3.5">
                           <div className="font-bold text-gray-900 font-mono text-xs">{req.id}</div>
@@ -334,11 +460,16 @@ export default function ReviewRequestsPage() {
                               </button>
                             )}
                             <button 
-                              onClick={() => { setSelectedRequest(req); setDisclaimerChecked(false); }}
-                              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-semibold transition cursor-pointer shadow-2xs"
+                              onClick={() => handleOpenDetail(req)}
+                              className={cn(
+                                "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer shadow-2xs",
+                                reviewTab === "pending"
+                                  ? "bg-slate-900 hover:bg-slate-800 text-white"
+                                  : "bg-emerald-50 text-emerald-800 border border-emerald-300 hover:bg-emerald-100"
+                              )}
                             >
                               <Eye size={13} />
-                              <span>Review</span>
+                              <span>{reviewTab === "pending" ? "Review" : "Lihat Progres"}</span>
                             </button>
                           </div>
                         </td>
@@ -348,8 +479,8 @@ export default function ReviewRequestsPage() {
                     <tr>
                       <td colSpan={5} className="px-6 py-12 text-center text-gray-500">
                         <CheckSquare size={40} className="mx-auto mb-3 opacity-20" />
-                        <p className="text-base font-medium">Semua Bersih!</p>
-                        <p className="text-sm">Tidak ada izin kerja yang perlu di-review saat ini.</p>
+                        <p className="text-base font-medium">{reviewTab === "pending" ? "Semua Bersih!" : "Belum Ada Riwayat"}</p>
+                        <p className="text-sm">{reviewTab === "pending" ? "Tidak ada izin kerja yang perlu di-review saat ini." : "Izin kerja yang telah Anda setujui akan tercatat di sini dan dapat dipantau alurnya."}</p>
                       </td>
                     </tr>
                   )}
@@ -363,8 +494,8 @@ export default function ReviewRequestsPage() {
                 <div className="p-12 text-center flex justify-center">
                   <K3Loader size="md" text="Memuat antrean review izin kerja..." />
                 </div>
-              ) : filteredRequests.length > 0 ? (
-                filteredRequests.map((req) => (
+              ) : activeList.length > 0 ? (
+                activeList.map((req) => (
                   <div key={req.id} className="p-4 hover:bg-gray-50/70 transition-colors space-y-3">
                     <div className="flex items-start justify-between gap-2">
                       <div>
@@ -411,10 +542,15 @@ export default function ReviewRequestsPage() {
                       )}
                       <button 
                         type="button"
-                        onClick={() => { setSelectedRequest(req); setDisclaimerChecked(false); }}
-                        className="flex-1 inline-flex items-center justify-center gap-2 py-2.5 px-4 bg-primary text-on-primary rounded-lg text-xs font-bold transition-all shadow-xs cursor-pointer active:scale-98"
+                        onClick={() => handleOpenDetail(req)}
+                        className={cn(
+                          "flex-1 inline-flex items-center justify-center gap-2 py-2.5 px-4 rounded-lg text-xs font-bold transition-all shadow-xs cursor-pointer active:scale-98",
+                          reviewTab === "pending"
+                            ? "bg-primary text-on-primary"
+                            : "bg-emerald-700 text-white hover:bg-emerald-800"
+                        )}
                       >
-                        <Eye size={15} /> Buka & Review
+                        <Eye size={15} /> {reviewTab === "pending" ? "Buka & Review" : "Lihat Progres Alur"}
                       </button>
                     </div>
                   </div>
@@ -422,8 +558,8 @@ export default function ReviewRequestsPage() {
               ) : (
                 <div className="p-8 text-center text-gray-500">
                   <CheckSquare size={36} className="mx-auto mb-2 opacity-20" />
-                  <p className="text-sm font-medium text-gray-800">Semua Bersih!</p>
-                  <p className="text-xs text-gray-500 mt-0.5">Tidak ada izin kerja yang perlu di-review saat ini.</p>
+                  <p className="text-sm font-medium text-gray-800">{reviewTab === "pending" ? "Semua Bersih!" : "Belum Ada Riwayat"}</p>
+                  <p className="text-xs text-gray-500 mt-0.5">{reviewTab === "pending" ? "Tidak ada izin kerja yang perlu di-review saat ini." : "Izin kerja yang telah Anda setujui akan tercatat di sini."}</p>
                 </div>
               )}
             </div>
