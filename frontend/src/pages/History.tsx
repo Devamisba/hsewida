@@ -904,10 +904,10 @@ export default function HistoryPage() {
                                 ) : (
                                   <button 
                                     disabled
-                                    className="p-2 text-gray-300 bg-gray-50 rounded-lg cursor-not-allowed opacity-60" 
-                                    title={`Cetak Terkunci: Menunggu persetujuan akhir dari HRD&GA Division Head (Status: ${formatPermitStatus(req.status)})`}
+                                    className="p-2 text-gray-300 bg-gray-50/80 rounded-lg cursor-not-allowed opacity-60" 
+                                    title={`Cetak Belum Tersedia: Menunggu persetujuan (Status: ${formatPermitStatus(req.status)})`}
                                   >
-                                    <Lock size={18} className="text-gray-400" />
+                                    <Printer size={18} className="text-gray-400" />
                                   </button>
                                 )}
                               </div>
@@ -992,10 +992,10 @@ export default function HistoryPage() {
                                 ) : (
                                   <button 
                                     disabled
-                                    className="p-2 text-gray-300 bg-gray-50 rounded-lg cursor-not-allowed opacity-60" 
-                                    title={`Cetak Terkunci: Menunggu persetujuan akhir dari HRD&GA Division Head (Status: ${formatPermitStatus(req.status)})`}
+                                    className="p-2 text-gray-300 bg-gray-50/80 rounded-lg cursor-not-allowed opacity-60" 
+                                    title={`Cetak Belum Tersedia: Menunggu persetujuan (Status: ${formatPermitStatus(req.status)})`}
                                   >
-                                    <Lock size={18} className="text-gray-400" />
+                                    <Printer size={18} className="text-gray-400" />
                                   </button>
                                 )}
                               </div>
@@ -1139,10 +1139,10 @@ export default function HistoryPage() {
                       ) : (
                         <button 
                           disabled
-                          className="p-2 text-gray-300 bg-gray-50 rounded-lg cursor-not-allowed opacity-60"
-                          title="Cetak Terkunci: Menunggu persetujuan akhir HRD&GA Division Head"
+                          className="p-2 text-gray-300 bg-gray-50/80 rounded-lg cursor-not-allowed opacity-60"
+                          title={`Cetak Belum Tersedia: Menunggu persetujuan (Status: ${formatPermitStatus(req.status)})`}
                         >
-                          <Lock size={16} className="text-gray-400" />
+                          <Printer size={16} className="text-gray-400" />
                         </button>
                       )}
                     </div>
