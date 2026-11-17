@@ -14,7 +14,6 @@ import {
   CheckCircle2, 
   Lock, 
   CalendarPlus, 
-  ClipboardCheck,
   Calendar,
   History as HistoryIcon,
   CalendarRange,
@@ -32,7 +31,6 @@ import { api } from "@/services/api";
 import { auth } from "@/lib/auth";
 import { PrintPermitModal } from "@/components/PrintPermitModal";
 import { ApprovalWorkflowStepper } from "@/components/ApprovalWorkflowStepper";
-import { InspectionDataTable } from "@/components/InspectionDataTable";
 import { ProjectPhaseTimeline } from "@/components/ProjectPhaseTimeline";
 import { exportWorkPermitsToExcel } from "@/utils/exportPermitExcel";
 import { K3Loader } from "@/components/K3Loader";
@@ -180,10 +178,6 @@ export default function HistoryPage() {
   const [printModalPermit, setPrintModalPermit] = useState<any>(null);
   const [showExpiringOnly, setShowExpiringOnly] = useState(filterExpiringSoon);
   const [extensionWindowDays] = useState(3);
-
-  const [historyTab, setHistoryTab] = useState<"permits" | "inspections">(
-    (location.state as any)?.tab === "inspections" ? "inspections" : "permits"
-  );
 
   const handleResubmit = (req: any) => {
     navigate("/create-request", { 
@@ -450,53 +444,16 @@ export default function HistoryPage() {
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div>
               <h2 className="text-2xl font-bold text-gray-900">
-                {historyTab === "permits" ? "Riwayat Izin Kerja" : "Inspeksi K3 & APAR"}
+                Riwayat Izin Kerja
               </h2>
               <p className="text-sm text-gray-500 mt-1">
-                {historyTab === "permits" 
-                  ? "Arsip dan pencatatan seluruh riwayat izin kerja yang telah diajukan."
-                  : "Daftar seluruh riwayat inspeksi berkala APAR dan fasilitas keselamatan kerja."}
+                Arsip dan pencatatan seluruh riwayat izin kerja yang telah diajukan.
               </p>
             </div>
             <div className="flex items-center gap-3">
-              {loading && historyTab === "permits" && <span className="text-xs text-primary font-medium animate-pulse">Memuat riwayat...</span>}
-              {(userRole === "hse" || userRole === "pic_k3" || userRole === "admin" || userRole === "ga_dept_head" || userRole === "ga_div_head") && (
-                <div className="flex items-center gap-1.5 bg-slate-100 p-1 rounded-xl border border-slate-200">
-                  <button
-                    type="button"
-                    onClick={() => setHistoryTab("permits")}
-                    className={cn(
-                      "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer",
-                      historyTab === "permits"
-                        ? "bg-white text-slate-900 shadow-xs"
-                        : "text-slate-600 hover:text-slate-900"
-                    )}
-                  >
-                    <FileText size={14} />
-                    <span>Izin Kerja</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setHistoryTab("inspections")}
-                    className={cn(
-                      "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer",
-                      historyTab === "inspections"
-                        ? "bg-white text-slate-900 shadow-xs"
-                        : "text-slate-600 hover:text-slate-900"
-                    )}
-                  >
-                    <ClipboardCheck size={14} />
-                    <span>Inspeksi K3 & APAR</span>
-                  </button>
-                </div>
-              )}
+              {loading && <span className="text-xs text-primary font-medium animate-pulse">Memuat riwayat...</span>}
             </div>
           </div>
-
-          {historyTab === "inspections" ? (
-            <InspectionDataTable />
-          ) : (
-            <>
 
           {/* Banner filter segera berakhir */}
           {expiringItems.length > 0 && (
@@ -1225,8 +1182,6 @@ export default function HistoryPage() {
               </div>
             )}
           </div>
-            </>
-          )}
 
         </div>
       </main>
