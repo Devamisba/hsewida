@@ -137,7 +137,7 @@ export function Step1DataKontraktor({ data, updateData }: { data: any, updateDat
         {/* 1. Detail Pekerjaan & Jadwal */}
         <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm space-y-5">
           <div className="border-b border-gray-100 pb-3">
-            <h4 className="text-sm font-bold text-gray-800 uppercase tracking-wide">Informasi Umum & Jadwal Pekerjaan</h4>
+            <h4 className="text-sm font-bold text-gray-900">Informasi Umum & Jadwal Pekerjaan</h4>
             <p className="text-xs text-gray-500 mt-0.5">Informasi instansi vendor pelaksana dan waktu pelaksanaan kerja.</p>
           </div>
 
@@ -166,12 +166,9 @@ export function Step1DataKontraktor({ data, updateData }: { data: any, updateDat
             </div>
 
             <div className="space-y-1.5">
-              <div className="flex items-center justify-between">
-                <label className="block text-sm font-medium text-gray-700">
-                  Mulai Kerja {data.requestType === "Perpanjangan" ? "(Lanjutan)" : `(min. H-${minLeadDays})`} <span className="text-red-500">*</span>
-                </label>
-                <span className="text-[10px] text-blue-600 font-medium">Format: dd/mm/yy</span>
-              </div>
+              <label className="block text-sm font-medium text-gray-700">
+                Mulai Kerja {data.requestType === "Perpanjangan" ? "(Lanjutan)" : `(min. H-${minLeadDays})`} <span className="text-red-500">*</span>
+              </label>
               <DateInputDDMMYY 
                 id="mulaiKerja"
                 min={minStartDate}
@@ -181,12 +178,9 @@ export function Step1DataKontraktor({ data, updateData }: { data: any, updateDat
               />
             </div>
             <div className="space-y-1.5">
-              <div className="flex items-center justify-between">
-                <label className="block text-sm font-medium text-gray-700">
-                  Target Selesai Pekerjaan / Proyek <span className="text-red-500">*</span>
-                </label>
-                <span className="text-[10px] text-blue-600 font-medium">Format: dd/mm/yy</span>
-              </div>
+              <label className="block text-sm font-medium text-gray-700">
+                Target Selesai Pekerjaan / Proyek <span className="text-red-500">*</span>
+              </label>
               <DateInputDDMMYY 
                 id="selesaiKerja"
                 min={minEndDate}
