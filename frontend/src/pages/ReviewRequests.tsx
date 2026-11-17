@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Header } from "@/components/Header";
-import { CheckCircle, XCircle, Clock, Eye, CheckSquare, Search, RotateCcw, ShieldCheck, Briefcase, AlertTriangle, Users, FileCheck, X, Shield, Printer, Lock, CalendarPlus } from "lucide-react";
+import { CheckCircle, CheckCircle2, XCircle, Clock, Eye, CheckSquare, Search, RotateCcw, ShieldCheck, Briefcase, AlertTriangle, Users, FileCheck, X, Shield, Printer, Lock, CalendarPlus } from "lucide-react";
 import { cn, calculateInclusiveDays, formatPermitStatus, formatDateDDMMYY } from "@/lib/utils";
 import { api } from "@/services/api";
 import { auth } from "@/lib/auth";
@@ -8,6 +8,41 @@ import { PrintPermitModal } from "@/components/PrintPermitModal";
 import { ApprovalWorkflowStepper } from "@/components/ApprovalWorkflowStepper";
 import { ProjectPhaseTimeline } from "@/components/ProjectPhaseTimeline";
 import { K3Loader } from "@/components/K3Loader";
+
+function formatApprovalDate(dateStr?: string) {
+  if (!dateStr) return "";
+  try {
+    const d = new Date(dateStr);
+    return d.toLocaleDateString("id-ID", {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  } catch {
+    return String(dateStr).slice(0, 16);
+  }
+}
+
+function formatRoleName(rc?: string) {
+  switch (rc) {
+    case "pic_vendor":
+    case "pic_widatra":
+      return "PIC Internal PT Widatra Bhakti";
+    case "hse":
+    case "pic_k3":
+      return "HSE Officer / PIC K3";
+    case "ga_dept_head":
+      return "HRD&GA Dept Head";
+    case "ga_div_head":
+      return "HRD&GA Division Head";
+    case "admin":
+      return "Administrator K3";
+    default:
+      return rc || "Reviewer Terkait";
+  }
+}
 
 function mapApiToReview(item: any) {
   const parent = item.parent_permit || item.parentPermit || null;
@@ -113,6 +148,43 @@ export default function ReviewRequestsPage() {
   const [previewPhoto, setPreviewPhoto] = useState<string | null>(null);
   const [disclaimerChecked, setDisclaimerChecked] = useState(false);
   const role = auth.getRole(); // 'pic_vendor', 'hse', 'ga_dept_head', 'ga_div_head', 'admin'
+  const currentUser = auth.getUser();
+  const currentUserId = currentUser?.id;
+
+  // Cek apakah user saat ini (atau rolenya) sudah pernah menyetujui izin kerja ini
+  const getMyApproval = (permit: any) => {
+    if (!permit?.approvals || permit.approvals.length === 0) return null;
+
+    // 1. Cek exact match user_id
+    if (currentUserId) {
+      const matchUserId = permit.approvals.find(
+        (a: any) => a.action === "Approve" && Number(a.user_id) === Number(currentUserId)
+      );
+      if (matchUserId) return matchUserId;
+    }
+
+    // 2. Cek match wewenang role
+    if (role) {
+      const matchRole = permit.approvals.find((a: any) => {
+        if (a.action !== "Approve") return false;
+        if (a.role_at_action === role) return true;
+        if ((role === "pic_vendor" || role === "pic_widatra") && (a.role_at_action === "pic_vendor" || a.role_at_action === "pic_widatra")) return true;
+        if ((role === "hse" || role === "pic_k3") && (a.role_at_action === "hse" || a.role_at_action === "pic_k3")) return true;
+        if (role === "ga_dept_head" && a.role_at_action === "ga_dept_head") return true;
+        if (role === "ga_div_head" && a.role_at_action === "ga_div_head") return true;
+        return false;
+      });
+      if (matchRole) return matchRole;
+    }
+
+    // 3. Fallback jika sedang di tab 'approved_by_me'
+    if (reviewTab === "approved_by_me") {
+      const approvalsList = permit.approvals.filter((a: any) => a.action === "Approve");
+      if (approvalsList.length > 0) return approvalsList[approvalsList.length - 1];
+    }
+
+    return null;
+  };
 
   const fetchQueue = async (silent = false) => {
     if (!silent) setLoading(true);
@@ -158,13 +230,16 @@ export default function ReviewRequestsPage() {
   // Live open & auto-polling detail modal
   const handleOpenDetail = async (req: any) => {
     setSelectedRequest(req);
-    setDisclaimerChecked(false);
+    const existingApproval = getMyApproval(req);
+    setDisclaimerChecked(!!existingApproval);
     try {
       const targetId = req.rawId || req.id;
       const res = await api.getPermitDetail(targetId);
       if (res.success && res.data) {
         const updated = mapApiToReview(res.data);
         setSelectedRequest(updated);
+        const freshApproval = getMyApproval(updated);
+        setDisclaimerChecked(!!freshApproval);
         setRequests(prev => prev.map(item => (item.rawId || item.id) === targetId ? updated : item));
         setApprovedRequests(prev => prev.map(item => (item.rawId || item.id) === targetId ? updated : item));
       }
@@ -184,6 +259,10 @@ export default function ReviewRequestsPage() {
         if (res.success && res.data) {
           const updated = mapApiToReview(res.data);
           setSelectedRequest(updated);
+          const freshApproval = getMyApproval(updated);
+          if (freshApproval) {
+            setDisclaimerChecked(true);
+          }
           setRequests(prev => prev.map(item => (item.rawId || item.id) === targetId ? updated : item));
           setApprovedRequests(prev => prev.map(item => (item.rawId || item.id) === targetId ? updated : item));
         }
@@ -852,24 +931,161 @@ export default function ReviewRequestsPage() {
                   </div>
                 </section>
                 
-                {/* 5. Deklarasi */}
+                {/* 5. Deklarasi & Disclaimer Otorisasi */}
                 <section>
-                  <label className="bg-blue-50/80 p-4 sm:p-5 rounded-xl border-2 border-blue-200 hover:border-blue-300 flex items-start gap-3 cursor-pointer select-none transition-all">
-                    <input
-                      type="checkbox"
-                      id="reviewer-disclaimer-checkbox"
-                      checked={disclaimerChecked}
-                      onChange={(e) => setDisclaimerChecked(e.target.checked)}
-                      className="w-4 h-4 mt-1 text-primary border-blue-300 rounded focus:ring-primary cursor-pointer shrink-0"
-                    />
-                    <div className="text-xs text-slate-800 leading-relaxed">
-                      <strong className="block text-blue-900 mb-1 text-sm font-bold flex items-center gap-1.5">
-                        <FileCheck size={16} className="text-blue-700" />
-                        Pernyataan & Disclaimer Otorisasi Reviewer (Wajib Dicentang)
-                      </strong>
-                      Saya menyatakan telah memeriksa persyaratan K3 (HSE), kesiapan pekerja, dan kelengkapan dokumen izin kerja ini secara seksama. Dengan mencentang pernyataan ini, saya bertanggung jawab atas verifikasi dokumen ini dan mengotorisasi pekerjaan untuk dilanjutkan ke tahap berikutnya sesuai wewenang saya.
-                    </div>
-                  </label>
+                  {(() => {
+                    const reqInfo = getRequiredRoleForStatus(selectedRequest.status);
+                    const isFullyApproved = selectedRequest.status === 'Disetujui' || selectedRequest.status === 'Selesai';
+                    const isRejected = selectedRequest.status === 'Ditolak';
+                    const myApproval = getMyApproval(selectedRequest);
+                    const isAuthorizedNow = (role === 'admin' || (reqInfo && (reqInfo.role === role || (reqInfo.role === 'hse' && role === 'pic_k3')))) && !isFullyApproved && !isRejected;
+
+                    // Kasus 1: Reviewer ini sudah menyetujui izin ini (Sudah dicentang & disetujui sebelumnya)
+                    if (myApproval && (!isAuthorizedNow || role !== 'admin')) {
+                      return (
+                        <div className="bg-emerald-50/90 p-4 sm:p-5 rounded-xl border-2 border-emerald-300 shadow-2xs">
+                          <div className="flex items-start gap-3">
+                            <div className="w-5 h-5 rounded bg-emerald-600 flex items-center justify-center text-white shrink-0 mt-0.5 shadow-2xs">
+                              <CheckCircle2 size={16} className="text-white" />
+                            </div>
+                            <div className="text-xs text-slate-800 leading-relaxed flex-1">
+                              <div className="flex flex-wrap items-center justify-between gap-2 mb-1.5">
+                                <strong className="block text-emerald-950 text-sm font-bold flex items-center gap-1.5">
+                                  <ShieldCheck size={18} className="text-emerald-700" />
+                                  Pernyataan & Disclaimer Otorisasi Telah Disetujui
+                                </strong>
+                                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">
+                                  <CheckCircle2 size={12} className="text-emerald-700" /> Dicentang & Terverifikasi
+                                </span>
+                              </div>
+
+                              <p className="text-slate-700 mb-2.5 italic bg-white/80 p-3 rounded-lg border border-emerald-200">
+                                "Saya menyatakan telah memeriksa persyaratan K3 (HSE), kesiapan pekerja, dan kelengkapan dokumen izin kerja ini secara seksama. Dengan mencentang pernyataan ini, saya bertanggung jawab atas verifikasi dokumen ini dan mengotorisasi pekerjaan untuk dilanjutkan ke tahap berikutnya sesuai wewenang saya."
+                              </p>
+
+                              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-emerald-950 bg-emerald-100/60 rounded-lg px-3 py-1.5 border border-emerald-200 font-medium">
+                                <span>
+                                  <span className="text-emerald-700">Otorisator:</span>{" "}
+                                  <strong className="text-slate-900 font-bold">{myApproval.user?.name || currentUser?.name || "Reviewer"}</strong>
+                                </span>
+                                <span className="text-emerald-300 hidden sm:inline">•</span>
+                                <span>
+                                  <span className="text-emerald-700">Wewenang:</span>{" "}
+                                  <strong className="text-slate-900 font-bold">{formatRoleName(myApproval.role_at_action || role)}</strong>
+                                </span>
+                                {myApproval.action_date && (
+                                  <>
+                                    <span className="text-emerald-300 hidden sm:inline">•</span>
+                                    <span>
+                                      <span className="text-emerald-700">Waktu Otorisasi:</span>{" "}
+                                      <strong className="text-slate-900 font-bold">{formatApprovalDate(myApproval.action_date)} WIB</strong>
+                                    </span>
+                                  </>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    }
+
+                    // Kasus 2: Izin kerja telah disetujui penuh oleh seluruh pihak
+                    if (isFullyApproved) {
+                      const latestApproval = (selectedRequest.approvals || []).filter((a: any) => a.action === 'Approve').pop();
+                      return (
+                        <div className="bg-emerald-50/90 p-4 sm:p-5 rounded-xl border-2 border-emerald-300 shadow-2xs">
+                          <div className="flex items-start gap-3">
+                            <div className="w-5 h-5 rounded bg-emerald-600 flex items-center justify-center text-white shrink-0 mt-0.5 shadow-2xs">
+                              <CheckCircle2 size={16} className="text-white" />
+                            </div>
+                            <div className="text-xs text-slate-800 leading-relaxed flex-1">
+                              <div className="flex flex-wrap items-center justify-between gap-2 mb-1.5">
+                                <strong className="block text-emerald-950 text-sm font-bold flex items-center gap-1.5">
+                                  <ShieldCheck size={18} className="text-emerald-700" />
+                                  Seluruh Pernyataan & Disclaimer Otorisasi Telah Lengkap & Disetujui
+                                </strong>
+                                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">
+                                  <CheckCircle2 size={12} className="text-emerald-700" /> Otorisasi Selesai
+                                </span>
+                              </div>
+
+                              <p className="text-slate-700 mb-2 italic bg-white/80 p-3 rounded-lg border border-emerald-200">
+                                "Saya menyatakan telah memeriksa persyaratan K3 (HSE), kesiapan pekerja, dan kelengkapan dokumen izin kerja ini secara seksama. Dengan mencentang pernyataan ini, saya bertanggung jawab atas verifikasi dokumen ini dan mengotorisasi pekerjaan untuk dilanjutkan ke tahap berikutnya sesuai wewenang saya."
+                              </p>
+
+                              {latestApproval && (
+                                <div className="text-[11px] text-emerald-900 bg-emerald-100/60 rounded-lg px-3 py-1.5 border border-emerald-200">
+                                  Persetujuan final diselesaikan oleh <strong>{latestApproval.user?.name || 'Otorisator'}</strong> ({formatRoleName(latestApproval.role_at_action)}) pada {formatApprovalDate(latestApproval.action_date)} WIB.
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    }
+
+                    // Kasus 3: Izin kerja ditolak
+                    if (isRejected) {
+                      return (
+                        <div className="bg-rose-50 border-2 border-rose-200 rounded-xl p-4 sm:p-5">
+                          <div className="flex items-start gap-3">
+                            <XCircle size={18} className="text-rose-600 shrink-0 mt-0.5" />
+                            <div className="text-xs text-rose-900 leading-relaxed flex-1">
+                              <strong className="block text-sm font-bold text-rose-950 mb-1">
+                                Otorisasi Izin Kerja Ditolak
+                              </strong>
+                              Izin kerja ini telah ditolak{selectedRequest.rejectReason ? `: "${selectedRequest.rejectReason}"` : "."} Proses otorisasi dan disclaimer dihentikan.
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    }
+
+                    // Kasus 4: Giliran reviewer saat ini untuk memverifikasi dan menyetujui
+                    if (isAuthorizedNow) {
+                      return (
+                        <div className="space-y-2">
+                          {myApproval && role === 'admin' && (
+                            <div className="text-xs text-emerald-800 bg-emerald-50 border border-emerald-200 rounded-lg px-3 py-1.5 flex items-center gap-1.5">
+                              <CheckCircle2 size={13} className="text-emerald-600" />
+                              <span>Sebagai Admin, Anda sebelumnya telah menyetujui tahap sebelumnya pada {formatApprovalDate(myApproval.action_date)}.</span>
+                            </div>
+                          )}
+                          <label className="bg-blue-50/80 p-4 sm:p-5 rounded-xl border-2 border-blue-200 hover:border-blue-300 flex items-start gap-3 cursor-pointer select-none transition-all">
+                            <input
+                              type="checkbox"
+                              id="reviewer-disclaimer-checkbox"
+                              checked={disclaimerChecked}
+                              onChange={(e) => setDisclaimerChecked(e.target.checked)}
+                              className="w-4 h-4 mt-1 text-primary border-blue-300 rounded focus:ring-primary cursor-pointer shrink-0"
+                            />
+                            <div className="text-xs text-slate-800 leading-relaxed">
+                              <strong className="block text-blue-900 mb-1 text-sm font-bold flex items-center gap-1.5">
+                                <FileCheck size={16} className="text-blue-700" />
+                                Pernyataan & Disclaimer Otorisasi Reviewer (Wajib Dicentang)
+                              </strong>
+                              Saya menyatakan telah memeriksa persyaratan K3 (HSE), kesiapan pekerja, dan kelengkapan dokumen izin kerja ini secara seksama. Dengan mencentang pernyataan ini, saya bertanggung jawab atas verifikasi dokumen ini dan mengotorisasi pekerjaan untuk dilanjutkan ke tahap berikutnya sesuai wewenang saya.
+                            </div>
+                          </label>
+                        </div>
+                      );
+                    }
+
+                    // Kasus 5: Belum giliran role ini untuk menyetujui
+                    return (
+                      <div className="bg-slate-50 border-2 border-slate-200 rounded-xl p-4 sm:p-5">
+                        <div className="flex items-start gap-3">
+                          <Lock size={18} className="text-slate-500 shrink-0 mt-0.5" />
+                          <div className="text-xs text-slate-700 leading-relaxed flex-1">
+                            <strong className="block text-sm font-bold text-slate-900 mb-1">
+                              Pernyataan & Disclaimer Otorisasi Reviewer
+                            </strong>
+                            Tahap otorisasi saat ini berada pada wewenang <strong>{reqInfo?.label || 'pihak terkait'}</strong>. Pernyataan & disclaimer akan ditandatangani saat pihak berwenang melakukan verifikasi dan persetujuan izin kerja.
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })()}
                 </section>
 
               </div>
