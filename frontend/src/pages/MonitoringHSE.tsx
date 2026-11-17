@@ -498,7 +498,7 @@ export default function MonitoringHSEPage() {
                   </span>
                 </div>
 
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 lg:gap-2.5 mt-3 text-center">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 lg:gap-2.5 mt-3 text-center">
                   {/* 1. Baik */}
                   <button
                     type="button"
@@ -519,27 +519,7 @@ export default function MonitoringHSEPage() {
                     <span className="text-[9px] sm:text-[10px] lg:text-[11px] text-emerald-600 font-semibold whitespace-nowrap block">Normal / Siap</span>
                   </button>
 
-                  {/* 2. Perhatian */}
-                  <button
-                    type="button"
-                    onClick={() => handleToggleStatusFilter("PERLU_PERHATIAN", "KONDISI")}
-                    title="Klik untuk memfilter alat kondisi PERLU PERHATIAN"
-                    className={cn(
-                      "p-2 sm:p-2.5 lg:p-3 rounded-xl border text-center transition-all cursor-pointer select-none flex flex-col justify-between",
-                      statusFilter === "PERLU_PERHATIAN"
-                        ? "bg-amber-100 border-amber-500 ring-2 ring-amber-500/50 shadow-xs"
-                        : "bg-amber-50/70 border-amber-100 hover:bg-amber-100/60 hover:border-amber-300"
-                    )}
-                  >
-                    <div className="flex items-center justify-center gap-1 text-[10px] sm:text-[11px] lg:text-xs text-amber-800 font-bold mb-0.5 whitespace-nowrap">
-                      <span className="w-1.5 h-1.5 rounded-full bg-amber-500 inline-block" />
-                      <span className="truncate">Perhatian</span>
-                    </div>
-                    <p className="text-base sm:text-xl lg:text-2xl font-black text-amber-800 my-0.5">{alertsSummary.kondisi?.perhatian || 0}</p>
-                    <span className="text-[9px] sm:text-[10px] lg:text-[11px] text-amber-700 font-semibold whitespace-nowrap block">Butuh Cek</span>
-                  </button>
-
-                  {/* 3. Rusak */}
+                  {/* 2. Rusak */}
                   <button
                     type="button"
                     onClick={() => handleToggleStatusFilter("RUSAK", "KONDISI")}
@@ -555,11 +535,11 @@ export default function MonitoringHSEPage() {
                       <span className="w-1.5 h-1.5 rounded-full bg-red-500 inline-block" />
                       <span className="truncate">Rusak</span>
                     </div>
-                    <p className="text-base sm:text-xl lg:text-2xl font-black text-red-700 my-0.5">{alertsSummary.kondisi?.rusak || 0}</p>
+                    <p className="text-base sm:text-xl lg:text-2xl font-black text-red-700 my-0.5">{(alertsSummary.kondisi?.rusak || 0) + (alertsSummary.kondisi?.perhatian || 0)}</p>
                     <span className="text-[9px] sm:text-[10px] lg:text-[11px] text-red-600 font-semibold whitespace-nowrap block">Perbaikan</span>
                   </button>
 
-                  {/* 4. Terlewat */}
+                  {/* 3. Terlewat */}
                   <button
                     type="button"
                     onClick={() => handleToggleStatusFilter("JADWAL_TERLEWAT", "KONDISI")}
@@ -954,7 +934,7 @@ function FacilityDataTable({
         if (s !== "PERLU_PERHATIAN" && s !== "NEEDS ATTENTION") return false;
       } else if (statusFilter === "RUSAK") {
         const s = (f.calculated_status || f.status || "").toUpperCase();
-        if (s !== "RUSAK" && s !== "CRITICAL") return false;
+        if (s !== "RUSAK" && s !== "CRITICAL" && s !== "PERLU_PERHATIAN" && s !== "NEEDS ATTENTION") return false;
       } else if (statusFilter === "JADWAL_TERLEWAT") {
         const s = (f.calculated_status || f.status || "").toUpperCase();
         if (s !== "JADWAL_TERLEWAT" && !f.is_overdue) return false;
@@ -1911,15 +1891,7 @@ export function MonitoringStatusBadge({ status }: { status: string }) {
       </span>
     );
   }
-  if (s === "PERLU_PERHATIAN") {
-    return (
-      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-50 text-amber-700 border border-amber-200">
-        <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
-        PERLU PERHATIAN
-      </span>
-    );
-  }
-  if (s === "RUSAK") {
+  if (s === "RUSAK" || s === "PERLU_PERHATIAN" || s === "CRITICAL" || s === "NEEDS ATTENTION") {
     return (
       <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-red-50 text-red-700 border border-red-200">
         <span className="w-1.5 h-1.5 rounded-full bg-red-500" />

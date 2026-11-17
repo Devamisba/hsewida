@@ -124,7 +124,8 @@ class SafetyFacility extends Model
                 return 'JADWAL_TERLEWAT';
             }
 
-            return $schedule->status_kondisi_terakhir ?: 'BAIK';
+            $st = $schedule->status_kondisi_terakhir ?: 'BAIK';
+            return ($st === 'PERLU_PERHATIAN') ? 'RUSAK' : $st;
         }
     }
 

@@ -1045,14 +1045,10 @@ class MonitoringController extends Controller
                 }
             }
 
-            if ($maxScore === 2) {
+            if ($maxScore >= 1) {
                 $hasilStatus = 'RUSAK';
                 $resultStatus = 'Fail';
                 $facility->status = 'Critical';
-            } elseif ($maxScore === 1) {
-                $hasilStatus = 'PERLU_PERHATIAN';
-                $resultStatus = 'Fail';
-                $facility->status = 'Needs Attention';
             } else {
                 $hasilStatus = 'BAIK';
                 $resultStatus = 'Pass';
@@ -1242,13 +1238,11 @@ class MonitoringController extends Controller
             } else {
                 $kondisi['total']++;
                 $st = $f->calculated_status;
-                if ($st === 'BAIK') $kondisi['baik']++;
-                elseif ($st === 'PERLU_PERHATIAN') {
-                    $kondisi['perlu_perhatian']++;
-                    $kondisi['perhatian']++;
-                }
-                elseif ($st === 'RUSAK') $kondisi['rusak']++;
-                elseif ($st === 'JADWAL_TERLEWAT') {
+                if ($st === 'BAIK') {
+                    $kondisi['baik']++;
+                } elseif ($st === 'RUSAK' || $st === 'PERLU_PERHATIAN') {
+                    $kondisi['rusak']++;
+                } elseif ($st === 'JADWAL_TERLEWAT') {
                     $kondisi['jadwal_terlewat']++;
                     $kondisi['terlewat']++;
                 }
