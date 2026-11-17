@@ -98,6 +98,10 @@ function mapApiToReview(item: any) {
   };
 }
 
+const canPrintPermit = (status: string) => {
+  return status === "Disetujui" || status === "Selesai";
+};
+
 export default function ReviewRequestsPage() {
   const [requests, setRequests] = useState<any[]>([]);
   const [approvedRequests, setApprovedRequests] = useState<any[]>([]);
@@ -494,29 +498,44 @@ export default function ReviewRequestsPage() {
                           </span>
                         </td>
                         <td className="px-5 py-4 text-right whitespace-nowrap">
-                          <div className="flex items-center justify-end gap-1.5">
-                            {req.status === 'Disetujui' && (
-                              <button
-                                onClick={() => setPrintPermit(req)}
-                                title="Cetak Dokumen Permit"
-                                className="p-1.5 text-gray-600 hover:text-blue-600 bg-white border border-slate-200 hover:bg-blue-50 rounded-lg transition-colors cursor-pointer"
+                          {reviewTab === "pending" ? (
+                            <div className="flex items-center justify-end">
+                              <button 
+                                onClick={() => handleOpenDetail(req)}
+                                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-primary hover:opacity-90 text-white transition cursor-pointer shadow-2xs"
                               >
-                                <Printer size={14} />
+                                <Eye size={13} />
+                                <span>Review</span>
                               </button>
-                            )}
-                            <button 
-                              onClick={() => handleOpenDetail(req)}
-                              className={cn(
-                                "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer shadow-2xs",
-                                reviewTab === "pending"
-                                  ? "bg-primary hover:opacity-90 text-white font-bold"
-                                  : "bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 hover:border-blue-300"
+                            </div>
+                          ) : (
+                            <div className="flex items-center justify-end gap-2">
+                              <button 
+                                onClick={() => handleOpenDetail(req)}
+                                className="p-2 text-gray-400 hover:text-primary hover:bg-primary-container/50 rounded-lg transition-colors cursor-pointer" 
+                                title="Lihat Detail"
+                              >
+                                <Eye size={18} />
+                              </button>
+                              {canPrintPermit(req.status) ? (
+                                <button 
+                                  onClick={() => setPrintPermit(req)}
+                                  className="p-2 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 rounded-lg transition-colors cursor-pointer" 
+                                  title="Cetak & Unduh Surat Izin Kerja Resmi"
+                                >
+                                  <Printer size={18} />
+                                </button>
+                              ) : (
+                                <button 
+                                  disabled
+                                  className="p-2 text-gray-300 bg-gray-50/80 rounded-lg cursor-not-allowed opacity-60" 
+                                  title={`Cetak Belum Tersedia: Menunggu persetujuan (Status: ${formatPermitStatus(req.status)})`}
+                                >
+                                  <Printer size={18} className="text-gray-400" />
+                                </button>
                               )}
-                            >
-                              <Eye size={13} />
-                              <span>{reviewTab === "pending" ? "Review" : "Lihat Progres"}</span>
-                            </button>
-                          </div>
+                            </div>
+                          )}
                         </td>
                       </tr>
                     ))
@@ -575,28 +594,43 @@ export default function ReviewRequestsPage() {
                     </div>
 
                     <div className="flex items-center gap-2 pt-1">
-                      {req.status === 'Disetujui' && (
-                        <button
+                      {reviewTab === "pending" ? (
+                        <button 
                           type="button"
-                          onClick={() => setPrintPermit(req)}
-                          title="Cetak Dokumen Permit"
-                          className="p-2.5 text-gray-600 hover:text-blue-600 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors cursor-pointer"
+                          onClick={() => handleOpenDetail(req)}
+                          className="flex-1 inline-flex items-center justify-center gap-2 py-2.5 px-4 rounded-lg text-xs font-bold bg-primary text-on-primary hover:opacity-90 transition-all shadow-xs cursor-pointer active:scale-98"
                         >
-                          <Printer size={16} />
+                          <Eye size={15} /> Buka & Review
                         </button>
+                      ) : (
+                        <div className="flex items-center justify-between w-full">
+                          <button 
+                            type="button"
+                            onClick={() => handleOpenDetail(req)}
+                            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 transition-colors cursor-pointer"
+                          >
+                            <Eye size={15} /> Lihat Detail
+                          </button>
+                          {canPrintPermit(req.status) ? (
+                            <button
+                              type="button"
+                              onClick={() => setPrintPermit(req)}
+                              title="Cetak Dokumen Permit"
+                              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 transition-colors cursor-pointer"
+                            >
+                              <Printer size={15} /> Cetak Permit
+                            </button>
+                          ) : (
+                            <button
+                              disabled
+                              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold text-gray-400 bg-gray-50 cursor-not-allowed opacity-60"
+                              title={`Cetak Belum Tersedia: Menunggu persetujuan (Status: ${formatPermitStatus(req.status)})`}
+                            >
+                              <Printer size={15} /> Cetak Permit
+                            </button>
+                          )}
+                        </div>
                       )}
-                      <button 
-                        type="button"
-                        onClick={() => handleOpenDetail(req)}
-                        className={cn(
-                          "flex-1 inline-flex items-center justify-center gap-2 py-2.5 px-4 rounded-lg text-xs font-bold transition-all shadow-xs cursor-pointer active:scale-98",
-                          reviewTab === "pending"
-                            ? "bg-primary text-on-primary hover:opacity-90"
-                            : "bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100"
-                        )}
-                      >
-                        <Eye size={15} /> {reviewTab === "pending" ? "Buka & Review" : "Lihat Progres"}
-                      </button>
                     </div>
                   </div>
                 ))
