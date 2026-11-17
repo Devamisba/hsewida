@@ -337,8 +337,8 @@ export function ApprovalWorkflowStepper({
                     )}
                   >
                     {isAuthorizedUser
-                      ? "👉 Butuh tindakan persetujuan Anda"
-                      : `🔒 Menunggu wewenang ${step.title}`}
+                      ? "Butuh tindakan persetujuan Anda"
+                      : `Menunggu wewenang ${step.title}`}
                   </span>
                 ) : (
                   <span className="text-slate-400 italic flex items-center gap-1">
