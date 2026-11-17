@@ -467,13 +467,10 @@ export default function CreateRequestPage() {
           </div>
           <h2 className="text-2xl font-bold text-gray-900 mb-2">Request Submitted!</h2>
           {permitNumber && (
-            <p className="text-sm font-semibold text-primary mb-2">
+            <p className="text-sm font-semibold text-primary mb-8">
               Nomor Izin Kerja: <span className="underline">{permitNumber}</span>
             </p>
           )}
-          <p className="text-gray-500 mb-8 max-w-md">
-            Izin kerja berhasil tersimpan di sistem dan sedang menunggu verifikasi dari PIC Internal Widatra & Tim K3 (HSE).
-          </p>
           <div className="flex gap-3">
             <button 
               onClick={() => navigate("/my-requests")}
