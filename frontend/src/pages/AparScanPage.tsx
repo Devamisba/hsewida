@@ -13,8 +13,10 @@ import {
   CheckCircle2,
   ClipboardCheck,
   History,
-  Inbox
+  Inbox,
+  AlertTriangle
 } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { api, SafetyFacility } from "@/services/api";
 import { PLANT_CENTER, syncGeofenceFromSettingsMap } from "@/utils/facilityCoordinates";
 import { auth } from "@/lib/auth";
@@ -169,9 +171,33 @@ export default function AparScanPage() {
   const [sgl, setSgl] = useState<boolean>(true);
   const [lev, setLev] = useState<boolean>(true);
   const [notes, setNotes] = useState<string>("");
+  const [damageDescriptions, setDamageDescriptions] = useState<Record<string, string>>({});
   const [capturedPhoto, setCapturedPhoto] = useState<string | null>(null);
   const [submittingPetugas, setSubmittingPetugas] = useState<boolean>(false);
   const [petugasSubmitted, setPetugasSubmitted] = useState<boolean>(false);
+
+  const handleParamChange = (paramId: string, isPass: boolean) => {
+    if (paramId === "tbg") setTbg(isPass);
+    if (paramId === "slg") setSlg(isPass);
+    if (paramId === "nozz") setNozz(isPass);
+    if (paramId === "sgl") setSgl(isPass);
+    if (paramId === "lev") setLev(isPass);
+
+    if (isPass) {
+      setDamageDescriptions(prev => {
+        const next = { ...prev };
+        delete next[paramId];
+        return next;
+      });
+    }
+  };
+
+  const handleDamageDescChange = (paramId: string, value: string) => {
+    setDamageDescriptions(prev => ({
+      ...prev,
+      [paramId]: value,
+    }));
+  };
 
   // --- Live Camera Elements (Realtime Only - No Gallery Upload) ---
   const [isLiveCameraOpen, setIsLiveCameraOpen] = useState(false);
@@ -353,16 +379,54 @@ export default function AparScanPage() {
       alert("Silakan ketik nama petugas pemeriksa.");
       return;
     }
-    if (!notes.trim() || notes.trim().length < 3) {
-      alert("Catatan / Keterangan temuan wajib diisi (minimal 3 karakter).");
-      return;
+
+    // Identifikasi parameter yang ditandai rusak
+    const damagedParams = categoryConfig.params.filter(param => {
+      if (param.id === "tbg") return !tbg;
+      if (param.id === "slg") return !slg;
+      if (param.id === "nozz") return !nozz;
+      if (param.id === "sgl") return !sgl;
+      if (param.id === "lev") return !lev;
+      return false;
+    });
+
+    // Validasi deskripsi kerusakan per item yang rusak
+    if (damagedParams.length > 0) {
+      for (const p of damagedParams) {
+        const desc = (damageDescriptions[p.id] || "").trim();
+        if (desc.length < 3) {
+          const cleanName = p.title.replace(/^\d+\.\s*/, "");
+          alert(`Mohon lengkapi Deskripsi Kerusakan untuk "${cleanName}" (minimal 3 karakter).`);
+          return;
+        }
+      }
+    }
+
+    // Susun catatan akhir secara cerdas
+    let compiledNotes = notes.trim();
+    if (damagedParams.length > 0) {
+      const damageDetails = damagedParams.map(p => {
+        const cleanName = p.title.replace(/^\d+\.\s*/, "");
+        const desc = damageDescriptions[p.id].trim();
+        return `[${cleanName} - ${p.failLabel}]: ${desc}`;
+      }).join("; ");
+
+      if (compiledNotes) {
+        compiledNotes = `${damageDetails}. Catatan tambahan: ${compiledNotes}`;
+      } else {
+        compiledNotes = damageDetails;
+      }
+    } else {
+      if (!compiledNotes) {
+        compiledNotes = `Kondisi fisik dan fungsi ${categoryConfig.badge} dalam keadaan baik, normal, dan siap digunakan.`;
+      }
     }
 
     setSubmittingPetugas(true);
     try {
       const payload = {
         inspector_name: petugasName.trim(),
-        notes: notes.trim(),
+        notes: compiledNotes,
         tbg,
         slg,
         nozz,
@@ -382,6 +446,7 @@ export default function AparScanPage() {
         setPetugasSubmitted(true);
         await fetchAparData();
         setNotes("");
+        setDamageDescriptions({});
         if (typeof window !== "undefined") {
           window.scrollTo({ top: 0, behavior: "smooth" });
         }
@@ -744,62 +809,108 @@ export default function AparScanPage() {
                         : param.id === "nozz" ? nozz
                         : param.id === "sgl" ? sgl
                         : lev;
-                      const setter = param.id === "tbg" ? setTbg
-                        : param.id === "slg" ? setSlg
-                        : param.id === "nozz" ? setNozz
-                        : param.id === "sgl" ? setSgl
-                        : setLev;
 
                       return (
-                        <div key={param.id} className="flex items-center justify-between p-2.5 rounded-lg bg-slate-50 border border-slate-200 gap-2">
-                          <div className="min-w-0 flex-1">
-                            <span className="font-bold text-slate-800 block text-xs truncate sm:text-clip">{param.title}</span>
-                            <span className="text-[11px] text-slate-500 leading-tight block">{param.desc}</span>
+                        <div 
+                          key={param.id} 
+                          className={cn(
+                            "p-2.5 rounded-lg border transition-all duration-200",
+                            isGood 
+                              ? "bg-slate-50 border-slate-200" 
+                              : "bg-rose-50/70 border-rose-300 shadow-2xs"
+                          )}
+                        >
+                          <div className="flex items-center justify-between gap-2">
+                            <div className="min-w-0 flex-1">
+                              <span className={cn(
+                                "font-bold block text-xs truncate sm:text-clip",
+                                isGood ? "text-slate-800" : "text-rose-900"
+                              )}>
+                                {param.title}
+                              </span>
+                              <span className={cn(
+                                "text-[11px] leading-tight block",
+                                isGood ? "text-slate-500" : "text-rose-700/80"
+                              )}>
+                                {param.desc}
+                              </span>
+                            </div>
+                            <div className="flex gap-1.5 shrink-0">
+                              <button
+                                type="button"
+                                disabled={submittingPetugas}
+                                onClick={() => handleParamChange(param.id, true)}
+                                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                                  isGood 
+                                    ? "bg-emerald-600 text-white shadow-xs" 
+                                    : "bg-white border border-slate-200 text-slate-600 hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-300 font-medium"
+                                }`}
+                              >
+                                {param.passLabel}
+                              </button>
+                              <button
+                                type="button"
+                                disabled={submittingPetugas}
+                                onClick={() => handleParamChange(param.id, false)}
+                                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                                  !isGood 
+                                    ? "bg-rose-600 text-white shadow-xs" 
+                                    : "bg-white border border-slate-200 text-slate-600 hover:bg-rose-50 hover:text-rose-700 hover:border-rose-300 font-medium"
+                                }`}
+                              >
+                                {param.failLabel}
+                              </button>
+                            </div>
                           </div>
-                          <div className="flex gap-1.5 shrink-0">
-                            <button
-                              type="button"
-                              disabled={submittingPetugas}
-                              onClick={() => setter(true)}
-                              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                                isGood 
-                                  ? "bg-emerald-600 text-white shadow-xs" 
-                                  : "bg-white border border-slate-200 text-slate-600 hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-300 font-medium"
-                              }`}
-                            >
-                              {param.passLabel}
-                            </button>
-                            <button
-                              type="button"
-                              disabled={submittingPetugas}
-                              onClick={() => setter(false)}
-                              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                                !isGood 
-                                  ? "bg-rose-600 text-white shadow-xs" 
-                                  : "bg-white border border-slate-200 text-slate-600 hover:bg-rose-50 hover:text-rose-700 hover:border-rose-300 font-medium"
-                              }`}
-                            >
-                              {param.failLabel}
-                            </button>
-                          </div>
+
+                          {/* Field Deskripsi Kerusakan Otomatis Per Objek yang Rusak */}
+                          {!isGood && (
+                            <div className="mt-2.5 pt-2.5 border-t border-rose-200/90 animate-in fade-in slide-in-from-top-1 duration-200">
+                              <div className="flex items-center justify-between mb-1">
+                                <label className="text-[11px] font-bold text-rose-800 flex items-center gap-1.5">
+                                  <AlertTriangle size={13} className="text-rose-600 shrink-0" />
+                                  <span>Deskripsi Kerusakan {param.title.replace(/^\d+\.\s*/, "")} *</span>
+                                </label>
+                                <span className="text-[10px] font-bold text-rose-600 bg-rose-100 border border-rose-200 px-1.5 py-0.5 rounded">
+                                  Wajib Diisi
+                                </span>
+                              </div>
+                              <input
+                                type="text"
+                                required
+                                value={damageDescriptions[param.id] || ""}
+                                onChange={(e) => handleDamageDescChange(param.id, e.target.value)}
+                                placeholder={`Jelaskan rincian kerusakan pada ${param.title.replace(/^\d+\.\s*/, "")}...`}
+                                disabled={submittingPetugas}
+                                autoFocus
+                                className="w-full px-3 py-2 bg-white border border-rose-300 rounded-lg text-xs text-rose-950 focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 placeholder:text-rose-400/70 shadow-2xs"
+                              />
+                            </div>
+                          )}
                         </div>
                       );
                     })}
                   </div>
 
-                  {/* Catatan / Keterangan Temuan Lapangan */}
+                  {/* Catatan Tambahan (Opsional) */}
                   <div className="space-y-1 border-t border-slate-200 pt-3">
-                    <label className="block font-semibold text-slate-700">
-                      Catatan / Temuan Lapangan *
-                    </label>
+                    <div className="flex items-center justify-between">
+                      <label className="block font-semibold text-slate-700">
+                        {(!tbg || !slg || !nozz || !sgl || !lev) ? "Catatan Tambahan Petugas" : "Catatan Pemeriksaan"}
+                      </label>
+                      <span className="text-[10px] text-slate-400 font-medium">Opsional</span>
+                    </div>
                     <textarea
                       rows={2}
-                      required
                       value={notes}
                       onChange={(e) => setNotes(e.target.value)}
-                      placeholder={`Contoh: Kondisi fisik ${categoryConfig.badge} bersih, fungsi normal dan siap digunakan...`}
+                      placeholder={
+                        (!tbg || !slg || !nozz || !sgl || !lev)
+                          ? "Ketik catatan umum tambahan di luar rincian kerusakan di atas (opsional)..."
+                          : `Kondisi fisik dan fungsi ${categoryConfig.badge} dalam keadaan baik, normal, dan siap digunakan...`
+                      }
                       disabled={submittingPetugas}
-                      className="w-full px-3 py-2 border border-slate-300 rounded-md text-xs focus:outline-none focus:border-slate-600 disabled:bg-slate-100"
+                      className="w-full px-3 py-2 border border-slate-300 rounded-md text-xs focus:outline-none focus:border-slate-600 disabled:bg-slate-100 placeholder:text-slate-400"
                     />
                   </div>
 
