@@ -4,6 +4,7 @@ use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Schema;
 
 Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
@@ -17,6 +18,63 @@ Artisan::command('hse:reset-passwords', function () {
     $this->info("Sukses! Sebanyak {$count} akun pengguna telah berhasil di-reset kata sandinya menjadi 'password'.");
     return 0;
 })->purpose('Reset all user passwords in database to password');
+
+Artisan::command('hse:clean-permits {--force : Force cleanup without confirmation}', function () {
+    $force = $this->option('force');
+    if (!$force && !$this->confirm('Apakah Anda yakin ingin membersihkan seluruh data riwayat Izin Kerja (Work Permit)?')) {
+        $this->warn('Pembersihan izin kerja dibatalkan.');
+        return 0;
+    }
+
+    $this->info('Memulai pembersihan data transaksi Izin Kerja (Work Permit)...');
+
+    try {
+        DB::statement('SET FOREIGN_KEY_CHECKS=0;');
+
+        $tablesToTruncate = [
+            'permit_documents',
+            'permit_approvals',
+            'permit_equipments',
+            'permit_types_pivot',
+            'permit_ppes_pivot',
+            'permit_jsas',
+            'permit_workers',
+            'work_permits',
+        ];
+
+        foreach ($tablesToTruncate as $tbl) {
+            if (Schema::hasTable($tbl)) {
+                $count = DB::table($tbl)->count();
+                DB::table($tbl)->truncate();
+                $this->line("  ✓ Tabel '{$tbl}' berhasil dikosongkan ({$count} baris dihapus)");
+            }
+        }
+
+        // Bersihkan notifikasi terkait perizinan kerja
+        if (Schema::hasTable('notifications')) {
+            $notifCount = DB::table('notifications')
+                ->where('type', 'like', 'permit_%')
+                ->orWhere('type', 'like', '%permit%')
+                ->delete();
+            $this->line("  ✓ {$notifCount} notifikasi izin kerja lama dihapus.");
+        }
+
+        DB::statement('SET FOREIGN_KEY_CHECKS=1;');
+
+        $this->info("\nRingkasan Status Sistem Setelah Pembersihan:");
+        $this->line('  - Total Izin Kerja Aktif/Riwayat : ' . DB::table('work_permits')->count() . ' (Bersih / 0)');
+        $this->line('  - Akun Pengguna Terlindungi      : ' . DB::table('users')->count() . ' akun');
+        $this->line('  - Master Lokasi Pabrik           : ' . DB::table('locations')->count() . ' lokasi');
+        $this->line('  - Data Fasilitas K3              : ' . DB::table('safety_facilities')->count() . ' unit');
+
+        $this->info("\nSukses! Seluruh data izin kerja telah bersih. Pengajuan berikutnya akan dimulai dari WP-" . date('ym') . "-001.");
+        return 0;
+    } catch (\Throwable $e) {
+        DB::statement('SET FOREIGN_KEY_CHECKS=1;');
+        $this->error('Gagal: ' . $e->getMessage());
+        return 1;
+    }
+})->purpose('Clean all work permits and related tables while preserving users, vendors, and master data');
 
 Artisan::command('hse:clean-history {--force : Force cleanup without confirmation}', function () {
     $force = $this->option('force');
