@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
 import { Header } from "@/components/Header";
-import { CheckCircle, XCircle, Clock, Eye, CheckSquare, Search, RotateCcw, Briefcase, AlertTriangle, Users, FileCheck, X, Shield, Printer, Lock, CalendarPlus, History as HistoryIcon } from "lucide-react";
+import { CheckCircle, XCircle, Clock, Eye, CheckSquare, Search, RotateCcw, Briefcase, AlertTriangle, Users, FileCheck, X, Shield, Printer, Lock, CalendarPlus } from "lucide-react";
 import { cn, calculateInclusiveDays, formatPermitStatus, formatDateDDMMYY } from "@/lib/utils";
 import { api } from "@/services/api";
 import { auth } from "@/lib/auth";
@@ -100,7 +99,6 @@ function mapApiToReview(item: any) {
 }
 
 export default function ReviewRequestsPage() {
-  const navigate = useNavigate();
   const [requests, setRequests] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
@@ -369,22 +367,12 @@ export default function ReviewRequestsPage() {
 
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
             {/* Header Panel Antrean */}
-            <div className="flex items-center justify-between px-5 py-3.5 border-b border-gray-200 bg-gray-50/50">
-              <div className="flex items-center gap-2">
-                <Clock className="text-primary" size={18} />
-                <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider">Antrean Review Izin Kerja</h3>
-                <span className="px-2 py-0.5 rounded-full text-xs font-mono font-bold bg-primary text-white">
-                  {filteredRequests.length}
-                </span>
-              </div>
-              <button
-                type="button"
-                onClick={() => navigate("/history")}
-                className="inline-flex items-center gap-1.5 text-xs font-semibold text-primary hover:underline cursor-pointer"
-              >
-                <span>Buka Menu Riwayat</span>
-                <span>&rarr;</span>
-              </button>
+            <div className="flex items-center gap-2 px-5 py-3.5 border-b border-gray-200 bg-gray-50/50">
+              <Clock className="text-primary" size={18} />
+              <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider">Antrean Review Izin Kerja</h3>
+              <span className="px-2 py-0.5 rounded-full text-xs font-mono font-bold bg-primary text-white">
+                {filteredRequests.length}
+              </span>
             </div>
 
             {/* Desktop Table (>= lg) */}
@@ -465,16 +453,8 @@ export default function ReviewRequestsPage() {
                         <CheckSquare size={44} className="mx-auto mb-3 text-emerald-500/40" />
                         <p className="text-base font-bold text-gray-800">Semua Bersih! Tidak Ada Antrean Review</p>
                         <p className="text-sm text-gray-500 mt-1 max-w-md mx-auto">
-                          Tidak ada izin kerja yang membutuhkan persetujuan Anda saat ini. Seluruh riwayat dan arsip izin kerja dapat dipantau langsung di menu Riwayat.
+                          Tidak ada izin kerja yang membutuhkan persetujuan Anda saat ini.
                         </p>
-                        <button
-                          type="button"
-                          onClick={() => navigate("/history")}
-                          className="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold text-primary bg-primary-container/40 hover:bg-primary-container/70 border border-primary/20 transition cursor-pointer"
-                        >
-                          <HistoryIcon size={14} />
-                          <span>Buka Menu Riwayat</span>
-                        </button>
                       </td>
                     </tr>
                   )}
@@ -539,14 +519,6 @@ export default function ReviewRequestsPage() {
                   <CheckSquare size={36} className="mx-auto mb-2 text-emerald-500/40" />
                   <p className="text-sm font-bold text-gray-800">Semua Bersih!</p>
                   <p className="text-xs text-gray-500 mt-0.5">Tidak ada izin kerja yang perlu di-review saat ini.</p>
-                  <button
-                    type="button"
-                    onClick={() => navigate("/history")}
-                    className="mt-3 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-primary bg-primary-container/40 border border-primary/20 cursor-pointer"
-                  >
-                    <HistoryIcon size={13} />
-                    <span>Buka Menu Riwayat</span>
-                  </button>
                 </div>
               )}
             </div>
