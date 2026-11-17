@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, type FormEvent } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import { 
   Camera, 
   ArrowLeft,
@@ -14,7 +14,9 @@ import {
   ClipboardCheck,
   History,
   Inbox,
-  AlertTriangle
+  AlertTriangle,
+  Lock,
+  LogIn
 } from "lucide-react";
 import { cn, parseLocalDate } from "@/lib/utils";
 import { api, SafetyFacility } from "@/services/api";
@@ -145,6 +147,7 @@ const getCategoryConfig = (category?: string): CategoryInspectionConfig => {
 
 export default function AparScanPage() {
   const { code } = useParams<{ code: string }>();
+  const navigate = useNavigate();
 
   const isAuthenticated = auth.isAuthenticated();
   const user = auth.getUser();
@@ -159,12 +162,15 @@ export default function AparScanPage() {
   const [isRefillQueue, setIsRefillQueue] = useState<boolean>(false);
   const [totalInspections, setTotalInspections] = useState<number>(0);
 
+  // Modal Otorisasi Login jika belum login saat klik Mulai Pemeriksaan
+  const [authModalOpen, setAuthModalOpen] = useState<boolean>(false);
+
   // Current View Mode (CHOICE = Kartu & Riwayat Utama, PENGECEKAN = Form Lapangan)
   const [viewMode, setViewMode] = useState<ViewMode>("CHOICE");
   const categoryConfig = getCategoryConfig(facility?.category);
 
   // --- FORM 1: Petugas HSE State ---
-  const [petugasName, setPetugasName] = useState<string>("");
+  const [petugasName, setPetugasName] = useState<string>(() => user?.name || "");
   const [tbg, setTbg] = useState<boolean>(true);
   const [slg, setSlg] = useState<boolean>(true);
   const [nozz, setNozz] = useState<boolean>(true);
@@ -250,10 +256,39 @@ export default function AparScanPage() {
     };
   }, []);
 
+  // Deteksi intent auto-start pasca-login (action=start)
+  useEffect(() => {
+    const searchParams = new URLSearchParams(window.location.search);
+    if (searchParams.get("action") === "start" && auth.isAuthenticated()) {
+      setViewMode("PENGECEKAN");
+      setPetugasSubmitted(false);
+      if (user?.name) {
+        setPetugasName(user.name);
+      }
+      // Bersihkan URL tanpa refresh agar rapi
+      window.history.replaceState({}, document.title, window.location.pathname);
+    } else if (auth.isAuthenticated() && user?.name && !petugasName) {
+      setPetugasName(user.name);
+    }
+  }, [code, user?.name]);
+
   // --- BUTTON CLICKS FROM CHOICE MENU ---
   const handleSelectPengecekan = () => {
+    if (!isAuthenticated) {
+      setAuthModalOpen(true);
+      return;
+    }
+    if (user?.name && !petugasName) {
+      setPetugasName(user.name);
+    }
     setPetugasSubmitted(false);
     setViewMode("PENGECEKAN");
+  };
+
+  const handleProceedToLogin = () => {
+    const returnUrl = `/scan/apar/${code}?action=start`;
+    sessionStorage.setItem("hse_login_redirect", returnUrl);
+    navigate(`/login?redirect=${encodeURIComponent(returnUrl)}`);
   };
 
   // --- CAMERA HANDLERS (STRICT REALTIME ONLY - NO GALLERY UPLOAD) ---
@@ -784,10 +819,18 @@ export default function AparScanPage() {
                 <form onSubmit={handlePetugasSubmit} className="space-y-4 text-xs">
                   
                   {/* Nama Petugas */}
-                  <div className="space-y-1">
-                    <label className="block font-semibold text-slate-700">
-                      Nama Petugas Pemeriksa *
-                    </label>
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <label className="block font-semibold text-slate-700">
+                        Nama Petugas Pemeriksa *
+                      </label>
+                      {user && (
+                        <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                          <ShieldCheck size={11} className="text-emerald-600" />
+                          Akun Terverifikasi
+                        </span>
+                      )}
+                    </div>
                     <input
                       type="text"
                       required
@@ -797,6 +840,11 @@ export default function AparScanPage() {
                       disabled={submittingPetugas}
                       className="w-full px-3 py-2 border border-slate-300 rounded-md text-xs focus:outline-none focus:border-slate-600 disabled:bg-slate-100"
                     />
+                    {user && (
+                      <p className="text-[10px] text-slate-500">
+                        Masuk sebagai: <strong>{user.name}</strong> ({userRole || "HSE"})
+                      </p>
+                    )}
                   </div>
 
                   {/* 5 Parameter Fisik Berdasarkan Kategori Fasilitas */}
@@ -995,6 +1043,59 @@ export default function AparScanPage() {
       <div className="mt-4 text-center text-xs text-slate-400">
         PT Widatra Bhakti • Health, Safety & Environment
       </div>
+
+      {/* Modal Otorisasi Wajib Login Sebelum Mulai Pemeriksaan */}
+      {authModalOpen && (
+        <div 
+          className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in duration-200"
+          onClick={() => setAuthModalOpen(false)}
+        >
+          <div 
+            className="bg-white rounded-2xl shadow-2xl max-w-sm w-full overflow-hidden animate-in zoom-in-95 duration-200 border border-slate-200"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="p-6 text-center space-y-4">
+              <div className="w-14 h-14 rounded-2xl bg-amber-50 border border-amber-200 text-amber-600 flex items-center justify-center mx-auto shadow-inner">
+                <Lock size={28} />
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-slate-900">Akses Terbatas: Login Diperlukan</h3>
+                <p className="text-xs text-slate-600 mt-2 leading-relaxed">
+                  Untuk melakukan pemeriksaan lapangan dan mencatat kondisi fisik fasilitas keselamatan K3 <strong>PT Widatra Bhakti</strong>, Anda wajib masuk menggunakan akun resmi terlebih dahulu.
+                </p>
+              </div>
+
+              <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl text-left text-[11px] text-slate-600 space-y-1">
+                <div className="flex items-center gap-1.5 font-semibold text-slate-800">
+                  <ShieldCheck size={14} className="text-emerald-600 shrink-0" />
+                  <span>Otorisasi & Akuntabilitas K3</span>
+                </div>
+                <p className="text-slate-500">
+                  Setelah login berhasil, Anda akan otomatis dikembalikan ke fasilitas <strong>{facility?.code || code}</strong> ini dan langsung masuk ke formulir pemeriksaan.
+                </p>
+              </div>
+
+              <div className="space-y-2 pt-2">
+                <button
+                  type="button"
+                  onClick={handleProceedToLogin}
+                  className="w-full py-2.5 px-4 bg-primary hover:bg-primary/90 text-white rounded-xl text-xs font-bold transition shadow-sm cursor-pointer flex items-center justify-center gap-2 active:scale-98"
+                >
+                  <LogIn size={15} />
+                  <span>Masuk ke Akun (Login)</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setAuthModalOpen(false)}
+                  className="w-full py-2 px-4 bg-white hover:bg-slate-100 text-slate-600 border border-slate-200 rounded-xl text-xs font-semibold transition cursor-pointer"
+                >
+                  Batal / Nanti Saja
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Kamera Fullscreen Sederhana */}
       {isLiveCameraOpen && (

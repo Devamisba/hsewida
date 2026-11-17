@@ -27,10 +27,24 @@ export default function LoginPage() {
   const [companyLogo, setCompanyLogo] = useState<string>(() => localStorage.getItem("hse_company_logo") || "/logo-widatra.png");
   const [companyName, setCompanyName] = useState<string>(() => localStorage.getItem("hse_company_name") || "PT WIDATRA BHAKTI");
 
+  // Helper untuk mendapatkan URL tujuan redirect pasca-login
+  const getValidRedirectUrl = (): string => {
+    try {
+      const searchParams = new URLSearchParams(window.location.search);
+      const redirectParam = searchParams.get("redirect") || sessionStorage.getItem("hse_login_redirect");
+      if (redirectParam && redirectParam.startsWith("/") && !redirectParam.startsWith("//")) {
+        return redirectParam;
+      }
+    } catch {}
+    return "/dashboard";
+  };
+
   // Auto-redirect if user already has an active session
   useEffect(() => {
     if (auth.isAuthenticated()) {
-      window.location.href = "/dashboard";
+      const target = getValidRedirectUrl();
+      sessionStorage.removeItem("hse_login_redirect");
+      window.location.href = target;
       return;
     }
 
@@ -76,7 +90,9 @@ export default function LoginPage() {
           localStorage.removeItem("hse_remembered_nip"); localStorage.removeItem("hse_remembered_nik");
         }
         auth.setSession(res.data.token, res.data.user);
-        window.location.href = "/dashboard";
+        const target = getValidRedirectUrl();
+        sessionStorage.removeItem("hse_login_redirect");
+        window.location.href = target;
       } else {
         setErrorMsg(res.message || "Login gagal, periksa kembali NIP dan password Anda.");
       }
