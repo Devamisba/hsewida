@@ -841,119 +841,215 @@ export default function HistoryPage() {
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse">
                 <thead className="bg-primary-container/20">
-                  <tr>
-                    <th className="px-5 py-4 text-xs font-semibold text-gray-600 uppercase tracking-wider">No. Izin</th>
-                    <th className="px-5 py-4 text-xs font-semibold text-gray-600 uppercase tracking-wider">Pekerjaan</th>
-                    <th className="px-5 py-4 text-xs font-semibold text-gray-600 uppercase tracking-wider">Lokasi</th>
-                    <th className="px-5 py-4 text-xs font-semibold text-gray-600 uppercase tracking-wider">Tanggal</th>
-                    <th className="px-5 py-4 text-xs font-semibold text-gray-600 uppercase tracking-wider">Status</th>
-                    <th className="px-5 py-4 text-xs font-semibold text-gray-600 uppercase tracking-wider text-right">Aksi</th>
-                  </tr>
+                  {isVendorRole ? (
+                    <tr>
+                      <th className="px-5 py-4 text-xs font-semibold text-gray-600 uppercase tracking-wider">No. Izin</th>
+                      <th className="px-5 py-4 text-xs font-semibold text-gray-600 uppercase tracking-wider">Pekerjaan</th>
+                      <th className="px-5 py-4 text-xs font-semibold text-gray-600 uppercase tracking-wider">Lokasi</th>
+                      <th className="px-5 py-4 text-xs font-semibold text-gray-600 uppercase tracking-wider">Tanggal</th>
+                      <th className="px-5 py-4 text-xs font-semibold text-gray-600 uppercase tracking-wider text-center whitespace-nowrap">Status</th>
+                      <th className="px-5 py-4 text-xs font-semibold text-gray-600 uppercase tracking-wider text-right whitespace-nowrap">Aksi</th>
+                    </tr>
+                  ) : (
+                    <tr>
+                      <th className="px-5 py-3.5 w-3/12 text-xs font-semibold text-gray-600 uppercase tracking-wider">ID & Pekerjaan</th>
+                      <th className="px-4 py-3.5 w-2/12 text-xs font-semibold text-gray-600 uppercase tracking-wider">Vendor</th>
+                      <th className="px-4 py-3.5 w-3/12 text-xs font-semibold text-gray-600 uppercase tracking-wider">Lokasi & Tanggal</th>
+                      <th className="px-4 py-3.5 w-2/12 text-xs font-semibold text-gray-600 uppercase tracking-wider text-center whitespace-nowrap">Status</th>
+                      <th className="px-5 py-3.5 w-2/12 text-xs font-semibold text-gray-600 uppercase tracking-wider text-right whitespace-nowrap">Aksi</th>
+                    </tr>
+                  )}
                 </thead>
                 <tbody className="divide-y divide-gray-100">
                   {loading ? (
                     <tr>
-                      <td colSpan={6} className="py-16 text-center">
+                      <td colSpan={isVendorRole ? 6 : 5} className="py-16 text-center">
                         <K3Loader size="md" text="Memuat riwayat izin kerja..." />
                       </td>
                     </tr>
                   ) : displayedRequests.length > 0 ? (
                     displayedRequests.map((req) => (
                       <tr key={req.id} className="hover:bg-gray-50/50 transition-colors">
-                        <td className="px-5 py-4 text-sm font-bold text-gray-900 whitespace-nowrap">
-                          <div className="font-mono text-gray-900">{req.id}</div>
-                          {req.requestType === 'Perpanjangan' && (
-                            <div className="mt-1 flex flex-col gap-0.5">
-                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-amber-50 text-amber-800 border border-amber-200" title={`Diperpanjang dari izin ${req.parentPermit?.permitNumber || req.parentPermitId}`}>
-                                Perpanjangan Ke-{req.extensionPhase || 1}
-                              </span>
-                              {req.hasActiveChild && (
-                                <span className="text-[9px] text-blue-600 font-medium">
-                                  ✓ Dilanjutkan ke Fase berikutnya
-                                </span>
+                        {!isVendorRole ? (
+                          <>
+                            {/* 1. ID & Pekerjaan */}
+                            <td className="px-5 py-3.5">
+                              <div className="font-bold text-gray-900 font-mono text-xs">{req.id}</div>
+                              {req.requestType === 'Perpanjangan' && (
+                                <div className="mt-0.5 flex flex-col gap-0.5">
+                                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-50 text-amber-800 border border-amber-200 w-fit" title={`Diperpanjang dari izin ${req.parentPermit?.permitNumber || req.parentPermitId}`}>
+                                    Perpanjangan Ke-{req.extensionPhase || 1}
+                                  </span>
+                                  {req.hasActiveChild && (
+                                    <span className="text-[9px] text-blue-600 font-medium">
+                                      ✓ Dilanjutkan ke Fase berikutnya
+                                    </span>
+                                  )}
+                                </div>
                               )}
-                            </div>
-                          )}
-                        </td>
-                        <td className="px-5 py-4 text-sm font-medium text-gray-700">{req.jenisPekerjaan}</td>
-                        <td className="px-5 py-4 text-sm text-gray-500">{req.lokasi}</td>
-                        <td className="px-5 py-4 text-sm text-gray-500 whitespace-nowrap">
-                          <div className="font-medium text-gray-800">{formatDateDDMMYY(req.mulaiKerja)} s/d {formatDateDDMMYY(req.selesaiKerja)}</div>
-                      {req.projectEndDate && req.projectEndDate > req.selesaiKerja && (
-                        <div className="text-[10px] font-semibold text-blue-700 mt-0.5">
-                          Target Proyek: s/d {formatDateDDMMYY(req.projectEndDate)}
-                        </div>
-                      )}
-                          {req.projectEndDate && req.projectEndDate > req.selesaiKerja && (
-                            <div className="text-[10.5px] font-semibold text-blue-700 mt-0.5">
-                              Target Proyek: s/d {formatDateDDMMYY(req.projectEndDate)}
-                            </div>
-                          )}
-                          {req.requestType === 'Perpanjangan' && req.cumulativeStartDate && (
-                            <div className="text-[11px] font-semibold text-amber-700 mt-0.5 flex items-center gap-1">
-                              <span>Kumulatif: {formatDateDDMMYY(req.cumulativeStartDate)} s/d {formatDateDDMMYY(req.cumulativeEndDate)}</span>
-                              <span className="text-[10px] bg-amber-100 text-amber-800 px-1 rounded">
-                                {calculateInclusiveDays(req.cumulativeStartDate, req.cumulativeEndDate)} Hari
+                              <div className="text-gray-600 text-xs mt-0.5 line-clamp-1" title={req.jenisPekerjaan}>{req.jenisPekerjaan}</div>
+                            </td>
+
+                            {/* 2. Vendor */}
+                            <td className="px-4 py-3.5">
+                              <div className="font-semibold text-gray-900 text-xs truncate max-w-[180px]" title={req.namaKontraktor}>{req.namaKontraktor}</div>
+                              <div className="text-[11px] text-gray-500 mt-0.5">
+                                {(req.pekerja && req.pekerja.length) || req.totalTenagaKerja || 0} Pekerja
+                              </div>
+                            </td>
+
+                            {/* 3. Lokasi & Tanggal */}
+                            <td className="px-4 py-3.5">
+                              <div className="text-gray-800 text-xs truncate max-w-[200px]" title={req.lokasi}>{req.lokasi}</div>
+                              <div className="text-[11px] text-gray-500 mt-0.5 font-medium whitespace-nowrap">
+                                {formatDateDDMMYY(req.mulaiKerja)} s/d {formatDateDDMMYY(req.selesaiKerja)}
+                              </div>
+                              {req.projectEndDate && req.projectEndDate > req.selesaiKerja && (
+                                <div className="text-[10px] font-semibold text-blue-700 mt-0.5">
+                                  Target Proyek: s/d {formatDateDDMMYY(req.projectEndDate)}
+                                </div>
+                              )}
+                              {req.requestType === 'Perpanjangan' && req.cumulativeStartDate && (
+                                <div className="text-[10px] font-semibold text-amber-700 mt-0.5 flex items-center gap-1">
+                                  <span>Kumulatif: {formatDateDDMMYY(req.cumulativeStartDate)} s/d {formatDateDDMMYY(req.cumulativeEndDate)}</span>
+                                  <span className="text-[10px] bg-amber-100 text-amber-800 px-1 rounded">
+                                    {calculateInclusiveDays(req.cumulativeStartDate, req.cumulativeEndDate)} Hari
+                                  </span>
+                                </div>
+                              )}
+                            </td>
+
+                            {/* 4. Status */}
+                            <td className="px-4 py-3.5 text-center whitespace-nowrap">
+                              <span className={cn("px-2.5 py-1 rounded-full text-xs font-bold tracking-wide uppercase inline-block", getStatusBadge(req.status))}>
+                                {formatPermitStatus(req.status)}
                               </span>
-                            </div>
-                          )}
-                        </td>
-                        <td className="px-5 py-4 whitespace-nowrap">
-                          <span className={cn("px-2.5 py-1 rounded-full text-xs font-bold tracking-wide uppercase", getStatusBadge(req.status))}>
-                            {formatPermitStatus(req.status)}
-                          </span>
-                        </td>
-                        <td className="px-5 py-4 text-right whitespace-nowrap">
-                          <div className="flex items-center justify-end gap-2">
-                            {isVendorRole && req.status === "Ditolak" && (
-                              <button
-                                onClick={() => handleResubmit(req)}
-                                className="p-2 text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors cursor-pointer"
-                                title="Ajukan Kembali Izin Kerja Ini (Koreksi Tanggal & Kirim Ulang)"
-                              >
-                                <RotateCcw size={18} />
-                              </button>
-                            )}
-                            {isVendorRole && isEligibleForExtension(req.selesaiKerja, req.status, extensionWindowDays) && !req.hasActiveChild && (
-                              <button
-                                onClick={() => handleExtend(req)}
-                                className="p-2 text-amber-600 hover:text-amber-700 hover:bg-amber-50 rounded-lg transition-colors cursor-pointer"
-                                title={`Perpanjang Izin Kerja (Fase ${(req.extensionPhase || 0) + 1})`}
-                              >
-                                <CalendarPlus size={18} />
-                              </button>
-                            )}
-                            <button 
-                              onClick={() => handleOpenDetail(req)}
-                              className="p-2 text-gray-400 hover:text-primary hover:bg-primary-container/50 rounded-lg transition-colors cursor-pointer" 
-                              title="Lihat Detail"
-                            >
-                              <Eye size={18} />
-                            </button>
-                            {canPrintPermit(req.status) ? (
-                              <button 
-                                onClick={() => handleOpenPrintModal(req)}
-                                className="p-2 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 rounded-lg transition-colors cursor-pointer" 
-                                title="Cetak & Unduh Surat Izin Kerja Resmi"
-                              >
-                                <Printer size={18} />
-                              </button>
-                            ) : (
-                              <button 
-                                disabled
-                                className="p-2 text-gray-300 bg-gray-50 rounded-lg cursor-not-allowed opacity-60" 
-                                title={`Cetak Terkunci: Menunggu persetujuan akhir dari HRD&GA Division Head (Status: ${formatPermitStatus(req.status)})`}
-                              >
-                                <Lock size={18} className="text-gray-400" />
-                              </button>
-                            )}
-                          </div>
-                        </td>
+                            </td>
+
+                            {/* 5. Aksi */}
+                            <td className="px-5 py-3.5 text-right whitespace-nowrap">
+                              <div className="flex items-center justify-end gap-2">
+                                <button 
+                                  onClick={() => handleOpenDetail(req)}
+                                  className="p-2 text-gray-400 hover:text-primary hover:bg-primary-container/50 rounded-lg transition-colors cursor-pointer" 
+                                  title="Lihat Detail"
+                                >
+                                  <Eye size={18} />
+                                </button>
+                                {canPrintPermit(req.status) ? (
+                                  <button 
+                                    onClick={() => handleOpenPrintModal(req)}
+                                    className="p-2 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 rounded-lg transition-colors cursor-pointer" 
+                                    title="Cetak & Unduh Surat Izin Kerja Resmi"
+                                  >
+                                    <Printer size={18} />
+                                  </button>
+                                ) : (
+                                  <button 
+                                    disabled
+                                    className="p-2 text-gray-300 bg-gray-50 rounded-lg cursor-not-allowed opacity-60" 
+                                    title={`Cetak Terkunci: Menunggu persetujuan akhir dari HRD&GA Division Head (Status: ${formatPermitStatus(req.status)})`}
+                                  >
+                                    <Lock size={18} className="text-gray-400" />
+                                  </button>
+                                )}
+                              </div>
+                            </td>
+                          </>
+                        ) : (
+                          <>
+                            {/* Vendor 6-Column Layout */}
+                            <td className="px-5 py-4 text-sm font-bold text-gray-900 whitespace-nowrap">
+                              <div className="font-mono text-gray-900">{req.id}</div>
+                              {req.requestType === 'Perpanjangan' && (
+                                <div className="mt-1 flex flex-col gap-0.5">
+                                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-amber-50 text-amber-800 border border-amber-200" title={`Diperpanjang dari izin ${req.parentPermit?.permitNumber || req.parentPermitId}`}>
+                                    Perpanjangan Ke-{req.extensionPhase || 1}
+                                  </span>
+                                  {req.hasActiveChild && (
+                                    <span className="text-[9px] text-blue-600 font-medium">
+                                      ✓ Dilanjutkan ke Fase berikutnya
+                                    </span>
+                                  )}
+                                </div>
+                              )}
+                            </td>
+                            <td className="px-5 py-4 text-sm font-medium text-gray-700">{req.jenisPekerjaan}</td>
+                            <td className="px-5 py-4 text-sm text-gray-500">{req.lokasi}</td>
+                            <td className="px-5 py-4 text-sm text-gray-500 whitespace-nowrap">
+                              <div className="font-medium text-gray-800">{formatDateDDMMYY(req.mulaiKerja)} s/d {formatDateDDMMYY(req.selesaiKerja)}</div>
+                              {req.projectEndDate && req.projectEndDate > req.selesaiKerja && (
+                                <div className="text-[10px] font-semibold text-blue-700 mt-0.5">
+                                  Target Proyek: s/d {formatDateDDMMYY(req.projectEndDate)}
+                                </div>
+                              )}
+                              {req.requestType === 'Perpanjangan' && req.cumulativeStartDate && (
+                                <div className="text-[11px] font-semibold text-amber-700 mt-0.5 flex items-center gap-1">
+                                  <span>Kumulatif: {formatDateDDMMYY(req.cumulativeStartDate)} s/d {formatDateDDMMYY(req.cumulativeEndDate)}</span>
+                                  <span className="text-[10px] bg-amber-100 text-amber-800 px-1 rounded">
+                                    {calculateInclusiveDays(req.cumulativeStartDate, req.cumulativeEndDate)} Hari
+                                  </span>
+                                </div>
+                              )}
+                            </td>
+                            <td className="px-5 py-4 text-center whitespace-nowrap">
+                              <span className={cn("px-2.5 py-1 rounded-full text-xs font-bold tracking-wide uppercase inline-block", getStatusBadge(req.status))}>
+                                {formatPermitStatus(req.status)}
+                              </span>
+                            </td>
+                            <td className="px-5 py-4 text-right whitespace-nowrap">
+                              <div className="flex items-center justify-end gap-2">
+                                {isVendorRole && req.status === "Ditolak" && (
+                                  <button
+                                    onClick={() => handleResubmit(req)}
+                                    className="p-2 text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors cursor-pointer"
+                                    title="Ajukan Kembali Izin Kerja Ini (Koreksi Tanggal & Kirim Ulang)"
+                                  >
+                                    <RotateCcw size={18} />
+                                  </button>
+                                )}
+                                {isVendorRole && isEligibleForExtension(req.selesaiKerja, req.status, extensionWindowDays) && !req.hasActiveChild && (
+                                  <button
+                                    onClick={() => handleExtend(req)}
+                                    className="p-2 text-amber-600 hover:text-amber-700 hover:bg-amber-50 rounded-lg transition-colors cursor-pointer"
+                                    title={`Perpanjang Izin Kerja (Fase ${(req.extensionPhase || 0) + 1})`}
+                                  >
+                                    <CalendarPlus size={18} />
+                                  </button>
+                                )}
+                                <button 
+                                  onClick={() => handleOpenDetail(req)}
+                                  className="p-2 text-gray-400 hover:text-primary hover:bg-primary-container/50 rounded-lg transition-colors cursor-pointer" 
+                                  title="Lihat Detail"
+                                >
+                                  <Eye size={18} />
+                                </button>
+                                {canPrintPermit(req.status) ? (
+                                  <button 
+                                    onClick={() => handleOpenPrintModal(req)}
+                                    className="p-2 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 rounded-lg transition-colors cursor-pointer" 
+                                    title="Cetak & Unduh Surat Izin Kerja Resmi"
+                                  >
+                                    <Printer size={18} />
+                                  </button>
+                                ) : (
+                                  <button 
+                                    disabled
+                                    className="p-2 text-gray-300 bg-gray-50 rounded-lg cursor-not-allowed opacity-60" 
+                                    title={`Cetak Terkunci: Menunggu persetujuan akhir dari HRD&GA Division Head (Status: ${formatPermitStatus(req.status)})`}
+                                  >
+                                    <Lock size={18} className="text-gray-400" />
+                                  </button>
+                                )}
+                              </div>
+                            </td>
+                          </>
+                        )}
                       </tr>
                     ))
                   ) : (
                     <tr>
-                      <td colSpan={6} className="px-6 py-12 text-center text-gray-500">
+                      <td colSpan={isVendorRole ? 6 : 5} className="px-6 py-12 text-center text-gray-500">
                         
                         {showExpiringOnly ? (
                           <>
@@ -1026,6 +1122,13 @@ export default function HistoryPage() {
                   
                   <div>
                     <h4 className="text-sm font-semibold text-gray-800 leading-tight">{req.jenisPekerjaan}</h4>
+                    {!isVendorRole && req.namaKontraktor && (
+                      <div className="flex items-center gap-1.5 text-xs text-gray-600 mt-1">
+                        <span className="font-semibold text-gray-900">{req.namaKontraktor}</span>
+                        <span>•</span>
+                        <span className="text-gray-500">{(req.pekerja && req.pekerja.length) || req.totalTenagaKerja || 0} Pekerja</span>
+                      </div>
+                    )}
                     <p className="text-xs text-gray-500 mt-1">{req.lokasi}</p>
                   </div>
                   
