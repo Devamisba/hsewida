@@ -884,7 +884,7 @@ export default function HistoryPage() {
                   ) : (
                     <tr>
                       <td colSpan={6} className="px-6 py-12 text-center text-gray-500">
-                        <AlertTriangle size={40} className="mx-auto mb-3 text-rose-300" />
+                        
                         {showExpiringOnly ? (
                           <>
                             <p className="text-base font-medium text-gray-800">Tidak Ada Izin yang Segera Berakhir</p>
@@ -1021,7 +1021,7 @@ export default function HistoryPage() {
               ))
             ) : (
               <div className="bg-white p-8 rounded-xl border border-gray-200 text-center text-gray-500 space-y-2">
-                <AlertTriangle size={32} className="mx-auto text-amber-400" />
+                
                 {showExpiringOnly ? (
                   <>
                     <p className="text-sm font-semibold text-gray-800">Tidak Ada Izin yang Segera Berakhir</p>
