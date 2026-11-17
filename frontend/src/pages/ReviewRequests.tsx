@@ -434,14 +434,14 @@ export default function ReviewRequestsPage() {
 
             {/* Desktop Table (>= lg) */}
             <div className="hidden lg:block overflow-x-auto">
-              <table className="w-full text-left text-xs border-collapse">
-                <thead className="bg-slate-50/80 border-b border-gray-200 text-gray-600 text-[11px] uppercase tracking-wider font-bold">
+              <table className="w-full text-left text-sm border-collapse">
+                <thead className="bg-slate-50/80 border-b border-gray-200 text-gray-600 text-xs uppercase tracking-wider font-bold">
                   <tr>
-                    <th className="px-5 py-3.5 w-3/12">ID & Pekerjaan</th>
-                    <th className="px-4 py-3.5 w-2/12">Vendor</th>
-                    <th className="px-4 py-3.5 w-3/12">Lokasi & Tanggal</th>
-                    <th className="px-4 py-3.5 w-2/12 text-center whitespace-nowrap">Status</th>
-                    <th className="px-5 py-3.5 w-2/12 text-right whitespace-nowrap">Aksi</th>
+                    <th className="px-5 py-4 w-3/12">ID & Pekerjaan</th>
+                    <th className="px-4 py-4 w-2/12">Vendor</th>
+                    <th className="px-4 py-4 w-3/12">Lokasi & Tanggal</th>
+                    <th className="px-4 py-4 w-2/12 text-center whitespace-nowrap">Status</th>
+                    <th className="px-5 py-4 w-2/12 text-right whitespace-nowrap">Aksi</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
@@ -454,46 +454,46 @@ export default function ReviewRequestsPage() {
                   ) : activeList.length > 0 ? (
                     activeList.map((req) => (
                       <tr key={req.id} className="hover:bg-gray-50/70 transition-colors group">
-                        <td className="px-5 py-3.5">
-                          <div className="font-bold text-gray-900 font-mono text-xs">{req.id}</div>
+                        <td className="px-5 py-4">
+                          <div className="font-bold text-gray-900 font-mono text-sm">{req.id}</div>
                           {req.requestType === 'Perpanjangan' && (
                             <div className="mt-0.5 flex flex-col gap-0.5">
-                              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-50 text-amber-800 border border-amber-200 w-fit" title={`Diperpanjang dari izin ${req.parentPermit?.permitNumber || req.parentPermitId}`}>
+                              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-50 text-amber-800 border border-amber-200 w-fit" title={`Diperpanjang dari izin ${req.parentPermit?.permitNumber || req.parentPermitId}`}>
                                 Perpanjangan Ke-{req.extensionPhase || 1}
                               </span>
                               {req.hasActiveChild && (
-                                <span className="text-[9px] text-blue-600 font-medium">
+                                <span className="text-[10px] text-blue-600 font-medium">
                                   ✓ Dilanjutkan ke Fase berikutnya
                                 </span>
                               )}
                             </div>
                           )}
-                          <div className="text-gray-600 text-xs mt-0.5 line-clamp-1" title={req.jenisPekerjaan}>{req.jenisPekerjaan}</div>
+                          <div className="text-gray-600 text-sm mt-0.5 line-clamp-1" title={req.jenisPekerjaan}>{req.jenisPekerjaan}</div>
                         </td>
-                        <td className="px-4 py-3.5">
-                          <div className="font-semibold text-gray-900 text-xs truncate max-w-[180px]" title={req.kontraktor}>{req.kontraktor}</div>
-                          <div className="text-[11px] text-gray-500 mt-0.5">{req.pekerja.length} Pekerja</div>
+                        <td className="px-4 py-4">
+                          <div className="font-semibold text-gray-900 text-sm truncate max-w-[200px]" title={req.kontraktor}>{req.kontraktor}</div>
+                          <div className="text-xs text-gray-500 mt-0.5">{req.pekerja.length} Pekerja</div>
                         </td>
-                        <td className="px-4 py-3.5">
-                          <div className="text-gray-800 text-xs truncate max-w-[200px]" title={req.lokasi}>{req.lokasi}</div>
-                          <div className="text-[11px] text-gray-500 mt-0.5 font-medium whitespace-nowrap">{formatDateDDMMYY(req.mulaiKerja)} s/d {formatDateDDMMYY(req.selesaiKerja)}</div>
+                        <td className="px-4 py-4">
+                          <div className="text-gray-800 text-sm truncate max-w-[220px]" title={req.lokasi}>{req.lokasi}</div>
+                          <div className="text-xs text-gray-500 mt-0.5 font-medium whitespace-nowrap">{formatDateDDMMYY(req.mulaiKerja)} s/d {formatDateDDMMYY(req.selesaiKerja)}</div>
                           {req.projectEndDate && req.projectEndDate > req.selesaiKerja && (
-                            <div className="text-[10px] font-semibold text-blue-700 mt-0.5">
+                            <div className="text-[11px] font-semibold text-blue-700 mt-0.5">
                               Target Proyek: s/d {formatDateDDMMYY(req.projectEndDate)}
                             </div>
                           )}
                           {req.requestType === 'Perpanjangan' && req.cumulativeStartDate && (
-                            <div className="text-[10px] font-semibold text-amber-700 mt-0.5">
+                            <div className="text-[11px] font-semibold text-amber-700 mt-0.5">
                               Kumulatif: {formatDateDDMMYY(req.cumulativeStartDate)} s/d {formatDateDDMMYY(req.cumulativeEndDate)} ({calculateInclusiveDays(req.cumulativeStartDate, req.cumulativeEndDate)} Hari)
                             </div>
                           )}
                         </td>
-                        <td className="px-4 py-3.5 text-center whitespace-nowrap">
+                        <td className="px-4 py-4 text-center whitespace-nowrap">
                           <span className={cn("px-2.5 py-1 rounded-full text-xs font-bold tracking-wide uppercase inline-block", getStatusBadge(req.status))}>
                             {formatPermitStatus(req.status)}
                           </span>
                         </td>
-                        <td className="px-5 py-3.5 text-right whitespace-nowrap">
+                        <td className="px-5 py-4 text-right whitespace-nowrap">
                           <div className="flex items-center justify-end gap-1.5">
                             {req.status === 'Disetujui' && (
                               <button
