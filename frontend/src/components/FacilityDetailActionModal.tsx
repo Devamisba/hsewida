@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { 
   X, 
@@ -20,12 +20,31 @@ import {
   Save,
   AlertCircle,
   Edit3,
-  Trash2
+  Trash2,
+  Filter,
+  ChevronDown,
+  History,
+  Inbox
 } from "lucide-react";
 import { SafetyFacility, api } from "@/services/api";
-import { parseLocalDate } from "@/lib/utils";
+import { cn, parseLocalDate } from "@/lib/utils";
 import { QRCodeSVG } from "./QRCodeSVG";
 import { getFacilityCoordinates } from "@/utils/facilityCoordinates";
+
+const MONTHS_LIST = [
+  { index: 0, short: "Jan", name: "Januari" },
+  { index: 1, short: "Feb", name: "Februari" },
+  { index: 2, short: "Mar", name: "Maret" },
+  { index: 3, short: "Apr", name: "April" },
+  { index: 4, short: "Mei", name: "Mei" },
+  { index: 5, short: "Jun", name: "Juni" },
+  { index: 6, short: "Jul", name: "Juli" },
+  { index: 7, short: "Agu", name: "Agustus" },
+  { index: 8, short: "Sep", name: "September" },
+  { index: 9, short: "Okt", name: "Oktober" },
+  { index: 10, short: "Nov", name: "November" },
+  { index: 11, short: "Des", name: "Desember" },
+];
 
 interface FacilityDetailActionModalProps {
   isOpen: boolean;
@@ -54,10 +73,139 @@ export function FacilityDetailActionModal({
   const [loadingHistory, setLoadingHistory] = useState<boolean>(false);
   const [activePhoto, setActivePhoto] = useState<string | null>(null);
 
+  // Filter Kalender Tahunan & Pilihan Bulan
+  const currentYear = new Date().getFullYear();
+  const [selectedYear, setSelectedYear] = useState<number>(() => currentYear);
+  const [selectedMonthIndex, setSelectedMonthIndex] = useState<number | null>(null);
+  const [isFilterOpen, setIsFilterOpen] = useState<boolean>(false);
+
+  // Daftar tahun yang tersedia
+  const availableYears = useMemo(() => {
+    const yearSet = new Set<number>();
+    yearSet.add(currentYear);
+    yearSet.add(currentYear - 1);
+    yearSet.add(currentYear - 2);
+
+    if (Array.isArray(inspections)) {
+      inspections.forEach((insp: any) => {
+        const d = parseLocalDate(insp.created_at || insp.inspection_date);
+        if (d && !isNaN(d.getFullYear())) {
+          yearSet.add(d.getFullYear());
+        }
+      });
+    }
+
+    return Array.from(yearSet).sort((a, b) => b - a);
+  }, [inspections, currentYear]);
+
+  // Pemetaan inspeksi per bulan (0 - 11) untuk tahun yang dipilih
+  const yearInspectionsByMonth = useMemo(() => {
+    const map: Record<number, any[]> = {};
+    for (let i = 0; i < 12; i++) {
+      map[i] = [];
+    }
+
+    if (Array.isArray(inspections)) {
+      inspections.forEach((insp: any) => {
+        const d = parseLocalDate(insp.created_at || insp.inspection_date);
+        if (d && !isNaN(d.getFullYear()) && d.getFullYear() === selectedYear) {
+          const m = d.getMonth();
+          map[m].push(insp);
+        }
+      });
+    }
+
+    return map;
+  }, [inspections, selectedYear]);
+
+  // Jumlah bulan yang sudah diinspeksi
+  const inspectedMonthsCount = useMemo(() => {
+    let count = 0;
+    for (let i = 0; i < 12; i++) {
+      if (yearInspectionsByMonth[i]?.length > 0) {
+        count++;
+      }
+    }
+    return count;
+  }, [yearInspectionsByMonth]);
+
+  // Helper status warna & label untuk setiap kotak bulan (sesuai standar kartu kendali)
+  const getMonthStatus = (monthInspections: any[]) => {
+    if (!monthInspections || monthInspections.length === 0) {
+      return {
+        type: "EMPTY" as const,
+        label: "Belum Diperiksa",
+        shortLabel: "-",
+        cellBg: "bg-slate-50/70 border-slate-200 text-slate-400 hover:bg-slate-100/70",
+        dotColor: "bg-slate-300",
+        textColor: "text-slate-400",
+      };
+    }
+
+    const latestInsp = monthInspections[0];
+    const results = Array.isArray(latestInsp.checklist_results) ? latestInsp.checklist_results : [];
+    const hasDamage = latestInsp.overall_condition === "DAMAGED" ||
+      results.some((r: any) =>
+        r.passed === false ||
+        [
+          "Rusak",
+          "Karat / Rusak",
+          "Putus / Hilang",
+          "Expired",
+          "Berantakan",
+          "Kurang",
+          "Terhalang",
+          "Kotor",
+          "Mati",
+          "Pudar",
+          "Buram",
+          "Goyang",
+          "Retak",
+          "Macet",
+          "Terkunci",
+        ].includes(r.jawaban)
+      );
+
+    const isVerified = latestInsp.inspection_stage === "PIC_VERIFIED" || latestInsp.verification_status === "VERIFIED";
+
+    if (hasDamage) {
+      return {
+        type: "FAIL" as const,
+        label: "Rusak / Perlu Atensi",
+        shortLabel: "Rusak",
+        cellBg: "bg-rose-50/60 border-rose-200 text-rose-800 hover:bg-rose-100/60",
+        dotColor: "bg-rose-500",
+        textColor: "text-rose-700",
+      };
+    }
+
+    if (!isVerified) {
+      return {
+        type: "PENDING" as const,
+        label: "Menunggu Verifikasi PIC",
+        shortLabel: "Verif PIC",
+        cellBg: "bg-amber-50/60 border-amber-200 text-amber-800 hover:bg-amber-100/60",
+        dotColor: "bg-amber-500",
+        textColor: "text-amber-700",
+      };
+    }
+
+    return {
+      type: "PASS" as const,
+      label: "Aman / Baik",
+      shortLabel: "Aman",
+      cellBg: "bg-emerald-50/60 border-emerald-200 text-emerald-800 hover:bg-emerald-100/60",
+      dotColor: "bg-emerald-500",
+      textColor: "text-emerald-700",
+    };
+  };
+
   useEffect(() => {
     if (!isOpen || !facility) {
       setInspections([]);
       setActivePhoto(null);
+      setSelectedMonthIndex(null);
+      setIsFilterOpen(false);
       return;
     }
 
@@ -603,20 +751,194 @@ export function FacilityDetailActionModal({
             </div>
           </div>
 
-          {/* SECTION 3: RIWAYAT MONITORING & VERIFIKASI */}
-          <div className="space-y-2 pt-2 border-t border-slate-200">
+          {/* SECTION 3: RIWAYAT MONITORING & VERIFIKASI (KALENDER 12 BULAN & FILTER PERIODE) */}
+          <div className="space-y-3 pt-3 border-t border-slate-200">
+            {/* Header & Total Count */}
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-600">
-                  Riwayat Monitoring & Verifikasi Lapangan
+                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
+                  <History size={14} className="text-slate-500" />
+                  <span>Riwayat Monitoring & Verifikasi Lapangan</span>
                 </h3>
                 <p className="text-[11px] text-slate-500">
-                  Catatan inspeksi fisik, nama petugas pemeriksa, dan verifikasi PIC K3
+                  Kalender kartu kendali 12 bulan dan rincian verifikasi fisik K3
                 </p>
               </div>
-              <span className="text-[11px] text-slate-400 font-mono">
+              <span className="text-[11px] font-bold text-slate-600 bg-slate-100 px-2.5 py-0.5 rounded-full border border-slate-200">
                 {inspections.length} Riwayat
               </span>
+            </div>
+
+            {/* Filter Periode Interaktif & Ringkasan Kepatuhan */}
+            <div className="relative">
+              <div className="flex items-center justify-between flex-wrap gap-2 py-0.5">
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setIsFilterOpen((prev) => !prev)}
+                    className={cn(
+                      "inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold border transition cursor-pointer shadow-xs",
+                      selectedMonthIndex !== null
+                        ? "bg-slate-900 text-white border-slate-900"
+                        : "bg-white text-slate-800 border-slate-300 hover:bg-slate-50"
+                    )}
+                  >
+                    <Filter size={13} className={selectedMonthIndex !== null ? "text-amber-400" : "text-slate-500"} />
+                    <span>
+                      Periode: <strong>{selectedYear}</strong>
+                      {" • "}
+                      <span className={selectedMonthIndex !== null ? "text-amber-200" : "text-slate-600"}>
+                        {selectedMonthIndex !== null ? MONTHS_LIST[selectedMonthIndex].name : "Semua Bulan (1 Tahun Full)"}
+                      </span>
+                    </span>
+                    <ChevronDown size={13} className={cn("transition-transform duration-200", isFilterOpen ? "rotate-180" : "")} />
+                  </button>
+
+                  {selectedMonthIndex !== null && (
+                    <button
+                      type="button"
+                      onClick={() => setSelectedMonthIndex(null)}
+                      className="text-[11px] text-slate-500 hover:text-slate-800 underline cursor-pointer"
+                    >
+                      Lihat 1 Tahun Full
+                    </button>
+                  )}
+                </div>
+
+                <span className="text-[11px] font-medium text-slate-500 bg-slate-50 px-2.5 py-1 rounded-md border border-slate-200">
+                  <strong className="text-slate-800 font-bold">{inspectedMonthsCount}</strong> / 12 Bulan Terinspeksi
+                </span>
+              </div>
+
+              {/* POPUP DROPDOWN FILTER (PILIH TAHUN & BULAN) */}
+              {isFilterOpen && (
+                <>
+                  <div 
+                    className="fixed inset-0 z-20"
+                    onClick={() => setIsFilterOpen(false)}
+                  />
+                  <div className="absolute left-0 top-full mt-1.5 z-30 w-full sm:w-[380px] bg-white rounded-xl shadow-xl border border-slate-200 p-4 space-y-3.5 animate-fade-in">
+                    <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+                      <div className="flex items-center gap-1.5 text-xs font-bold text-slate-800 uppercase tracking-wide">
+                        <Filter size={13} className="text-slate-600" />
+                        <span>Filter Periode Kalender</span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setIsFilterOpen(false)}
+                        className="text-slate-400 hover:text-slate-600 p-1 rounded"
+                      >
+                        <X size={14} />
+                      </button>
+                    </div>
+
+                    {/* 1. Pilih Tahun */}
+                    <div className="space-y-1.5">
+                      <label className="text-[11px] font-bold text-slate-600 uppercase tracking-wider block">
+                        1. Pilih Tahun:
+                      </label>
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        {availableYears.map((yr) => (
+                          <button
+                            key={yr}
+                            type="button"
+                            onClick={() => setSelectedYear(yr)}
+                            className={cn(
+                              "px-3 py-1 text-xs font-bold rounded-lg transition cursor-pointer",
+                              selectedYear === yr
+                                ? "bg-slate-900 text-white shadow-xs"
+                                : "bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200"
+                            )}
+                          >
+                            {yr}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* 2. Pilih Bulan */}
+                    <div className="space-y-1.5">
+                      <div className="flex items-center justify-between">
+                        <label className="text-[11px] font-bold text-slate-600 uppercase tracking-wider block">
+                          2. Pilih Bulan:
+                        </label>
+                        <span className="text-[10px] text-slate-400">
+                          Bulan atau 1 tahun penuh
+                        </span>
+                      </div>
+
+                      {/* Tombol Semua Bulan (1 Tahun Full) */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSelectedMonthIndex(null);
+                          setIsFilterOpen(false);
+                        }}
+                        className={cn(
+                          "w-full py-1.5 px-3 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer border",
+                          selectedMonthIndex === null
+                            ? "bg-slate-900 text-white border-slate-900 shadow-xs"
+                            : "bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200"
+                        )}
+                      >
+                        <span>★</span>
+                        <span>Semua Bulan (Tampilkan 1 Tahun Penuh)</span>
+                      </button>
+
+                      {/* 12 Kotak Pilihan Bulan */}
+                      <div className="grid grid-cols-4 gap-1.5 pt-1">
+                        {MONTHS_LIST.map((m) => {
+                          const isSelected = selectedMonthIndex === m.index;
+                          const hasData = yearInspectionsByMonth[m.index]?.length > 0;
+                          return (
+                            <button
+                              key={m.index}
+                              type="button"
+                              onClick={() => {
+                                setSelectedMonthIndex(m.index);
+                                setIsFilterOpen(false);
+                              }}
+                              className={cn(
+                                "py-1.5 px-2 rounded-lg text-xs font-semibold transition cursor-pointer border text-center relative",
+                                isSelected
+                                  ? "bg-slate-900 text-white border-slate-900 shadow-xs"
+                                  : "bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200"
+                              )}
+                            >
+                              {m.short}
+                              {hasData && (
+                                <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                              )}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Footer Tombol Tutup & Reset */}
+                    <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-xs">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSelectedYear(currentYear);
+                          setSelectedMonthIndex(null);
+                          setIsFilterOpen(false);
+                        }}
+                        className="text-slate-500 hover:text-rose-600 underline cursor-pointer text-[11px]"
+                      >
+                        Reset Filter
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setIsFilterOpen(false)}
+                        className="px-3 py-1 bg-slate-900 text-white font-semibold rounded-lg hover:bg-slate-800 transition cursor-pointer text-[11px]"
+                      >
+                        Tutup
+                      </button>
+                    </div>
+                  </div>
+                </>
+              )}
             </div>
 
             {loadingHistory && inspections.length === 0 ? (
@@ -631,136 +953,258 @@ export function FacilityDetailActionModal({
                 </p>
               </div>
             ) : (
-              <div className="space-y-3">
-                {inspections.map((insp, idx) => {
-                  const inspector = insp.inspector_name || insp.inspector?.name || "Petugas Lapangan";
-                  const pic = insp.pic_name || null;
-                  const isVerified = insp.inspection_stage === "PIC_VERIFIED" || insp.verification_status === "VERIFIED";
-                  const results = Array.isArray(insp.checklist_results) ? insp.checklist_results : [];
-                  const photos = Array.isArray(insp.foto_bukti) ? insp.foto_bukti : [];
+              <div className="space-y-3.5">
+                {/* Matriks Kalender 12 Bulan (Januari s/d Desember) */}
+                <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2">
+                  {MONTHS_LIST.map((m) => {
+                    const monthInspections = yearInspectionsByMonth[m.index] || [];
+                    const status = getMonthStatus(monthInspections);
+                    const isSelected = selectedMonthIndex === m.index;
+
+                    let inspDateLabel = "-";
+                    if (monthInspections.length > 0) {
+                      const d = parseLocalDate(monthInspections[0].created_at || monthInspections[0].inspection_date);
+                      if (d) {
+                        inspDateLabel = `${d.getDate()} ${m.short}`;
+                      }
+                    }
+
+                    return (
+                      <button
+                        key={m.index}
+                        type="button"
+                        onClick={() => setSelectedMonthIndex(m.index)}
+                        className={cn(
+                          "relative p-2 rounded-xl border text-left transition-all cursor-pointer flex flex-col justify-between min-h-[70px]",
+                          status.cellBg,
+                          isSelected
+                            ? "ring-2 ring-slate-900 shadow-sm bg-white"
+                            : "hover:shadow-xs"
+                        )}
+                      >
+                        <div className="flex items-center justify-between w-full">
+                          <span className="text-xs font-bold uppercase tracking-wider text-slate-800">
+                            {m.short}
+                          </span>
+                          <span className={cn("w-2 h-2 rounded-full shrink-0", status.dotColor)} />
+                        </div>
+
+                        <div className="mt-1">
+                          <div className="text-[10px] font-semibold truncate leading-tight">
+                            {inspDateLabel !== "-" ? inspDateLabel : <span className="text-slate-400 font-normal">Belum</span>}
+                          </div>
+                          <div className={cn("text-[9px] font-bold mt-0.5 truncate", status.textColor)}>
+                            {status.shortLabel}
+                          </div>
+                        </div>
+
+                        {isSelected && (
+                          <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-4 h-1 bg-slate-900 rounded-full" />
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Legenda Status Kalender */}
+                <div className="flex items-center justify-between flex-wrap gap-2 pt-1 border-t border-slate-100 text-[10px] text-slate-600">
+                  <div className="flex items-center gap-2.5 flex-wrap">
+                    <div className="flex items-center gap-1">
+                      <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
+                      <span>Aman / Baik</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <span className="w-2 h-2 rounded-full bg-rose-500 shrink-0" />
+                      <span>Kerusakan</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <span className="w-2 h-2 rounded-full bg-amber-500 shrink-0" />
+                      <span>Menunggu PIC</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <span className="w-2 h-2 rounded-full bg-slate-300 shrink-0" />
+                      <span>Belum Diperiksa</span>
+                    </div>
+                  </div>
+                  <span className="text-[10px] text-slate-400 italic">
+                    *Klik kotak bulan untuk melihat detail
+                  </span>
+                </div>
+
+                {/* Panel Detail Pemeriksaan Bulan Terpilih */}
+                {selectedMonthIndex !== null ? (() => {
+                  const selectedMonth = MONTHS_LIST[selectedMonthIndex];
+                  const inspectionsInMonth = yearInspectionsByMonth[selectedMonthIndex] || [];
+
+                  if (inspectionsInMonth.length === 0) {
+                    return (
+                      <div className="p-5 bg-slate-50 rounded-xl border border-dashed border-slate-200 text-center space-y-1.5">
+                        <Inbox size={24} className="mx-auto text-slate-300 mb-0.5" />
+                        <div className="text-xs font-bold text-slate-700">
+                          Belum Ada Pemeriksaan di Bulan {selectedMonth.name} {selectedYear}
+                        </div>
+                        <p className="text-[11px] text-slate-400 max-w-sm mx-auto">
+                          Fasilitas ini belum memiliki catatan checklist inspeksi pada bulan ini.
+                        </p>
+                      </div>
+                    );
+                  }
 
                   return (
-                    <div 
-                      key={insp.id || idx}
-                      className="p-3.5 bg-white border border-slate-200 rounded-lg text-xs space-y-2 hover:border-slate-300 transition"
-                    >
-                      {/* Baris 1: Tanggal & Status Badge */}
-                      <div className="flex items-center justify-between flex-wrap gap-2 pb-2 border-b border-slate-100">
-                        <div className="flex items-center gap-1.5 text-slate-600 font-semibold">
-                          <Calendar size={13} className="text-slate-400" />
-                          <span>{formatDateTime(insp.created_at || insp.inspection_date)}</span>
-                        </div>
-
-                        {/* Status Verifikasi Badge */}
-                        {isVerified ? (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                            <CheckCircle2 size={12} />
-                            Terverifikasi PIC
+                    <div className="space-y-3 pt-1">
+                      <div className="flex items-center justify-between text-xs font-bold text-slate-800 px-0.5">
+                        <span>Detail Pemeriksaan: {selectedMonth.name} {selectedYear}</span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-[11px] font-semibold text-slate-500 bg-slate-100 px-2 py-0.5 rounded">
+                            {inspectionsInMonth.length} Inspeksi
                           </span>
-                        ) : (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-bold bg-amber-50 text-amber-800 border border-amber-200">
-                            <Clock size={12} />
-                            Menunggu Verifikasi PIC
-                          </span>
-                        )}
-                      </div>
-
-                      {/* Baris 2: Pemeriksa Lapangan & Verifikator PIC */}
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px]">
-                        
-                        {/* Petugas Pemeriksa */}
-                        <div className="p-2 bg-slate-50/80 rounded border border-slate-100">
-                          <span className="text-slate-400 block text-[10px]">Petugas Pemeriksa:</span>
-                          <span className="font-bold text-slate-800 flex items-center gap-1 mt-0.5">
-                            <User size={12} className="text-slate-500" />
-                            {inspector}
-                          </span>
-                        </div>
-
-                        {/* Verifikator PIC */}
-                        <div className={`p-2 rounded border ${isVerified ? "bg-emerald-50/40 border-emerald-100" : "bg-amber-50/40 border-amber-100"}`}>
-                          <span className="text-slate-400 block text-[10px]">Diverifikasi Oleh:</span>
-                          <span className="font-bold text-slate-800 flex items-center gap-1 mt-0.5">
-                            <ShieldCheck size={12} className={isVerified ? "text-emerald-600" : "text-amber-600"} />
-                            {pic || "Belum Diverifikasi"}
-                          </span>
-                          {insp.verified_at && (
-                            <span className="text-[10px] text-slate-400 block mt-0.5">
-                              {formatDateTime(insp.verified_at)}
-                            </span>
-                          )}
+                          <button
+                            type="button"
+                            onClick={() => setSelectedMonthIndex(null)}
+                            className="text-[11px] text-primary hover:underline font-semibold cursor-pointer"
+                          >
+                            Tutup Detail
+                          </button>
                         </div>
                       </div>
 
-                      {/* Baris 3: 5 Parameter Fisik APAR (Jika Ada) */}
-                      {results.length > 0 && (
-                        <div className="pt-1">
-                          <span className="text-[10px] font-semibold text-slate-500 block mb-1">
-                            Parameter Fisik:
-                          </span>
-                          <div className="flex flex-wrap gap-1">
-                            {results.map((r: any, rIdx: number) => {
-                              const isPass = r.passed !== false && r.jawaban !== "Rusak" && r.jawaban !== "Karat / Rusak";
-                              return (
-                                <span
-                                  key={rIdx}
-                                  className={`px-2 py-0.5 rounded text-[10px] font-semibold border ${
-                                    isPass 
-                                      ? "bg-slate-50 text-slate-700 border-slate-200" 
-                                      : "bg-red-50 text-red-700 border-red-200"
-                                  }`}
-                                  title={`${r.label || r.code || r.item}: ${r.jawaban || (isPass ? "Baik" : "Rusak")}`}
-                                >
-                                  {r.code || r.label || r.item}: {r.jawaban || (isPass ? "OK" : "NOK")}
+                      {inspectionsInMonth.map((insp: any, idx: number) => {
+                        const inspector = insp.inspector_name || insp.inspector?.name || "Petugas Lapangan";
+                        const pic = insp.pic_name || null;
+                        const isVerified = insp.inspection_stage === "PIC_VERIFIED" || insp.verification_status === "VERIFIED";
+                        const results = Array.isArray(insp.checklist_results) ? insp.checklist_results : [];
+                        const photos = Array.isArray(insp.foto_bukti) ? insp.foto_bukti : [];
+
+                        return (
+                          <div 
+                            key={insp.id || idx}
+                            className="p-3.5 bg-white border border-slate-200 rounded-lg text-xs space-y-2 hover:border-slate-300 transition"
+                          >
+                            {/* Baris 1: Tanggal & Status Badge */}
+                            <div className="flex items-center justify-between flex-wrap gap-2 pb-2 border-b border-slate-100">
+                              <div className="flex items-center gap-1.5 text-slate-600 font-semibold">
+                                <Calendar size={13} className="text-slate-400" />
+                                <span>{formatDateTime(insp.created_at || insp.inspection_date)}</span>
+                              </div>
+
+                              {isVerified ? (
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                  <CheckCircle2 size={12} />
+                                  Terverifikasi PIC
                                 </span>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      )}
+                              ) : (
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-bold bg-amber-50 text-amber-800 border border-amber-200">
+                                  <Clock size={12} />
+                                  Menunggu Verifikasi PIC
+                                </span>
+                              )}
+                            </div>
 
-                      {/* Baris 4: Catatan Temuan & Catatan PIC */}
-                      {insp.notes && (
-                        <div className="text-[11px] text-slate-600 pt-1">
-                          <span className="font-semibold text-slate-700">Catatan Petugas: </span>
-                          <span className="italic">"{insp.notes}"</span>
-                        </div>
-                      )}
+                            {/* Baris 2: Pemeriksa Lapangan & Verifikator PIC */}
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px]">
+                              <div className="p-2 bg-slate-50/80 rounded border border-slate-100">
+                                <span className="text-slate-400 block text-[10px]">Petugas Pemeriksa:</span>
+                                <span className="font-bold text-slate-800 flex items-center gap-1 mt-0.5">
+                                  <User size={12} className="text-slate-500" />
+                                  {inspector}
+                                </span>
+                              </div>
 
-                      {insp.verification_notes && (
-                        <div className="text-[11px] text-emerald-800 bg-emerald-50/50 p-1.5 rounded border border-emerald-100">
-                          <span className="font-semibold">Catatan Verifikasi PIC: </span>
-                          <span>"{insp.verification_notes}"</span>
-                        </div>
-                      )}
+                              <div className={`p-2 rounded border ${isVerified ? "bg-emerald-50/40 border-emerald-100" : "bg-amber-50/40 border-amber-100"}`}>
+                                <span className="text-slate-400 block text-[10px]">Diverifikasi Oleh:</span>
+                                <span className="font-bold text-slate-800 flex items-center gap-1 mt-0.5">
+                                  <ShieldCheck size={12} className={isVerified ? "text-emerald-600" : "text-amber-600"} />
+                                  {pic || "Belum Diverifikasi"}
+                                </span>
+                                {insp.verified_at && (
+                                  <span className="text-[10px] text-slate-400 block mt-0.5">
+                                    {formatDateTime(insp.verified_at)}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
 
-                      {/* Baris 5: Foto Dokumentasi */}
-                      {photos.length > 0 && (
-                        <div className="pt-1">
-                          <span className="text-[10px] font-semibold text-slate-500 block mb-1">
-                            Foto Dokumentasi:
-                          </span>
-                          <div className="flex items-center gap-2">
-                            {photos.map((photo: string, pIdx: number) => (
-                              <button
-                                key={pIdx}
-                                type="button"
-                                onClick={() => setActivePhoto(photo)}
-                                className="relative w-12 h-12 rounded border border-slate-200 overflow-hidden hover:opacity-90 transition group cursor-pointer shrink-0"
-                              >
-                                <img src={photo} alt={`Bukti ${pIdx + 1}`} className="w-full h-full object-cover" />
-                                <div className="absolute inset-0 bg-black/20 group-hover:bg-transparent flex items-center justify-center">
-                                  <Camera size={12} className="text-white drop-shadow" />
+                            {/* Baris 3: Parameter Fisik APAR */}
+                            {results.length > 0 && (
+                              <div className="pt-1">
+                                <span className="text-[10px] font-semibold text-slate-500 block mb-1">
+                                  Parameter Fisik:
+                                </span>
+                                <div className="flex flex-wrap gap-1">
+                                  {results.map((r: any, rIdx: number) => {
+                                    const isPass = r.passed !== false && r.jawaban !== "Rusak" && r.jawaban !== "Karat / Rusak";
+                                    return (
+                                      <span
+                                        key={rIdx}
+                                        className={`px-2 py-0.5 rounded text-[10px] font-semibold border ${
+                                          isPass 
+                                            ? "bg-slate-50 text-slate-700 border-slate-200" 
+                                            : "bg-red-50 text-red-700 border-red-200"
+                                        }`}
+                                        title={`${r.label || r.code || r.item}: ${r.jawaban || (isPass ? "Baik" : "Rusak")}`}
+                                      >
+                                        {r.code || r.label || r.item}: {r.jawaban || (isPass ? "OK" : "NOK")}
+                                      </span>
+                                    );
+                                  })}
                                 </div>
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-                      )}
+                              </div>
+                            )}
 
+                            {/* Baris 4: Catatan Petugas & PIC */}
+                            {insp.notes && (
+                              <div className="text-[11px] text-slate-600 pt-1">
+                                <span className="font-semibold text-slate-700">Catatan Petugas: </span>
+                                <span className="italic">"{insp.notes}"</span>
+                              </div>
+                            )}
+
+                            {insp.verification_notes && (
+                              <div className="text-[11px] text-emerald-800 bg-emerald-50/50 p-1.5 rounded border border-emerald-100">
+                                <span className="font-semibold">Catatan Verifikasi PIC: </span>
+                                <span>"{insp.verification_notes}"</span>
+                              </div>
+                            )}
+
+                            {/* Baris 5: Foto Dokumentasi */}
+                            {photos.length > 0 && (
+                              <div className="pt-1">
+                                <span className="text-[10px] font-semibold text-slate-500 block mb-1">
+                                  Foto Dokumentasi:
+                                </span>
+                                <div className="flex items-center gap-2">
+                                  {photos.map((photo: string, pIdx: number) => (
+                                    <button
+                                      key={pIdx}
+                                      type="button"
+                                      onClick={() => setActivePhoto(photo)}
+                                      className="relative w-12 h-12 rounded border border-slate-200 overflow-hidden hover:opacity-90 transition group cursor-pointer shrink-0"
+                                    >
+                                      <img src={photo} alt={`Bukti ${pIdx + 1}`} className="w-full h-full object-cover" />
+                                      <div className="absolute inset-0 bg-black/20 group-hover:bg-transparent flex items-center justify-center">
+                                        <Camera size={12} className="text-white drop-shadow" />
+                                      </div>
+                                    </button>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
                     </div>
                   );
-                })}
+                })() : (
+                  /* Ketika mode 1 tahun full (selectedMonthIndex === null) */
+                  <div className="p-3 bg-slate-50 rounded-xl border border-slate-200/80 text-center space-y-1">
+                    <p className="text-xs text-slate-600 font-medium">
+                      Menampilkan kartu kendali 1 tahun penuh (Januari – Desember {selectedYear}).
+                    </p>
+                    <p className="text-[11px] text-slate-400">
+                      Klik salah satu kotak bulan di atas untuk membuka detail rincian pemeriksaan fisik & foto bukti.
+                    </p>
+                  </div>
+                )}
               </div>
             )}
           </div>

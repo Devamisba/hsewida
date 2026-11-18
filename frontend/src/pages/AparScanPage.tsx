@@ -16,7 +16,9 @@ import {
   Inbox,
   AlertTriangle,
   Lock,
-  LogIn
+  LogIn,
+  Filter,
+  ChevronDown
 } from "lucide-react";
 import { cn, parseLocalDate } from "@/lib/utils";
 import { api, SafetyFacility } from "@/services/api";
@@ -188,6 +190,7 @@ export default function AparScanPage() {
   const currentYear = new Date().getFullYear();
   const [selectedYear, setSelectedYear] = useState<number>(() => currentYear);
   const [selectedMonthIndex, setSelectedMonthIndex] = useState<number | null>(null);
+  const [isFilterOpen, setIsFilterOpen] = useState<boolean>(false);
 
   // Daftar tahun yang tersedia (minimal tahun berjalan dan 2 tahun ke belakang, misal 2026, 2025, 2024, ditambah tahun riwayat)
   const availableYears = useMemo(() => {
@@ -238,27 +241,6 @@ export default function AparScanPage() {
     }
     return count;
   }, [yearInspectionsByMonth]);
-
-  // Otomatis pilih bulan terbaru yang memiliki inspeksi pada tahun terpilih saat ganti tahun atau data dimuat
-  useEffect(() => {
-    let foundMonthIndex: number | null = null;
-    for (let i = 11; i >= 0; i--) {
-      if (yearInspectionsByMonth[i]?.length > 0) {
-        foundMonthIndex = i;
-        break;
-      }
-    }
-
-    if (foundMonthIndex !== null) {
-      setSelectedMonthIndex(foundMonthIndex);
-    } else {
-      if (selectedYear === currentYear) {
-        setSelectedMonthIndex(new Date().getMonth());
-      } else {
-        setSelectedMonthIndex(null);
-      }
-    }
-  }, [selectedYear, yearInspectionsByMonth, currentYear]);
 
   // Helper untuk menentukan status warna dan label pada kotak bulan
   const getMonthStatus = (inspections: any[]) => {
@@ -802,35 +784,176 @@ export default function AparScanPage() {
                     </span>
                   </div>
 
-                  {/* Filter Kalender Tahunan & Ringkasan Kepatuhan */}
-                  <div className="flex items-center justify-between flex-wrap gap-2 py-0.5">
-                    <div className="flex items-center gap-1.5 overflow-x-auto py-0.5">
-                      <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wide mr-1">
-                        Tahun:
-                      </span>
-                      {availableYears.map((yr) => {
-                        const isYearSelected = selectedYear === yr;
-                        return (
+                  {/* Filter Periode Interaktif & Ringkasan Kepatuhan */}
+                  <div className="relative">
+                    <div className="flex items-center justify-between flex-wrap gap-2 py-0.5">
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setIsFilterOpen((prev) => !prev)}
+                          className={cn(
+                            "inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold border transition cursor-pointer shadow-xs",
+                            selectedMonthIndex !== null
+                              ? "bg-slate-900 text-white border-slate-900"
+                              : "bg-white text-slate-800 border-slate-300 hover:bg-slate-50"
+                          )}
+                        >
+                          <Filter size={13} className={selectedMonthIndex !== null ? "text-amber-400" : "text-slate-500"} />
+                          <span>
+                            Periode: <strong>{selectedYear}</strong>
+                            {" • "}
+                            <span className={selectedMonthIndex !== null ? "text-amber-200" : "text-slate-600"}>
+                              {selectedMonthIndex !== null ? MONTHS_LIST[selectedMonthIndex].name : "Semua Bulan (1 Tahun Full)"}
+                            </span>
+                          </span>
+                          <ChevronDown size={13} className={cn("transition-transform duration-200", isFilterOpen ? "rotate-180" : "")} />
+                        </button>
+
+                        {selectedMonthIndex !== null && (
                           <button
-                            key={yr}
                             type="button"
-                            onClick={() => setSelectedYear(yr)}
-                            className={cn(
-                              "px-3 py-1 text-xs font-bold rounded-lg transition-all cursor-pointer",
-                              isYearSelected
-                                ? "bg-slate-900 text-white shadow-xs"
-                                : "bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200/80"
-                            )}
+                            onClick={() => setSelectedMonthIndex(null)}
+                            className="text-[11px] text-slate-500 hover:text-slate-800 underline cursor-pointer"
                           >
-                            {yr}
+                            Lihat 1 Tahun Full
                           </button>
-                        );
-                      })}
+                        )}
+                      </div>
+
+                      <span className="text-[11px] font-medium text-slate-500 bg-slate-50 px-2.5 py-1 rounded-md border border-slate-200">
+                        <strong className="text-slate-800 font-bold">{inspectedMonthsCount}</strong> / 12 Bulan Terinspeksi
+                      </span>
                     </div>
 
-                    <span className="text-[11px] font-medium text-slate-500 bg-slate-50 px-2.5 py-0.5 rounded-md border border-slate-200">
-                      <strong className="text-slate-800 font-bold">{inspectedMonthsCount}</strong> / 12 Bulan Terinspeksi
-                    </span>
+                    {/* POPUP DROPDOWN FILTER (PILIH TAHUN & BULAN) */}
+                    {isFilterOpen && (
+                      <>
+                        <div 
+                          className="fixed inset-0 z-20"
+                          onClick={() => setIsFilterOpen(false)}
+                        />
+                        <div className="absolute left-0 top-full mt-1.5 z-30 w-full sm:w-[380px] bg-white rounded-xl shadow-xl border border-slate-200 p-4 space-y-3.5 animate-fade-in">
+                          <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+                            <div className="flex items-center gap-1.5 text-xs font-bold text-slate-800 uppercase tracking-wide">
+                              <Filter size={13} className="text-slate-600" />
+                              <span>Filter Periode Kalender</span>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => setIsFilterOpen(false)}
+                              className="text-slate-400 hover:text-slate-600 p-1 rounded"
+                            >
+                              <X size={14} />
+                            </button>
+                          </div>
+
+                          {/* 1. Pilih Tahun */}
+                          <div className="space-y-1.5">
+                            <label className="text-[11px] font-bold text-slate-600 uppercase tracking-wider block">
+                              1. Pilih Tahun:
+                            </label>
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              {availableYears.map((yr) => (
+                                <button
+                                  key={yr}
+                                  type="button"
+                                  onClick={() => setSelectedYear(yr)}
+                                  className={cn(
+                                    "px-3 py-1 text-xs font-bold rounded-lg transition cursor-pointer",
+                                    selectedYear === yr
+                                      ? "bg-slate-900 text-white shadow-xs"
+                                      : "bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200"
+                                  )}
+                                >
+                                  {yr}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+
+                          {/* 2. Pilih Bulan */}
+                          <div className="space-y-1.5">
+                            <div className="flex items-center justify-between">
+                              <label className="text-[11px] font-bold text-slate-600 uppercase tracking-wider block">
+                                2. Pilih Bulan:
+                              </label>
+                              <span className="text-[10px] text-slate-400">
+                                Bulan atau 1 tahun penuh
+                              </span>
+                            </div>
+
+                            {/* Tombol Semua Bulan (1 Tahun Full) */}
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setSelectedMonthIndex(null);
+                                setIsFilterOpen(false);
+                              }}
+                              className={cn(
+                                "w-full py-1.5 px-3 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer border",
+                                selectedMonthIndex === null
+                                  ? "bg-slate-900 text-white border-slate-900 shadow-xs"
+                                  : "bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200"
+                              )}
+                            >
+                              <span>★</span>
+                              <span>Semua Bulan (Tampilkan 1 Tahun Penuh)</span>
+                            </button>
+
+                            {/* 12 Kotak Pilihan Bulan */}
+                            <div className="grid grid-cols-4 gap-1.5 pt-1">
+                              {MONTHS_LIST.map((m) => {
+                                const isSelected = selectedMonthIndex === m.index;
+                                const hasData = yearInspectionsByMonth[m.index]?.length > 0;
+                                return (
+                                  <button
+                                    key={m.index}
+                                    type="button"
+                                    onClick={() => {
+                                      setSelectedMonthIndex(m.index);
+                                      setIsFilterOpen(false);
+                                    }}
+                                    className={cn(
+                                      "py-1.5 px-2 rounded-lg text-xs font-semibold transition cursor-pointer border text-center relative",
+                                      isSelected
+                                        ? "bg-slate-900 text-white border-slate-900 shadow-xs"
+                                        : "bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200"
+                                    )}
+                                  >
+                                    {m.short}
+                                    {hasData && (
+                                      <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                                    )}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </div>
+
+                          {/* Footer Tombol Tutup & Reset */}
+                          <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-xs">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setSelectedYear(currentYear);
+                                setSelectedMonthIndex(null);
+                                setIsFilterOpen(false);
+                              }}
+                              className="text-slate-500 hover:text-rose-600 underline cursor-pointer text-[11px]"
+                            >
+                              Reset Filter
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setIsFilterOpen(false)}
+                              className="px-3 py-1 bg-slate-900 text-white font-semibold rounded-lg hover:bg-slate-800 transition cursor-pointer text-[11px]"
+                            >
+                              Tutup
+                            </button>
+                          </div>
+                        </div>
+                      </>
+                    )}
                   </div>
 
                   {/* Matriks Kalender 12 Bulan (Januari s/d Desember) */}
@@ -934,9 +1057,18 @@ export default function AparScanPage() {
                       <div className="space-y-3 pt-1">
                         <div className="flex items-center justify-between text-xs font-bold text-slate-800 px-0.5">
                           <span>Detail Pemeriksaan: {selectedMonth.name} {selectedYear}</span>
-                          <span className="text-[11px] font-semibold text-slate-500 bg-slate-100 px-2 py-0.5 rounded">
-                            {inspectionsInMonth.length} Inspeksi
-                          </span>
+                          <div className="flex items-center gap-2">
+                            <span className="text-[11px] font-semibold text-slate-500 bg-slate-100 px-2 py-0.5 rounded">
+                              {inspectionsInMonth.length} Inspeksi
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => setSelectedMonthIndex(null)}
+                              className="text-[11px] text-primary hover:underline font-semibold cursor-pointer"
+                            >
+                              Tutup Detail
+                            </button>
+                          </div>
                         </div>
 
                         {inspectionsInMonth.map((insp: any, idx: number) => {
@@ -1104,15 +1236,26 @@ export default function AparScanPage() {
                     );
                   })()}
 
-                  {/* Fallback Jika Belum Ada Pilihan Bulan dan Belum Ada Data di Tahun Terpilih */}
+                  {/* Tampilan Ketika Mode 1 Tahun Full (selectedMonthIndex === null) */}
                   {selectedMonthIndex === null && (
-                    <div className="p-6 bg-slate-50 rounded-xl border border-dashed border-slate-200 text-center space-y-1">
-                      <Inbox size={26} className="mx-auto text-slate-300 mb-1" />
-                      <p className="text-xs font-bold text-slate-700">Belum Ada Riwayat Inspeksi di Tahun {selectedYear}</p>
-                      <p className="text-[11px] text-slate-400">
-                        Fasilitas ini belum memiliki catatan pemeriksaan di tahun {selectedYear}.
-                      </p>
-                    </div>
+                    inspectedMonthsCount > 0 ? (
+                      <div className="p-3 bg-slate-50 rounded-xl border border-slate-200/80 text-center space-y-1">
+                        <p className="text-xs text-slate-600 font-medium">
+                          Menampilkan kartu kendali 1 tahun penuh (Januari – Desember {selectedYear}).
+                        </p>
+                        <p className="text-[11px] text-slate-400">
+                          Klik salah satu kotak bulan di atas untuk membuka rincian pemeriksaan fisik & foto bukti.
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="p-6 bg-slate-50 rounded-xl border border-dashed border-slate-200 text-center space-y-1">
+                        <Inbox size={26} className="mx-auto text-slate-300 mb-1" />
+                        <p className="text-xs font-bold text-slate-700">Belum Ada Riwayat Inspeksi di Tahun {selectedYear}</p>
+                        <p className="text-[11px] text-slate-400">
+                          Fasilitas ini belum memiliki catatan pemeriksaan di tahun {selectedYear}.
+                        </p>
+                      </div>
+                    )
                   )}
                 </div>
               </div>
