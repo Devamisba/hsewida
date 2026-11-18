@@ -17,7 +17,6 @@ import {
   AlertTriangle,
   Lock,
   LogIn,
-  Filter,
   ChevronDown,
   ChevronLeft,
   ChevronRight
@@ -797,7 +796,10 @@ export default function AparScanPage() {
                         {/* Stepper Mundur 1 Tahun Langsung */}
                         <button
                           type="button"
-                          onClick={() => setSelectedYear((y) => y - 1)}
+                          onClick={() => {
+                            setSelectedYear((y) => y - 1);
+                            setSelectedMonthIndex(null);
+                          }}
                           className="p-1.5 bg-white hover:bg-slate-100 text-slate-700 rounded-lg border border-slate-300 shadow-2xs transition cursor-pointer"
                           title="Mundur 1 Tahun"
                         >
@@ -809,18 +811,15 @@ export default function AparScanPage() {
                           onClick={() => setIsFilterOpen((prev) => !prev)}
                           className={cn(
                             "inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold border transition cursor-pointer shadow-xs",
-                            selectedMonthIndex !== null
+                            selectedYear !== currentYear
                               ? "bg-slate-900 text-white border-slate-900"
                               : "bg-white text-slate-800 border-slate-300 hover:bg-slate-50"
                           )}
                         >
-                          <Filter size={13} className={selectedMonthIndex !== null ? "text-amber-400" : "text-slate-500"} />
+                          <Calendar size={13} className={selectedYear !== currentYear ? "text-amber-400" : "text-slate-500"} />
                           <span>
-                            Periode: <strong>{selectedYear}</strong>
-                            {" • "}
-                            <span className={selectedMonthIndex !== null ? "text-amber-200" : "text-slate-600"}>
-                              {selectedMonthIndex !== null ? MONTHS_LIST[selectedMonthIndex].name : "Semua Bulan (1 Tahun Full)"}
-                            </span>
+                            Tahun: <strong>{selectedYear}</strong>
+                            {selectedMonthIndex !== null ? ` • ${MONTHS_LIST[selectedMonthIndex].name}` : ""}
                           </span>
                           <ChevronDown size={13} className={cn("transition-transform duration-200", isFilterOpen ? "rotate-180" : "")} />
                         </button>
@@ -828,7 +827,10 @@ export default function AparScanPage() {
                         {/* Stepper Maju 1 Tahun Langsung */}
                         <button
                           type="button"
-                          onClick={() => setSelectedYear((y) => y + 1)}
+                          onClick={() => {
+                            setSelectedYear((y) => y + 1);
+                            setSelectedMonthIndex(null);
+                          }}
                           className="p-1.5 bg-white hover:bg-slate-100 text-slate-700 rounded-lg border border-slate-300 shadow-2xs transition cursor-pointer"
                           title="Maju 1 Tahun"
                         >
@@ -851,18 +853,18 @@ export default function AparScanPage() {
                       </span>
                     </div>
 
-                    {/* POPUP DROPDOWN FILTER (PILIH TAHUN & BULAN) */}
+                    {/* POPUP DROPDOWN FILTER (PILIH TAHUN AUDIT) */}
                     {isFilterOpen && (
                       <>
                         <div 
                           className="fixed inset-0 z-20"
                           onClick={() => setIsFilterOpen(false)}
                         />
-                        <div className="absolute left-0 top-full mt-1.5 z-30 w-full sm:w-[400px] bg-white rounded-xl shadow-xl border border-slate-200 p-4 space-y-3.5 animate-fade-in">
+                        <div className="absolute left-0 top-full mt-1.5 z-30 w-full sm:w-[380px] bg-white rounded-xl shadow-xl border border-slate-200 p-4 space-y-3.5 animate-fade-in">
                           <div className="flex items-center justify-between pb-2 border-b border-slate-100">
                             <div className="flex items-center gap-1.5 text-xs font-bold text-slate-800 uppercase tracking-wide">
-                              <Filter size={13} className="text-slate-600" />
-                              <span>Filter Periode Kalender</span>
+                              <Calendar size={13} className="text-slate-600" />
+                              <span>Pilih Tahun Kalender</span>
                             </div>
                             <button
                               type="button"
@@ -873,14 +875,14 @@ export default function AparScanPage() {
                             </button>
                           </div>
 
-                          {/* 1. Pilih Tahun Fleksibel (Stepper + Dropdown Select + Quick Chips) */}
+                          {/* Pilih Tahun Fleksibel (Stepper + Dropdown Select + Quick Chips) */}
                           <div className="space-y-2">
                             <div className="flex items-center justify-between">
                               <label className="text-[11px] font-bold text-slate-700 uppercase tracking-wider block">
-                                1. Pilih Tahun:
+                                Tahun Audit / Inspeksi:
                               </label>
                               <span className="text-[10px] text-slate-500 font-semibold">
-                                Tahun Aktif: <strong className="text-slate-900 text-xs font-bold">{selectedYear}</strong>
+                                Aktif: <strong className="text-slate-900 text-xs font-bold">{selectedYear}</strong>
                               </span>
                             </div>
 
@@ -888,7 +890,10 @@ export default function AparScanPage() {
                             <div className="flex items-center gap-1.5">
                               <button
                                 type="button"
-                                onClick={() => setSelectedYear((y) => y - 1)}
+                                onClick={() => {
+                                  setSelectedYear((y) => y - 1);
+                                  setSelectedMonthIndex(null);
+                                }}
                                 className="p-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 transition cursor-pointer flex items-center justify-center shrink-0 border border-slate-200"
                                 title="Tahun Sebelumnya"
                               >
@@ -897,7 +902,10 @@ export default function AparScanPage() {
 
                               <select
                                 value={selectedYear}
-                                onChange={(e) => setSelectedYear(Number(e.target.value))}
+                                onChange={(e) => {
+                                  setSelectedYear(Number(e.target.value));
+                                  setSelectedMonthIndex(null);
+                                }}
                                 className="flex-1 py-1.5 px-3 bg-white border border-slate-300 rounded-lg text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-primary/40 cursor-pointer"
                               >
                                 {availableYears.map((yr) => (
@@ -909,7 +917,10 @@ export default function AparScanPage() {
 
                               <button
                                 type="button"
-                                onClick={() => setSelectedYear((y) => y + 1)}
+                                onClick={() => {
+                                  setSelectedYear((y) => y + 1);
+                                  setSelectedMonthIndex(null);
+                                }}
                                 className="p-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 transition cursor-pointer flex items-center justify-center shrink-0 border border-slate-200"
                                 title="Tahun Berikutnya"
                               >
@@ -923,7 +934,10 @@ export default function AparScanPage() {
                                 <button
                                   key={yr}
                                   type="button"
-                                  onClick={() => setSelectedYear(yr)}
+                                  onClick={() => {
+                                    setSelectedYear(yr);
+                                    setSelectedMonthIndex(null);
+                                  }}
                                   className={cn(
                                     "px-2.5 py-1 text-xs font-bold rounded-lg transition cursor-pointer shrink-0 border",
                                     selectedYear === yr
@@ -934,65 +948,6 @@ export default function AparScanPage() {
                                   {yr}
                                 </button>
                               ))}
-                            </div>
-                          </div>
-
-                          {/* 2. Pilih Bulan */}
-                          <div className="space-y-1.5">
-                            <div className="flex items-center justify-between">
-                              <label className="text-[11px] font-bold text-slate-600 uppercase tracking-wider block">
-                                2. Pilih Bulan:
-                              </label>
-                              <span className="text-[10px] text-slate-400">
-                                Bulan atau 1 tahun penuh
-                              </span>
-                            </div>
-
-                            {/* Tombol Semua Bulan (1 Tahun Full) */}
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setSelectedMonthIndex(null);
-                                setIsFilterOpen(false);
-                              }}
-                              className={cn(
-                                "w-full py-1.5 px-3 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer border",
-                                selectedMonthIndex === null
-                                  ? "bg-slate-900 text-white border-slate-900 shadow-xs"
-                                  : "bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200"
-                              )}
-                            >
-                              <span>★</span>
-                              <span>Semua Bulan (Tampilkan 1 Tahun Penuh)</span>
-                            </button>
-
-                            {/* 12 Kotak Pilihan Bulan */}
-                            <div className="grid grid-cols-4 gap-1.5 pt-1">
-                              {MONTHS_LIST.map((m) => {
-                                const isSelected = selectedMonthIndex === m.index;
-                                const hasData = yearInspectionsByMonth[m.index]?.length > 0;
-                                return (
-                                  <button
-                                    key={m.index}
-                                    type="button"
-                                    onClick={() => {
-                                      setSelectedMonthIndex(m.index);
-                                      setIsFilterOpen(false);
-                                    }}
-                                    className={cn(
-                                      "py-1.5 px-2 rounded-lg text-xs font-semibold transition cursor-pointer border text-center relative",
-                                      isSelected
-                                        ? "bg-slate-900 text-white border-slate-900 shadow-xs"
-                                        : "bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200"
-                                    )}
-                                  >
-                                    {m.short}
-                                    {hasData && (
-                                      <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                                    )}
-                                  </button>
-                                );
-                              })}
                             </div>
                           </div>
 
@@ -1007,12 +962,12 @@ export default function AparScanPage() {
                               }}
                               className="text-slate-500 hover:text-rose-600 underline cursor-pointer text-[11px]"
                             >
-                              Reset Filter
+                              Reset ke Tahun Ini
                             </button>
                             <button
                               type="button"
                               onClick={() => setIsFilterOpen(false)}
-                              className="px-3 py-1 bg-slate-900 text-white font-semibold rounded-lg hover:bg-slate-800 transition cursor-pointer text-[11px]"
+                              className="px-3.5 py-1.5 bg-slate-900 text-white font-semibold rounded-lg hover:bg-slate-800 transition cursor-pointer text-[11px]"
                             >
                               Tutup
                             </button>
