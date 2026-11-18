@@ -166,7 +166,6 @@ export default function HistoryPage() {
   const user = auth.getUser();
   const userRole = (auth.getRole() || user?.role?.code || "").toLowerCase().trim();
   const isVendorRole = ["pemohon", "vendor", "kontraktor", "contractor"].includes((userRole || "").toLowerCase().trim());
-  const isPicWidatra = userRole === "pic_vendor" || userRole === "pic" || userRole === "pic_widatra" || userRole.includes("pic");
 
   // Vendor role now has access to History for viewing completed/expired permits
 
@@ -286,10 +285,10 @@ export default function HistoryPage() {
     return () => clearInterval(interval);
   }, [selectedRequest?.rawId, selectedRequest?.id]);
 
-  // Hitung izin yang akan berakhir dalam 3 hari (hanya untuk role internal; untuk vendor di menu Izin Saya)
+  // Hitung izin yang akan berakhir dalam 3 hari
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  const expiringItems = isVendorRole ? [] : requests.filter((req) => {
+  const expiringItems = requests.filter((req) => {
     if (req.status !== "Disetujui") return false;
     const end = new Date(req.selesaiKerja);
     end.setHours(0, 0, 0, 0);
@@ -463,7 +462,7 @@ export default function HistoryPage() {
                 <p className="text-sm font-semibold text-rose-700">
                   {expiringItems.length} izin akan berakhir dalam 3 hari ke depan!
                 </p>
-                {!isPicWidatra && (
+                {isVendorRole && (
                   <p className="text-xs text-rose-500 mt-0.5">Segera ajukan perpanjangan sebelum izin habis masa berlakunya.</p>
                 )}
               </div>
