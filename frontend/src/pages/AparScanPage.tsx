@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, type FormEvent } from "react";
+import { useState, useEffect, useRef, useMemo, type FormEvent } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { 
   Camera, 
@@ -145,6 +145,21 @@ const getCategoryConfig = (category?: string): CategoryInspectionConfig => {
   return CATEGORY_CONFIG[cat] || CATEGORY_CONFIG.apar;
 };
 
+const MONTHS_LIST = [
+  { index: 0, short: "Jan", name: "Januari" },
+  { index: 1, short: "Feb", name: "Februari" },
+  { index: 2, short: "Mar", name: "Maret" },
+  { index: 3, short: "Apr", name: "April" },
+  { index: 4, short: "Mei", name: "Mei" },
+  { index: 5, short: "Jun", name: "Juni" },
+  { index: 6, short: "Jul", name: "Juli" },
+  { index: 7, short: "Agu", name: "Agustus" },
+  { index: 8, short: "Sep", name: "September" },
+  { index: 9, short: "Okt", name: "Oktober" },
+  { index: 10, short: "Nov", name: "November" },
+  { index: 11, short: "Des", name: "Desember" },
+];
+
 export default function AparScanPage() {
   const { code } = useParams<{ code: string }>();
   const navigate = useNavigate();
@@ -168,6 +183,163 @@ export default function AparScanPage() {
   // Current View Mode (CHOICE = Kartu & Riwayat Utama, PENGECEKAN = Form Lapangan)
   const [viewMode, setViewMode] = useState<ViewMode>("CHOICE");
   const categoryConfig = getCategoryConfig(facility?.category);
+
+  // Filter Kalender Tahunan & Pilihan Bulan
+  const currentYear = new Date().getFullYear();
+  const [selectedYear, setSelectedYear] = useState<number>(() => currentYear);
+  const [selectedMonthIndex, setSelectedMonthIndex] = useState<number | null>(null);
+
+  // Daftar tahun yang tersedia (minimal tahun berjalan dan 2 tahun ke belakang, misal 2026, 2025, 2024, ditambah tahun riwayat)
+  const availableYears = useMemo(() => {
+    const yearSet = new Set<number>();
+    yearSet.add(currentYear);
+    yearSet.add(currentYear - 1);
+    yearSet.add(currentYear - 2);
+
+    if (facility?.inspections && Array.isArray(facility.inspections)) {
+      facility.inspections.forEach((insp: any) => {
+        const d = parseLocalDate(insp.created_at || insp.inspection_date);
+        if (d && !isNaN(d.getFullYear())) {
+          yearSet.add(d.getFullYear());
+        }
+      });
+    }
+
+    return Array.from(yearSet).sort((a, b) => b - a); // Urut dari tahun terbaru (2026, 2025, 2024, dst.)
+  }, [facility?.inspections, currentYear]);
+
+  // Pemetaan inspeksi berdasarkan bulan (0 s/d 11) untuk tahun yang dipilih
+  const yearInspectionsByMonth = useMemo(() => {
+    const map: Record<number, any[]> = {};
+    for (let i = 0; i < 12; i++) {
+      map[i] = [];
+    }
+
+    if (facility?.inspections && Array.isArray(facility.inspections)) {
+      facility.inspections.forEach((insp: any) => {
+        const d = parseLocalDate(insp.created_at || insp.inspection_date);
+        if (d && !isNaN(d.getFullYear()) && d.getFullYear() === selectedYear) {
+          const m = d.getMonth();
+          map[m].push(insp);
+        }
+      });
+    }
+
+    return map;
+  }, [facility?.inspections, selectedYear]);
+
+  // Jumlah bulan yang sudah diinspeksi pada tahun yang dipilih
+  const inspectedMonthsCount = useMemo(() => {
+    let count = 0;
+    for (let i = 0; i < 12; i++) {
+      if (yearInspectionsByMonth[i]?.length > 0) {
+        count++;
+      }
+    }
+    return count;
+  }, [yearInspectionsByMonth]);
+
+  // Otomatis pilih bulan terbaru yang memiliki inspeksi pada tahun terpilih saat ganti tahun atau data dimuat
+  useEffect(() => {
+    let foundMonthIndex: number | null = null;
+    for (let i = 11; i >= 0; i--) {
+      if (yearInspectionsByMonth[i]?.length > 0) {
+        foundMonthIndex = i;
+        break;
+      }
+    }
+
+    if (foundMonthIndex !== null) {
+      setSelectedMonthIndex(foundMonthIndex);
+    } else {
+      if (selectedYear === currentYear) {
+        setSelectedMonthIndex(new Date().getMonth());
+      } else {
+        setSelectedMonthIndex(null);
+      }
+    }
+  }, [selectedYear, yearInspectionsByMonth, currentYear]);
+
+  // Helper untuk menentukan status warna dan label pada kotak bulan
+  const getMonthStatus = (inspections: any[]) => {
+    if (!inspections || inspections.length === 0) {
+      return {
+        type: "EMPTY" as const,
+        label: "Belum Diperiksa",
+        shortLabel: "-",
+        badgeColor: "bg-slate-100 text-slate-500 border-slate-200",
+        cellBg: "bg-slate-50/70 border-slate-200 text-slate-400 hover:bg-slate-100/70",
+        activeRing: "ring-2 ring-slate-800 border-slate-400",
+        dotColor: "bg-slate-300",
+        textColor: "text-slate-400",
+      };
+    }
+
+    // Ambil inspeksi terbaru di bulan tersebut
+    const latestInsp = inspections[0];
+    const results = Array.isArray(latestInsp.checklist_results) ? latestInsp.checklist_results : [];
+
+    const hasDamage = latestInsp.overall_condition === "DAMAGED" ||
+      results.some((r: any) =>
+        r.passed === false ||
+        [
+          "Rusak",
+          "Karat / Rusak",
+          "Putus / Hilang",
+          "Expired",
+          "Berantakan",
+          "Kurang",
+          "Terhalang",
+          "Kotor",
+          "Mati",
+          "Pudar",
+          "Buram",
+          "Goyang",
+          "Retak",
+          "Macet",
+          "Terkunci",
+        ].includes(r.jawaban)
+      );
+
+    const isVerified = latestInsp.inspection_stage === "PIC_VERIFIED" || latestInsp.verification_status === "VERIFIED";
+
+    if (hasDamage) {
+      return {
+        type: "FAIL" as const,
+        label: "Rusak / Perlu Atensi",
+        shortLabel: "Rusak",
+        badgeColor: "bg-rose-100 text-rose-800 border-rose-200",
+        cellBg: "bg-rose-50/50 border-rose-200 text-rose-800 hover:bg-rose-100/50",
+        activeRing: "ring-2 ring-rose-500 border-rose-400",
+        dotColor: "bg-rose-500",
+        textColor: "text-rose-700",
+      };
+    }
+
+    if (!isVerified) {
+      return {
+        type: "PENDING" as const,
+        label: "Menunggu Verifikasi PIC",
+        shortLabel: "Verif PIC",
+        badgeColor: "bg-amber-100 text-amber-800 border-amber-200",
+        cellBg: "bg-amber-50/50 border-amber-200 text-amber-800 hover:bg-amber-100/50",
+        activeRing: "ring-2 ring-amber-500 border-amber-400",
+        dotColor: "bg-amber-500",
+        textColor: "text-amber-700",
+      };
+    }
+
+    return {
+      type: "PASS" as const,
+      label: "Aman / Baik",
+      shortLabel: "Aman",
+      badgeColor: "bg-emerald-100 text-emerald-800 border-emerald-200",
+      cellBg: "bg-emerald-50/50 border-emerald-200 text-emerald-800 hover:bg-emerald-100/50",
+      activeRing: "ring-2 ring-emerald-500 border-emerald-400",
+      dotColor: "bg-emerald-500",
+      textColor: "text-emerald-700",
+    };
+  };
 
   // --- FORM 1: Petugas HSE State ---
   const [petugasName, setPetugasName] = useState<string>(() => user?.name || "");
@@ -615,8 +787,9 @@ export default function AparScanPage() {
                   </button>
                 </div>
 
-                {/* 2. Informasi & Riwayat Inspeksi Objek Tersebut */}
-                <div className="space-y-3 pt-1 border-t border-slate-200">
+                {/* 2. Informasi & Kartu Kendali Kalender Tahunan Inspeksi */}
+                <div className="space-y-3.5 pt-1 border-t border-slate-200">
+                  {/* Header Title & Total Riwayat */}
                   <div className="flex items-center justify-between pt-1">
                     <div className="flex items-center gap-2">
                       <History size={16} className="text-slate-600" />
@@ -629,139 +802,316 @@ export default function AparScanPage() {
                     </span>
                   </div>
 
-                  {(!facility.inspections || facility.inspections.length === 0) ? (
-                    <div className="p-6 bg-slate-50 rounded-xl border border-dashed border-slate-200 text-center">
-                      <Inbox size={28} className="mx-auto text-slate-300 mb-1.5" />
-                      <p className="text-xs font-semibold text-slate-700">Belum Ada Riwayat Inspeksi</p>
-                      <p className="text-[11px] text-slate-400 mt-0.5">
-                        Fasilitas ini belum memiliki catatan pemeriksaan. Silakan mulai pengecekan pertama melalui tombol di atas.
-                      </p>
-                    </div>
-                  ) : (
-                    <div className="space-y-3">
-                      {facility.inspections.map((insp: any, idx: number) => {
-                        const inspector = insp.inspector_name || insp.inspector?.name || "Petugas Lapangan";
-                        const pic = insp.pic_name || null;
-                        const isVerified = insp.inspection_stage === "PIC_VERIFIED" || insp.verification_status === "VERIFIED";
-                        const results = Array.isArray(insp.checklist_results) ? insp.checklist_results : [];
-                        const isLatest = idx === 0;
-
+                  {/* Filter Kalender Tahunan & Ringkasan Kepatuhan */}
+                  <div className="flex items-center justify-between flex-wrap gap-2 py-0.5">
+                    <div className="flex items-center gap-1.5 overflow-x-auto py-0.5">
+                      <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wide mr-1">
+                        Tahun:
+                      </span>
+                      {availableYears.map((yr) => {
+                        const isYearSelected = selectedYear === yr;
                         return (
-                          <div 
-                            key={insp.id || idx}
-                            className={`p-3.5 bg-white rounded-xl border text-xs space-y-2.5 transition ${
-                              isLatest 
-                                ? "border-emerald-300 shadow-xs ring-1 ring-emerald-500/20" 
-                                : "border-slate-200 hover:border-slate-300"
-                            }`}
+                          <button
+                            key={yr}
+                            type="button"
+                            onClick={() => setSelectedYear(yr)}
+                            className={cn(
+                              "px-3 py-1 text-xs font-bold rounded-lg transition-all cursor-pointer",
+                              isYearSelected
+                                ? "bg-slate-900 text-white shadow-xs"
+                                : "bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200/80"
+                            )}
                           >
-                            {/* Baris 1: Tanggal & Badge Verifikasi */}
-                            <div className="flex items-center justify-between flex-wrap gap-2 pb-2 border-b border-slate-100">
-                              <div className="flex items-center gap-1.5 text-slate-700 font-semibold">
-                                <Calendar size={13} className="text-slate-400" />
-                                <span>{formatDateTime(insp.created_at || insp.inspection_date)}</span>
-                                {isLatest && (
-                                  <span className="text-[9px] font-extrabold uppercase px-1.5 py-0.5 bg-emerald-100 text-emerald-800 rounded">
-                                    Inspeksi Terbaru
-                                  </span>
-                                )}
-                              </div>
-
-                              {isVerified ? (
-                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                                  <CheckCircle2 size={11} />
-                                  Terverifikasi PIC
-                                </span>
-                              ) : (
-                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-amber-50 text-amber-800 border border-amber-200">
-                                  <Clock size={11} />
-                                  Menunggu Verifikasi PIC
-                                </span>
-                              )}
-                            </div>
-
-                            {/* Baris 2: Pemeriksa & Verifikator */}
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px]">
-                              <div className="p-2 bg-slate-50 rounded-lg border border-slate-100">
-                                <span className="text-slate-400 block text-[10px]">Petugas Pemeriksa:</span>
-                                <span className="font-bold text-slate-800 flex items-center gap-1.5 mt-0.5">
-                                  <User size={12} className="text-slate-500 shrink-0" />
-                                  <span className="truncate">{inspector}</span>
-                                </span>
-                              </div>
-
-                              <div className={`p-2 rounded-lg border ${
-                                isVerified ? "bg-emerald-50/50 border-emerald-100" : "bg-amber-50/50 border-amber-100"
-                              }`}>
-                                <span className="text-slate-400 block text-[10px]">Diverifikasi Oleh:</span>
-                                <span className="font-bold text-slate-800 flex items-center gap-1.5 mt-0.5">
-                                  <ShieldCheck size={12} className={`shrink-0 ${isVerified ? "text-emerald-600" : "text-amber-600"}`} />
-                                  <span className="truncate">{pic || "Belum Diverifikasi"}</span>
-                                </span>
-                                {insp.verified_at && (
-                                  <span className="text-[10px] text-slate-400 block mt-0.5">
-                                    {formatDateTime(insp.verified_at)}
-                                  </span>
-                                )}
-                              </div>
-                            </div>
-
-                            {/* Baris 3: Parameter Fisik (5 Parameter) */}
-                            {results.length > 0 && (
-                              <div className="pt-0.5">
-                                <span className="text-[10px] font-semibold text-slate-500 block mb-1">
-                                  Kondisi 5 Parameter Fisik:
-                                </span>
-                                <div className="flex flex-wrap gap-1">
-                                  {results.map((r: any, rIdx: number) => {
-                                    const isPass = r.passed !== false && r.jawaban !== "Rusak" && r.jawaban !== "Karat / Rusak" && r.jawaban !== "Putus / Hilang";
-                                    return (
-                                      <span
-                                        key={rIdx}
-                                        className={`px-2 py-0.5 rounded text-[10px] font-semibold border ${
-                                          isPass 
-                                            ? "bg-emerald-50 text-emerald-700 border-emerald-200" 
-                                            : "bg-rose-50 text-rose-700 border-rose-200"
-                                        }`}
-                                        title={`${r.label || r.code || r.item}: ${r.jawaban || (isPass ? "Baik" : "Rusak")}`}
-                                      >
-                                        {r.code || r.label || r.item}: {r.jawaban || (isPass ? "OK" : "NOK")}
-                                      </span>
-                                    );
-                                  })}
-                                </div>
-                              </div>
-                            )}
-
-                            {/* Baris 4: Catatan Petugas */}
-                            {insp.notes && (
-                              <div className="text-[11px] text-slate-600 pt-1 border-t border-slate-100">
-                                <span className="font-semibold text-slate-700">Catatan Petugas: </span>
-                                <span className="italic">"{insp.notes}"</span>
-                              </div>
-                            )}
-
-                            {/* Baris 5: Catatan Verifikasi PIC */}
-                            {insp.verification_notes && (
-                              <div className="text-[11px] text-emerald-800 pt-0.5">
-                                <span className="font-semibold">Catatan PIC: </span>
-                                <span className="italic">"{insp.verification_notes}"</span>
-                              </div>
-                            )}
-                          </div>
+                            {yr}
+                          </button>
                         );
                       })}
+                    </div>
 
-                      {/* Footer Info Jumlah Riwayat sesuai permintaan pengguna */}
-                      {totalInspections > 5 ? (
-                        <div className="p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-center text-xs text-slate-600 font-medium">
-                          Menampilkan 1 - 5 dari {totalInspections} riwayat inspeksi
+                    <span className="text-[11px] font-medium text-slate-500 bg-slate-50 px-2.5 py-0.5 rounded-md border border-slate-200">
+                      <strong className="text-slate-800 font-bold">{inspectedMonthsCount}</strong> / 12 Bulan Terinspeksi
+                    </span>
+                  </div>
+
+                  {/* Matriks Kalender 12 Bulan (Januari s/d Desember) */}
+                  <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2">
+                    {MONTHS_LIST.map((m) => {
+                      const monthInspections = yearInspectionsByMonth[m.index] || [];
+                      const status = getMonthStatus(monthInspections);
+                      const isSelected = selectedMonthIndex === m.index;
+
+                      // Tanggal inspeksi singkat jika ada
+                      let inspDateLabel = "-";
+                      if (monthInspections.length > 0) {
+                        const d = parseLocalDate(monthInspections[0].created_at || monthInspections[0].inspection_date);
+                        if (d) {
+                          inspDateLabel = `${d.getDate()} ${m.short}`;
+                        }
+                      }
+
+                      return (
+                        <button
+                          key={m.index}
+                          type="button"
+                          onClick={() => setSelectedMonthIndex(m.index)}
+                          className={cn(
+                            "relative p-2 rounded-xl border text-left transition-all cursor-pointer flex flex-col justify-between min-h-[70px]",
+                            status.cellBg,
+                            isSelected
+                              ? "ring-2 ring-slate-900 shadow-sm bg-white"
+                              : "hover:shadow-xs"
+                          )}
+                        >
+                          <div className="flex items-center justify-between w-full">
+                            <span className="text-xs font-bold uppercase tracking-wider text-slate-800">
+                              {m.short}
+                            </span>
+                            <span className={cn("w-2 h-2 rounded-full shrink-0", status.dotColor)} />
+                          </div>
+
+                          <div className="mt-1">
+                            <div className="text-[10px] font-semibold truncate leading-tight">
+                              {inspDateLabel !== "-" ? inspDateLabel : <span className="text-slate-400 font-normal">Belum</span>}
+                            </div>
+                            <div className={cn("text-[9px] font-bold mt-0.5 truncate", status.textColor)}>
+                              {status.shortLabel}
+                            </div>
+                          </div>
+
+                          {isSelected && (
+                            <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-4 h-1 bg-slate-900 rounded-full" />
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {/* Legenda Status Kalender */}
+                  <div className="flex items-center justify-between flex-wrap gap-2 pt-1 border-t border-slate-100 text-[10px] text-slate-600">
+                    <div className="flex items-center gap-2.5 flex-wrap">
+                      <div className="flex items-center gap-1">
+                        <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
+                        <span>Aman / Baik</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <span className="w-2 h-2 rounded-full bg-rose-500 shrink-0" />
+                        <span>Kerusakan</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <span className="w-2 h-2 rounded-full bg-amber-500 shrink-0" />
+                        <span>Menunggu PIC</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <span className="w-2 h-2 rounded-full bg-slate-300 shrink-0" />
+                        <span>Belum Diperiksa</span>
+                      </div>
+                    </div>
+                    <span className="text-[10px] text-slate-400 italic">
+                      *Klik bulan untuk detail
+                    </span>
+                  </div>
+
+                  {/* Rincian Detail Inspeksi Bulan Terpilih */}
+                  {selectedMonthIndex !== null && (() => {
+                    const selectedMonth = MONTHS_LIST[selectedMonthIndex];
+                    const inspectionsInMonth = yearInspectionsByMonth[selectedMonthIndex] || [];
+
+                    if (inspectionsInMonth.length === 0) {
+                      return (
+                        <div className="p-5 bg-slate-50 rounded-xl border border-dashed border-slate-200 text-center space-y-1.5">
+                          <Inbox size={24} className="mx-auto text-slate-300 mb-0.5" />
+                          <div className="text-xs font-bold text-slate-700">
+                            Belum Ada Pemeriksaan di Bulan {selectedMonth.name} {selectedYear}
+                          </div>
+                          <p className="text-[11px] text-slate-400 max-w-sm mx-auto">
+                            Fasilitas ini belum memiliki catatan checklist inspeksi pada bulan ini.
+                          </p>
                         </div>
-                      ) : totalInspections > 0 ? (
-                        <div className="p-2 bg-slate-50/60 border border-slate-100 rounded-lg text-center text-[11px] text-slate-500 font-medium">
-                          Menampilkan {totalInspections} riwayat inspeksi
+                      );
+                    }
+
+                    return (
+                      <div className="space-y-3 pt-1">
+                        <div className="flex items-center justify-between text-xs font-bold text-slate-800 px-0.5">
+                          <span>Detail Pemeriksaan: {selectedMonth.name} {selectedYear}</span>
+                          <span className="text-[11px] font-semibold text-slate-500 bg-slate-100 px-2 py-0.5 rounded">
+                            {inspectionsInMonth.length} Inspeksi
+                          </span>
                         </div>
-                      ) : null}
+
+                        {inspectionsInMonth.map((insp: any, idx: number) => {
+                          const inspector = insp.inspector_name || insp.inspector?.name || "Petugas Lapangan";
+                          const pic = insp.pic_name || null;
+                          const isVerified = insp.inspection_stage === "PIC_VERIFIED" || insp.verification_status === "VERIFIED";
+                          const results = Array.isArray(insp.checklist_results) ? insp.checklist_results : [];
+                          const isLatestOverall = facility.inspections?.[0]?.id === insp.id;
+
+                          return (
+                            <div
+                              key={insp.id || idx}
+                              className={cn(
+                                "p-3.5 bg-white rounded-xl border text-xs space-y-2.5 transition",
+                                isLatestOverall
+                                  ? "border-emerald-300 shadow-xs ring-1 ring-emerald-500/20"
+                                  : "border-slate-200 hover:border-slate-300"
+                              )}
+                            >
+                              {/* Baris 1: Tanggal & Badge Verifikasi */}
+                              <div className="flex items-center justify-between flex-wrap gap-2 pb-2 border-b border-slate-100">
+                                <div className="flex items-center gap-1.5 text-slate-700 font-semibold">
+                                  <Calendar size={13} className="text-slate-400" />
+                                  <span>{formatDateTime(insp.created_at || insp.inspection_date)}</span>
+                                  {isLatestOverall && (
+                                    <span className="text-[9px] font-extrabold uppercase px-1.5 py-0.5 bg-emerald-100 text-emerald-800 rounded">
+                                      Inspeksi Terbaru
+                                    </span>
+                                  )}
+                                </div>
+
+                                {isVerified ? (
+                                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                    <CheckCircle2 size={11} />
+                                    Terverifikasi PIC
+                                  </span>
+                                ) : (
+                                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-amber-50 text-amber-800 border border-amber-200">
+                                    <Clock size={11} />
+                                    Menunggu Verifikasi PIC
+                                  </span>
+                                )}
+                              </div>
+
+                              {/* Baris 2: Pemeriksa & Verifikator */}
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px]">
+                                <div className="p-2 bg-slate-50 rounded-lg border border-slate-100">
+                                  <span className="text-slate-400 block text-[10px]">Petugas Pemeriksa:</span>
+                                  <span className="font-bold text-slate-800 flex items-center gap-1.5 mt-0.5">
+                                    <User size={12} className="text-slate-500 shrink-0" />
+                                    <span className="truncate">{inspector}</span>
+                                  </span>
+                                </div>
+
+                                <div
+                                  className={`p-2 rounded-lg border ${
+                                    isVerified ? "bg-emerald-50/50 border-emerald-100" : "bg-amber-50/50 border-amber-100"
+                                  }`}
+                                >
+                                  <span className="text-slate-400 block text-[10px]">Diverifikasi Oleh:</span>
+                                  <span className="font-bold text-slate-800 flex items-center gap-1.5 mt-0.5">
+                                    <ShieldCheck
+                                      size={12}
+                                      className={`shrink-0 ${isVerified ? "text-emerald-600" : "text-amber-600"}`}
+                                    />
+                                    <span className="truncate">{pic || "Belum Diverifikasi"}</span>
+                                  </span>
+                                  {insp.verified_at && (
+                                    <span className="text-[10px] text-slate-400 block mt-0.5">
+                                      {formatDateTime(insp.verified_at)}
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+
+                              {/* Baris 3: Parameter Fisik (5 Parameter) */}
+                              {results.length > 0 && (
+                                <div className="pt-0.5">
+                                  <span className="text-[10px] font-semibold text-slate-500 block mb-1">
+                                    Kondisi 5 Parameter Fisik:
+                                  </span>
+                                  <div className="flex flex-wrap gap-1">
+                                    {results.map((r: any, rIdx: number) => {
+                                      const isPass =
+                                        r.passed !== false &&
+                                        r.jawaban !== "Rusak" &&
+                                        r.jawaban !== "Karat / Rusak" &&
+                                        r.jawaban !== "Putus / Hilang" &&
+                                        r.jawaban !== "Expired" &&
+                                        r.jawaban !== "Berantakan" &&
+                                        r.jawaban !== "Kurang" &&
+                                        r.jawaban !== "Terhalang" &&
+                                        r.jawaban !== "Kotor" &&
+                                        r.jawaban !== "Mati" &&
+                                        r.jawaban !== "Pudar" &&
+                                        r.jawaban !== "Buram" &&
+                                        r.jawaban !== "Goyang" &&
+                                        r.jawaban !== "Retak" &&
+                                        r.jawaban !== "Macet" &&
+                                        r.jawaban !== "Terkunci";
+
+                                      return (
+                                        <span
+                                          key={rIdx}
+                                          className={`px-2 py-0.5 rounded text-[10px] font-semibold border ${
+                                            isPass
+                                              ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                                              : "bg-rose-50 text-rose-700 border-rose-200"
+                                          }`}
+                                          title={`${r.label || r.code || r.item}: ${r.jawaban || (isPass ? "Baik" : "Rusak")}`}
+                                        >
+                                          {r.code || r.label || r.item}: {r.jawaban || (isPass ? "OK" : "NOK")}
+                                        </span>
+                                      );
+                                    })}
+                                  </div>
+                                </div>
+                              )}
+
+                              {/* Baris 4: Catatan Petugas */}
+                              {insp.notes && (
+                                <div className="text-[11px] text-slate-600 pt-1 border-t border-slate-100">
+                                  <span className="font-semibold text-slate-700">Catatan Petugas: </span>
+                                  <span className="italic">"{insp.notes}"</span>
+                                </div>
+                              )}
+
+                              {/* Baris 5: Catatan Verifikasi PIC */}
+                              {insp.verification_notes && (
+                                <div className="text-[11px] text-emerald-800 pt-0.5">
+                                  <span className="font-semibold">Catatan PIC: </span>
+                                  <span className="italic">"{insp.verification_notes}"</span>
+                                </div>
+                              )}
+
+                              {/* Foto Bukti jika ada */}
+                              {insp.foto_bukti && (
+                                <div className="pt-1 border-t border-slate-100">
+                                  <span className="text-[10px] font-semibold text-slate-500 block mb-1">
+                                    Foto Bukti Pemeriksaan:
+                                  </span>
+                                  <div className="flex gap-2 overflow-x-auto py-1">
+                                    {(Array.isArray(insp.foto_bukti) ? insp.foto_bukti : [insp.foto_bukti]).map((imgSrc: string, iIdx: number) => (
+                                      <a
+                                        key={iIdx}
+                                        href={imgSrc.startsWith("http") || imgSrc.startsWith("data:") ? imgSrc : `/storage/${imgSrc}`}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="block shrink-0 rounded-lg overflow-hidden border border-slate-200 hover:opacity-90"
+                                      >
+                                        <img
+                                          src={imgSrc.startsWith("http") || imgSrc.startsWith("data:") ? imgSrc : `/storage/${imgSrc}`}
+                                          alt={`Bukti #${iIdx + 1}`}
+                                          className="w-16 h-16 object-cover bg-slate-100"
+                                        />
+                                      </a>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    );
+                  })()}
+
+                  {/* Fallback Jika Belum Ada Pilihan Bulan dan Belum Ada Data di Tahun Terpilih */}
+                  {selectedMonthIndex === null && (
+                    <div className="p-6 bg-slate-50 rounded-xl border border-dashed border-slate-200 text-center space-y-1">
+                      <Inbox size={26} className="mx-auto text-slate-300 mb-1" />
+                      <p className="text-xs font-bold text-slate-700">Belum Ada Riwayat Inspeksi di Tahun {selectedYear}</p>
+                      <p className="text-[11px] text-slate-400">
+                        Fasilitas ini belum memiliki catatan pemeriksaan di tahun {selectedYear}.
+                      </p>
                     </div>
                   )}
                 </div>

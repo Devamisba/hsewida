@@ -1333,7 +1333,7 @@ class MonitoringController extends Controller
                 'consumableCycle',
                 'conditionSchedule',
                 'inspections' => function ($q) {
-                    $q->latest()->limit(5)->with('inspector:id,name');
+                    $q->latest()->with('inspector:id,name');
                 },
                 'refillHistories' => function ($q) {
                     $q->latest()->limit(5);
