@@ -18,7 +18,9 @@ import {
   Lock,
   LogIn,
   Filter,
-  ChevronDown
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight
 } from "lucide-react";
 import { cn, parseLocalDate } from "@/lib/utils";
 import { api, SafetyFacility } from "@/services/api";
@@ -192,12 +194,14 @@ export default function AparScanPage() {
   const [selectedMonthIndex, setSelectedMonthIndex] = useState<number | null>(null);
   const [isFilterOpen, setIsFilterOpen] = useState<boolean>(false);
 
-  // Daftar tahun yang tersedia (minimal tahun berjalan dan 2 tahun ke belakang, misal 2026, 2025, 2024, ditambah tahun riwayat)
+  // Daftar tahun yang tersedia (fleksibel & luas: minimal 2020 s/d currentYear + 2, plus seluruh tahun riwayat di DB)
   const availableYears = useMemo(() => {
     const yearSet = new Set<number>();
-    yearSet.add(currentYear);
-    yearSet.add(currentYear - 1);
-    yearSet.add(currentYear - 2);
+    const minDefault = Math.min(2020, currentYear - 6);
+    const maxDefault = currentYear + 2;
+    for (let y = minDefault; y <= maxDefault; y++) {
+      yearSet.add(y);
+    }
 
     if (facility?.inspections && Array.isArray(facility.inspections)) {
       facility.inspections.forEach((insp: any) => {
@@ -208,8 +212,10 @@ export default function AparScanPage() {
       });
     }
 
-    return Array.from(yearSet).sort((a, b) => b - a); // Urut dari tahun terbaru (2026, 2025, 2024, dst.)
-  }, [facility?.inspections, currentYear]);
+    yearSet.add(selectedYear);
+
+    return Array.from(yearSet).sort((a, b) => b - a); // Urut dari tahun terbaru (2028, 2027, 2026, 2025, ...)
+  }, [facility?.inspections, currentYear, selectedYear]);
 
   // Pemetaan inspeksi berdasarkan bulan (0 s/d 11) untuk tahun yang dipilih
   const yearInspectionsByMonth = useMemo(() => {
@@ -787,7 +793,17 @@ export default function AparScanPage() {
                   {/* Filter Periode Interaktif & Ringkasan Kepatuhan */}
                   <div className="relative">
                     <div className="flex items-center justify-between flex-wrap gap-2 py-0.5">
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        {/* Stepper Mundur 1 Tahun Langsung */}
+                        <button
+                          type="button"
+                          onClick={() => setSelectedYear((y) => y - 1)}
+                          className="p-1.5 bg-white hover:bg-slate-100 text-slate-700 rounded-lg border border-slate-300 shadow-2xs transition cursor-pointer"
+                          title="Mundur 1 Tahun"
+                        >
+                          <ChevronLeft size={14} />
+                        </button>
+
                         <button
                           type="button"
                           onClick={() => setIsFilterOpen((prev) => !prev)}
@@ -809,11 +825,21 @@ export default function AparScanPage() {
                           <ChevronDown size={13} className={cn("transition-transform duration-200", isFilterOpen ? "rotate-180" : "")} />
                         </button>
 
+                        {/* Stepper Maju 1 Tahun Langsung */}
+                        <button
+                          type="button"
+                          onClick={() => setSelectedYear((y) => y + 1)}
+                          className="p-1.5 bg-white hover:bg-slate-100 text-slate-700 rounded-lg border border-slate-300 shadow-2xs transition cursor-pointer"
+                          title="Maju 1 Tahun"
+                        >
+                          <ChevronRight size={14} />
+                        </button>
+
                         {selectedMonthIndex !== null && (
                           <button
                             type="button"
                             onClick={() => setSelectedMonthIndex(null)}
-                            className="text-[11px] text-slate-500 hover:text-slate-800 underline cursor-pointer"
+                            className="text-[11px] text-slate-500 hover:text-slate-800 underline cursor-pointer ml-1"
                           >
                             Lihat 1 Tahun Full
                           </button>
@@ -832,7 +858,7 @@ export default function AparScanPage() {
                           className="fixed inset-0 z-20"
                           onClick={() => setIsFilterOpen(false)}
                         />
-                        <div className="absolute left-0 top-full mt-1.5 z-30 w-full sm:w-[380px] bg-white rounded-xl shadow-xl border border-slate-200 p-4 space-y-3.5 animate-fade-in">
+                        <div className="absolute left-0 top-full mt-1.5 z-30 w-full sm:w-[400px] bg-white rounded-xl shadow-xl border border-slate-200 p-4 space-y-3.5 animate-fade-in">
                           <div className="flex items-center justify-between pb-2 border-b border-slate-100">
                             <div className="flex items-center gap-1.5 text-xs font-bold text-slate-800 uppercase tracking-wide">
                               <Filter size={13} className="text-slate-600" />
@@ -847,22 +873,62 @@ export default function AparScanPage() {
                             </button>
                           </div>
 
-                          {/* 1. Pilih Tahun */}
-                          <div className="space-y-1.5">
-                            <label className="text-[11px] font-bold text-slate-600 uppercase tracking-wider block">
-                              1. Pilih Tahun:
-                            </label>
-                            <div className="flex items-center gap-1.5 flex-wrap">
+                          {/* 1. Pilih Tahun Fleksibel (Stepper + Dropdown Select + Quick Chips) */}
+                          <div className="space-y-2">
+                            <div className="flex items-center justify-between">
+                              <label className="text-[11px] font-bold text-slate-700 uppercase tracking-wider block">
+                                1. Pilih Tahun:
+                              </label>
+                              <span className="text-[10px] text-slate-500 font-semibold">
+                                Tahun Aktif: <strong className="text-slate-900 text-xs font-bold">{selectedYear}</strong>
+                              </span>
+                            </div>
+
+                            {/* Stepper Panah & Dropdown Select Bebas */}
+                            <div className="flex items-center gap-1.5">
+                              <button
+                                type="button"
+                                onClick={() => setSelectedYear((y) => y - 1)}
+                                className="p-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 transition cursor-pointer flex items-center justify-center shrink-0 border border-slate-200"
+                                title="Tahun Sebelumnya"
+                              >
+                                <ChevronLeft size={15} />
+                              </button>
+
+                              <select
+                                value={selectedYear}
+                                onChange={(e) => setSelectedYear(Number(e.target.value))}
+                                className="flex-1 py-1.5 px-3 bg-white border border-slate-300 rounded-lg text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-primary/40 cursor-pointer"
+                              >
+                                {availableYears.map((yr) => (
+                                  <option key={yr} value={yr}>
+                                    Tahun {yr} {yr === currentYear ? "(Tahun Berjalan)" : ""}
+                                  </option>
+                                ))}
+                              </select>
+
+                              <button
+                                type="button"
+                                onClick={() => setSelectedYear((y) => y + 1)}
+                                className="p-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 transition cursor-pointer flex items-center justify-center shrink-0 border border-slate-200"
+                                title="Tahun Berikutnya"
+                              >
+                                <ChevronRight size={15} />
+                              </button>
+                            </div>
+
+                            {/* Quick Chips Tahun (Scrollable Horizontal) */}
+                            <div className="flex items-center gap-1 overflow-x-auto py-0.5 scrollbar-thin">
                               {availableYears.map((yr) => (
                                 <button
                                   key={yr}
                                   type="button"
                                   onClick={() => setSelectedYear(yr)}
                                   className={cn(
-                                    "px-3 py-1 text-xs font-bold rounded-lg transition cursor-pointer",
+                                    "px-2.5 py-1 text-xs font-bold rounded-lg transition cursor-pointer shrink-0 border",
                                     selectedYear === yr
-                                      ? "bg-slate-900 text-white shadow-xs"
-                                      : "bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200"
+                                      ? "bg-slate-900 text-white border-slate-900 shadow-xs"
+                                      : "bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200"
                                   )}
                                 >
                                   {yr}
