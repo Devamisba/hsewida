@@ -36,7 +36,7 @@ class UserSeeder extends Seeder
             ],
             [
                 'nik' => 'K301',
-                'name' => 'Tim K3 / HSE',
+                'name' => 'Ahli K3 Umum',
                 'email' => 'hse@hse.com',
                 'password' => Hash::make('password'),
                 'role_id' => $roles['hse']->id ?? null,

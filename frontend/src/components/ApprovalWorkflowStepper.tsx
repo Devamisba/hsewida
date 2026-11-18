@@ -40,10 +40,10 @@ const STEPS: StepDef[] = [
   {
     key: "hse",
     stepNumber: 2,
-    title: "HSE Officer",
+    title: "Safety Officer",
     subtitle: "Verifikasi K3 & JSA",
     roleCode: "hse",
-    roleName: "HSE Officer / Koordinator K3",
+    roleName: "Safety Officer",
   },
   {
     key: "ga_dept_head",

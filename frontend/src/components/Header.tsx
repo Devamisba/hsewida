@@ -27,13 +27,16 @@ export function Header({ title = "HSE Portal" }: HeaderProps) {
     };
   }, []);
 
-  const displayName = user?.name || 'Pengguna';
+  const rawName = user?.name || 'Pengguna';
+  const displayName = ['Tim K3 / HSE', 'Tim K3', 'Tim K3 / HSE Lapangan'].includes(rawName) ? 'Ahli K3 Umum' : rawName;
   const getDisplayRole = () => {
     if (role === 'ga_dept_head' || user?.role?.code === 'ga_dept_head') return 'HRD&GA Dept Head';
     if (role === 'ga_div_head' || user?.role?.code === 'ga_div_head') return 'HRD&GA Division Head';
+    if (role === 'hse' || user?.role?.code === 'hse') return 'Safety Officer';
     const roleName = user?.role?.name;
     if (roleName === 'Head Dept HRD&GA' || roleName === 'Dept Head HRD&GA' || roleName === 'ga_dept_head') return 'HRD&GA Dept Head';
     if (roleName === 'Head Division HRD&GA' || roleName === 'Division Head HRD&GA' || roleName === 'ga_div_head') return 'HRD&GA Division Head';
+    if (roleName === 'Tim K3 / HSE Officer' || roleName === 'HSE Officer / Koordinator K3' || roleName === 'HSE Officer') return 'Safety Officer';
     if (roleName) return roleName;
     if (user?.company_name) return user.company_name;
     return role || 'User';

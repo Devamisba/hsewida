@@ -57,6 +57,7 @@ class AuthController extends Controller
                         'name' => match ($user->role->code) {
                             'ga_dept_head' => 'HRD&GA Dept Head',
                             'ga_div_head' => 'HRD&GA Division Head',
+                            'hse' => 'Safety Officer',
                             default => $user->role->name,
                         },
                     ] : null,
@@ -103,6 +104,7 @@ class AuthController extends Controller
                     'name' => match ($user->role->code) {
                         'ga_dept_head' => 'HRD&GA Dept Head',
                         'ga_div_head' => 'HRD&GA Division Head',
+                        'hse' => 'Safety Officer',
                         default => $user->role->name,
                     },
                 ] : null,
@@ -166,6 +168,7 @@ class AuthController extends Controller
                     'name' => match ($freshUser->role->code) {
                         'ga_dept_head' => 'HRD&GA Dept Head',
                         'ga_div_head' => 'HRD&GA Division Head',
+                        'hse' => 'Safety Officer',
                         default => $freshUser->role->name,
                     },
                 ] : null,

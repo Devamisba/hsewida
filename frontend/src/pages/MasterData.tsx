@@ -927,7 +927,9 @@ export default function MasterDataPage() {
                           filteredUsers.map((u) => (
                             <tr key={u.id} className="hover:bg-slate-50/70 transition-colors">
                               <td className="px-5 py-4">
-                                <div className="font-bold text-slate-900">{u.name}</div>
+                                <div className="font-bold text-slate-900">
+                                  {['Tim K3 / HSE', 'Tim K3', 'Tim K3 / HSE Lapangan'].includes(u.name) ? 'Ahli K3 Umum' : u.name}
+                                </div>
                                 <div className="text-xs font-mono font-semibold text-blue-600">NIP: {u.nik || "-"}</div>
                                 <div className="text-xs text-slate-400">{u.email}</div>
                               </td>
@@ -941,6 +943,7 @@ export default function MasterDataPage() {
                                   {u.role ? (
                                     u.role.code === 'ga_dept_head' || u.role.name === 'Head Dept HRD&GA' || u.role.name === 'Dept Head HRD&GA' ? 'HRD&GA Dept Head' :
                                     u.role.code === 'ga_div_head' || u.role.name === 'Head Division HRD&GA' ? 'HRD&GA Division Head' :
+                                    u.role.code === 'hse' || u.role.name === 'Tim K3 / HSE Officer' || u.role.name === 'HSE Officer' ? 'Safety Officer' :
                                     u.role.name
                                   ) : "Tanpa Role"}
                                 </span>

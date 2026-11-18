@@ -37,6 +37,14 @@ class User extends Authenticatable
         ];
     }
 
+    public function getNameAttribute($value)
+    {
+        if (in_array($value, ['Tim K3 / HSE', 'Tim K3', 'Tim K3 / HSE Lapangan'])) {
+            return 'Ahli K3 Umum';
+        }
+        return $value;
+    }
+
     public function role()
     {
         return $this->belongsTo(Role::class);

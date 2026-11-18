@@ -260,7 +260,7 @@ export default function ReviewRequestsPage() {
     switch (st) {
       case "Menunggu PIC Vendor": 
       case "Menunggu PIC Widatra": return { role: "pic_vendor", label: "PIC Widatra", step: 1 };
-      case "Menunggu HSE": return { role: "hse", label: "HSE Officer / PIC K3", step: 2 };
+      case "Menunggu HSE": return { role: "hse", label: "Safety Officer", step: 2 };
       case "Menunggu Dept Head HRD&GA":
       case "Menunggu Head Dept HRD&GA":
       case "Menunggu GA Dept Head": return { role: "ga_dept_head", label: "HRD&GA Dept Head", step: 3 };

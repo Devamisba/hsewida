@@ -45,7 +45,12 @@ export const auth = {
           user.role.name = 'HRD&GA Dept Head';
         } else if (user.role.code === 'ga_div_head' || user.role.name === 'Head Division HRD&GA') {
           user.role.name = 'HRD&GA Division Head';
+        } else if (user.role.code === 'hse' || user.role.name === 'Tim K3 / HSE Officer' || user.role.name === 'HSE Officer') {
+          user.role.name = 'Safety Officer';
         }
+      }
+      if (user?.name && ['Tim K3 / HSE', 'Tim K3', 'Tim K3 / HSE Lapangan'].includes(user.name)) {
+        user.name = 'Ahli K3 Umum';
       }
       return user;
     } catch {
@@ -60,7 +65,12 @@ export const auth = {
         user.role.name = 'HRD&GA Dept Head';
       } else if (user.role.code === 'ga_div_head' || user.role.name === 'Head Division HRD&GA') {
         user.role.name = 'HRD&GA Division Head';
+      } else if (user.role.code === 'hse' || user.role.name === 'Tim K3 / HSE Officer' || user.role.name === 'HSE Officer') {
+        user.role.name = 'Safety Officer';
       }
+    }
+    if (user?.name && ['Tim K3 / HSE', 'Tim K3', 'Tim K3 / HSE Lapangan'].includes(user.name)) {
+      user.name = 'Ahli K3 Umum';
     }
     const roleCode = user?.role?.code || (typeof user?.role === 'string' ? user.role : 'admin');
     
@@ -82,7 +92,12 @@ export const auth = {
         user.role.name = 'HRD&GA Dept Head';
       } else if (user.role.code === 'ga_div_head' || user.role.name === 'Head Division HRD&GA') {
         user.role.name = 'HRD&GA Division Head';
+      } else if (user.role.code === 'hse' || user.role.name === 'Tim K3 / HSE Officer' || user.role.name === 'HSE Officer') {
+        user.role.name = 'Safety Officer';
       }
+    }
+    if (user?.name && ['Tim K3 / HSE', 'Tim K3', 'Tim K3 / HSE Lapangan'].includes(user.name)) {
+      user.name = 'Ahli K3 Umum';
     }
     const userStr = JSON.stringify(user);
     sessionStorage.setItem(USER_KEY, userStr);

@@ -447,7 +447,7 @@ export function InspectionModal({ isOpen, onClose, item, type, onSuccess }: Insp
   const [error, setError] = useState("");
   const [findingNotes, setFindingNotes] = useState("");
   const [actionPlan, setActionPlan] = useState("");
-  const [pic, setPic] = useState("Tim K3 / HSE");
+  const [pic, setPic] = useState("Ahli K3 Umum");
 
   const config = useMemo(() => {
     return getInspectionConfig(item?.category, type);
@@ -805,7 +805,7 @@ export function InspectionModal({ isOpen, onClose, item, type, onSuccess }: Insp
                   onChange={(e) => setPic(e.target.value)}
                   className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white text-slate-900 font-semibold"
                 >
-                  <option value="Tim K3 / HSE">Tim K3 / HSE</option>
+                  <option value="Ahli K3 Umum">Ahli K3 Umum</option>
                   <option value="Tim Maintenance / GA">Tim Maintenance / GA</option>
                   <option value="Vendor Rekanan K3">Vendor Rekanan K3</option>
                   <option value="Supervisor Area Pabrik">Supervisor Area Pabrik</option>

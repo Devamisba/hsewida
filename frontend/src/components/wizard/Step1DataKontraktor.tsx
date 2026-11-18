@@ -51,7 +51,7 @@ export function Step1DataKontraktor({ data, updateData }: { data: any, updateDat
       }
       if (!data.jamKerjaMulai) updates.jamKerjaMulai = "08:00";
       if (!data.jamKerjaAkhir) updates.jamKerjaAkhir = "17:00";
-      if (!data.pengawasHse) updates.pengawasHse = "Tim K3 Widatra / HSE Lapangan";
+      if (!data.pengawasHse) updates.pengawasHse = "Ahli K3 Umum";
       if (!data.noHpHse) updates.noHpHse = "085566778899";
       if (data.totalTenagaKerja === undefined || data.totalTenagaKerja === null) updates.totalTenagaKerja = "1";
       if (Object.keys(updates).length > 0) {
@@ -464,7 +464,7 @@ export function Step1DataKontraktor({ data, updateData }: { data: any, updateDat
                 value={data.pengawasHse || ""}
                 onChange={(e) => updateData({ pengawasHse: e.target.value })}
                 className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm bg-white"
-                placeholder="Contoh: Tim K3 Widatra / Safety Officer"
+                placeholder="Contoh: Ahli K3 Umum / Safety Officer"
               />
               <p className="text-[11px] text-gray-500">Petugas K3 internal PT Widatra Bhakti yang memverifikasi kepatuhan JSA & APD.</p>
             </div>

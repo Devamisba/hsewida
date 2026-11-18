@@ -257,7 +257,7 @@ class MasterDataController extends Controller
                 'stage_code' => 'hse_review',
                 'status_name' => 'Menunggu HSE',
                 'reviewer_role' => 'hse',
-                'role_name' => 'Tim K3 / HSE Officer',
+                'role_name' => 'Safety Officer',
                 'sla_hours' => 24,
                 'sla_label' => '24 Jam Kerja',
                 'description' => 'Pemeriksaan aspek keselamatan kerja: validasi potensi bahaya JSA, sertifikasi pekerja khusus (Welder/Scaffolder), kecukupan APD, dan safety induction.',

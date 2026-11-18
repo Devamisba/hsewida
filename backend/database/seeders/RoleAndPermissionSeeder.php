@@ -24,7 +24,7 @@ class RoleAndPermissionSeeder extends Seeder
             ],
             [
                 'code' => 'hse',
-                'name' => 'Tim K3 / HSE Officer',
+                'name' => 'Safety Officer',
                 'description' => 'Melakukan review keselamatan tahap 2, validasi JSA, mitigasi risiko, inspeksi fasilitas K3, dan CAPA.',
             ],
             [
@@ -63,7 +63,7 @@ class RoleAndPermissionSeeder extends Seeder
             ['code' => 'permits.create', 'name' => 'Ajukan Ijin Kerja Baru / Perpanjangan', 'group' => 'Work Permit'],
             ['code' => 'permits.view_own', 'name' => 'Lihat Ijin Kerja Milik Sendiri', 'group' => 'Work Permit'],
             ['code' => 'permits.review_pic', 'name' => 'Review Permit Tahap 1 (PIC Widatra)', 'group' => 'Work Permit'],
-            ['code' => 'permits.review_hse', 'name' => 'Review Permit Tahap 2 (HSE)', 'group' => 'Work Permit'],
+            ['code' => 'permits.review_hse', 'name' => 'Review Permit Tahap 2 (Safety Officer)', 'group' => 'Work Permit'],
             ['code' => 'permits.review_ga_dept', 'name' => 'Review Permit Tahap 3 (HRD&GA Dept Head)', 'group' => 'Work Permit'],
             ['code' => 'permits.review_ga_div', 'name' => 'Review Permit Tahap 4 (HRD&GA Division Head)', 'group' => 'Work Permit'],
             ['code' => 'permits.view_all', 'name' => 'Lihat Seluruh Ijin Kerja & Riwayat', 'group' => 'Work Permit'],

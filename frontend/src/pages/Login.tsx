@@ -9,7 +9,7 @@ const DEMO_ACCOUNTS = [
   { role: "admin", label: "Admin", nip: "SA12345", name: "System Administrator" },
   { role: "pemohon", label: "Vendor (Pemohon)", nip: "VN01", name: "PT Yokohama" },
   { role: "pic_vendor", label: "PIC Widatra (Internal)", nip: "K302", name: "PIC Widatra" },
-  { role: "hse", label: "Tim K3 / HSE", nip: "K301", name: "Tim K3 / HSE" },
+  { role: "hse", label: "Ahli K3 Umum (Safety Officer)", nip: "K301", name: "Ahli K3 Umum" },
   { role: "pic_k3", label: "PIC K3 (Monitoring)", nip: "PK10006", name: "PIC K3 Widatra" },
   { role: "ga_dept_head", label: "HRD&GA Dept Head", nip: "GA10004", name: "P. Andaru" },
   { role: "ga_div_head", label: "HRD&GA Division Head", nip: "GA10005", name: "P. Effendy" },

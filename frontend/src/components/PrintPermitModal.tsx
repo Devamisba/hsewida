@@ -57,7 +57,8 @@ export function PrintPermitModal({ permit, onClose }: PrintPermitModalProps) {
   const pjPhone = permit?.noHpPJ || "-";
   const supervisorName = permit?.pengawasPekerjaan || "-";
   const supervisorPhone = permit?.noHpPengawas || "-";
-  const hseOfficerName = permit?.pengawasHse || "Tim K3 / HSE Lapangan";
+  const rawHseOfficer = permit?.pengawasHse || "Ahli K3 Umum";
+  const hseOfficerName = ["Tim K3 / HSE Lapangan", "Tim K3 / HSE", "Tim K3"].includes(rawHseOfficer) ? "Ahli K3 Umum" : rawHseOfficer;
   const hseOfficerPhone = permit?.noHpHse || "085566778899";
   
   const totalWorkers = Number(permit?.totalTenagaKerja || permit?.pekerja?.length || 1);

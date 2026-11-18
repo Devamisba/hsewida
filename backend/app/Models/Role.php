@@ -34,6 +34,9 @@ class Role extends Model
         if ($this->code === 'ga_div_head' || in_array($value, ['Head Division HRD&GA', 'Division Head HRD&GA', 'HRD & GA Division Head'])) {
             return 'HRD&GA Division Head';
         }
+        if ($this->code === 'hse' || in_array($value, ['Tim K3 / HSE Officer', 'HSE Officer / Koordinator K3', 'HSE Officer', 'Tim K3'])) {
+            return 'Safety Officer';
+        }
         return $value;
     }
 
