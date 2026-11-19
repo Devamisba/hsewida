@@ -11,19 +11,21 @@ return new class extends Migration
      */
     public function up(): void
     {
-        // 1. Expand ENUM column status in work_permits to include new approver statuses
-        DB::statement("ALTER TABLE `work_permits` MODIFY COLUMN `status` ENUM(
-            'Draft',
-            'Menunggu PIC Vendor',
-            'Menunggu HSE',
-            'Menunggu GA Dept Head',
-            'Menunggu GA Div Head',
-            'Menunggu Head Dept HRD&GA',
-            'Menunggu Head Division HRD&GA',
-            'Disetujui',
-            'Ditolak',
-            'Selesai'
-        ) NOT NULL DEFAULT 'Draft'");
+        // 1. Expand ENUM column status in work_permits to include new approver statuses (MySQL only)
+        if (DB::getDriverName() === 'mysql') {
+            DB::statement("ALTER TABLE `work_permits` MODIFY COLUMN `status` ENUM(
+                'Draft',
+                'Menunggu PIC Vendor',
+                'Menunggu HSE',
+                'Menunggu GA Dept Head',
+                'Menunggu GA Div Head',
+                'Menunggu Head Dept HRD&GA',
+                'Menunggu Head Division HRD&GA',
+                'Disetujui',
+                'Ditolak',
+                'Selesai'
+            ) NOT NULL DEFAULT 'Draft'");
+        }
 
         // 2. Migrate existing work permits to new statuses
         DB::table('work_permits')

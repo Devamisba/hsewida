@@ -12,7 +12,9 @@ return new class extends Migration
      */
     public function up(): void
     {
-        DB::statement("ALTER TABLE `permit_approvals` MODIFY COLUMN `action` ENUM('Submit', 'Approve', 'Reject', 'Close') NOT NULL");
+        if (DB::getDriverName() === 'mysql') {
+            DB::statement("ALTER TABLE `permit_approvals` MODIFY COLUMN `action` ENUM('Submit', 'Approve', 'Reject', 'Close') NOT NULL");
+        }
     }
 
     /**
@@ -20,6 +22,8 @@ return new class extends Migration
      */
     public function down(): void
     {
-        DB::statement("ALTER TABLE `permit_approvals` MODIFY COLUMN `action` ENUM('Submit', 'Approve', 'Reject') NOT NULL");
+        if (DB::getDriverName() === 'mysql') {
+            DB::statement("ALTER TABLE `permit_approvals` MODIFY COLUMN `action` ENUM('Submit', 'Approve', 'Reject') NOT NULL");
+        }
     }
 };
