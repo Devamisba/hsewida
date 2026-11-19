@@ -47,9 +47,22 @@ import { RolePermissionMatrixView } from "@/components/RolePermissionMatrixView"
 import { syncGeofenceFromSettingsMap, DEFAULT_PLANT_CENTER } from "@/utils/facilityCoordinates";
 
 const MirrorIcon = ({ size = 14, className = "" }: { size?: number; className?: string }) => (
-  <span style={{ fontSize: `${size}px`, lineHeight: 1 }} className={`inline-flex items-center justify-center select-none ${className}`}>
-    🪞
-  </span>
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={className}
+  >
+    <circle cx="12" cy="10" r="7" />
+    <path d="M9 7.5a4 4 0 0 1 4-1.5" />
+    <path d="M12 17v4" />
+    <path d="M8 21h8" />
+  </svg>
 );
 
 const PPE_CATEGORIES_INFO: Record<string, { label: string; desc: string; color: string; bg: string; border: string }> = {
