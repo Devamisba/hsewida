@@ -341,7 +341,16 @@ export default function AparScanPage() {
   const [submittingPetugas, setSubmittingPetugas] = useState<boolean>(false);
   const [petugasSubmitted, setPetugasSubmitted] = useState<boolean>(false);
 
+  // Dynamic Checklist Master Data
+  const [dynamicChecklists, setDynamicChecklists] = useState<any[] | null>(null);
+  const [paramAnswers, setParamAnswers] = useState<Record<string, boolean>>({});
+
   const handleParamChange = (paramId: string, isPass: boolean) => {
+    setParamAnswers(prev => ({
+      ...prev,
+      [paramId]: isPass,
+    }));
+
     if (paramId === "tbg") setTbg(isPass);
     if (paramId === "slg") setSlg(isPass);
     if (paramId === "nozz") setNozz(isPass);
@@ -386,6 +395,23 @@ export default function AparScanPage() {
         setFacility(res.data.facility);
         setIsRefillQueue(!!res.data.is_refill_queue);
         setTotalInspections(res.data.total_inspections ?? res.data.facility?.inspections_count ?? (res.data.facility?.inspections?.length || 0));
+
+        // Load dynamic checklist parameters for this facility category
+        const cat = res.data.facility?.category || "apar";
+        api.getCategoryChecklistsPublic(cat)
+          .then(cRes => {
+            if (cRes?.success && Array.isArray(cRes.data) && cRes.data.length > 0) {
+              setDynamicChecklists(cRes.data);
+              const initAnswers: Record<string, boolean> = {};
+              cRes.data.forEach((tpl: any) => {
+                initAnswers[tpl.param_code] = true;
+              });
+              setParamAnswers(initAnswers);
+            }
+          })
+          .catch(() => {
+            // Keep dynamicChecklists as null to gracefully use CATEGORY_CONFIG
+          });
 
 
       } else {
@@ -565,6 +591,26 @@ export default function AparScanPage() {
   };
 
   // --- SUBMIT FORM 1 (Petugas HSE) ---
+  const activeInspectionParams = useMemo(() => {
+    if (dynamicChecklists && dynamicChecklists.length > 0) {
+      return dynamicChecklists.map((item, idx) => ({
+        id: item.param_code,
+        code: item.badge_code || item.param_code.substring(0, 3).toUpperCase(),
+        num: idx + 1,
+        title: `${idx + 1}. ${item.title}`,
+        desc: item.description || "",
+        passLabel: item.pass_label || "Baik",
+        failLabel: item.fail_label || "Rusak",
+        isCritical: !!item.is_critical,
+      }));
+    }
+    return categoryConfig.params.map(p => ({
+      ...p,
+      code: p.id.toUpperCase(),
+      isCritical: false,
+    }));
+  }, [dynamicChecklists, categoryConfig]);
+
   const handlePetugasSubmit = async (e: FormEvent) => {
     e.preventDefault();
     if (!code) return;
@@ -575,13 +621,16 @@ export default function AparScanPage() {
     }
 
     // Identifikasi parameter yang ditandai rusak
-    const damagedParams = categoryConfig.params.filter(param => {
-      if (param.id === "tbg") return !tbg;
-      if (param.id === "slg") return !slg;
-      if (param.id === "nozz") return !nozz;
-      if (param.id === "sgl") return !sgl;
-      if (param.id === "lev") return !lev;
-      return false;
+    const damagedParams = activeInspectionParams.filter(param => {
+      const isGood = paramAnswers[param.id] !== undefined
+        ? paramAnswers[param.id]
+        : (param.id === "tbg" ? tbg
+        : param.id === "slg" ? slg
+        : param.id === "nozz" ? nozz
+        : param.id === "sgl" ? sgl
+        : param.id === "lev" ? lev
+        : true);
+      return !isGood;
     });
 
     // Validasi deskripsi kerusakan per item yang rusak
@@ -616,11 +665,31 @@ export default function AparScanPage() {
       }
     }
 
+    const checklistResults = activeInspectionParams.map(p => {
+      const isGood = paramAnswers[p.id] !== undefined
+        ? paramAnswers[p.id]
+        : (p.id === "tbg" ? tbg
+        : p.id === "slg" ? slg
+        : p.id === "nozz" ? nozz
+        : p.id === "sgl" ? sgl
+        : p.id === "lev" ? lev
+        : true);
+      return {
+        id: p.id,
+        code: p.code,
+        label: p.title.replace(/^\d+\.\s*/, ""),
+        passed: isGood,
+        jawaban: isGood ? p.passLabel : p.failLabel,
+        damage_description: isGood ? null : (damageDescriptions[p.id] || null),
+      };
+    });
+
     setSubmittingPetugas(true);
     try {
       const payload = {
         inspector_name: petugasName.trim(),
         notes: compiledNotes,
+        checklist_results: checklistResults,
         tbg,
         slg,
         nozz,
@@ -641,6 +710,7 @@ export default function AparScanPage() {
         await fetchAparData();
         setNotes("");
         setDamageDescriptions({});
+        setParamAnswers({});
         if (typeof window !== "undefined") {
           window.scrollTo({ top: 0, behavior: "smooth" });
         }
@@ -1361,16 +1431,28 @@ export default function AparScanPage() {
                     )}
                   </div>
 
-                  {/* 5 Parameter Fisik Berdasarkan Kategori Fasilitas */}
+                  {/* Parameter Fisik Berdasarkan Kategori Fasilitas */}
                   <div className="space-y-2 border-t border-slate-200 pt-3">
-                    <div className="font-semibold text-slate-700">Pemeriksaan Fisik 5 Parameter {categoryConfig.badge}:</div>
+                    <div className="flex items-center justify-between">
+                      <div className="font-semibold text-slate-700">
+                        Pemeriksaan Fisik {activeInspectionParams.length} Parameter {categoryConfig.badge}:
+                      </div>
+                      {dynamicChecklists && dynamicChecklists.length > 0 && (
+                        <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">
+                          Master Data K3
+                        </span>
+                      )}
+                    </div>
                     
-                    {categoryConfig.params.map((param) => {
-                      const isGood = param.id === "tbg" ? tbg
+                    {activeInspectionParams.map((param) => {
+                      const isGood = paramAnswers[param.id] !== undefined
+                        ? paramAnswers[param.id]
+                        : (param.id === "tbg" ? tbg
                         : param.id === "slg" ? slg
                         : param.id === "nozz" ? nozz
                         : param.id === "sgl" ? sgl
-                        : lev;
+                        : param.id === "lev" ? lev
+                        : true);
 
                       return (
                         <div 

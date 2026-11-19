@@ -5,6 +5,7 @@ use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\RolePermissionController;
 use App\Http\Controllers\Api\MasterDataController;
+use App\Http\Controllers\Api\MasterChecklistController;
 use App\Http\Controllers\Api\WorkPermitController;
 use App\Http\Controllers\Api\PermitDocumentController;
 use App\Http\Controllers\Api\MonitoringController;
@@ -25,6 +26,7 @@ Route::prefix('v1')->group(function () {
     Route::get('/monitoring/refill-summary', [MonitoringController::class, 'getRefillSummary']);
     Route::get('/monitoring/facilities/{id}/inspections', [MonitoringController::class, 'getFacilityInspections']);
     Route::get('/monitoring/inspections', [MonitoringController::class, 'getAllInspections']);
+    Route::get('/monitoring/checklists/{category?}', [MasterChecklistController::class, 'getCategoryChecklists']);
 
     // --- PROTECTED ROUTES (SANCTUM) ---
     Route::middleware('auth:sanctum')->group(function () {
@@ -77,6 +79,13 @@ Route::prefix('v1')->group(function () {
         Route::post('/master/reset-login-image', [MasterDataController::class, 'resetLoginImage']);
         Route::post('/master/upload-company-logo', [MasterDataController::class, 'uploadCompanyLogo']);
         Route::post('/master/reset-company-logo', [MasterDataController::class, 'resetCompanyLogo']);
+
+        // Master Data Checklist & Parameter Inspeksi K3
+        Route::get('/master/checklists', [MasterChecklistController::class, 'index']);
+        Route::post('/master/checklists', [MasterChecklistController::class, 'store']);
+        Route::put('/master/checklists/{id}', [MasterChecklistController::class, 'update']);
+        Route::delete('/master/checklists/{id}', [MasterChecklistController::class, 'destroy']);
+        Route::post('/master/checklists/reorder', [MasterChecklistController::class, 'reorder']);
 
         // 5. Work Permits Lifecycle
         Route::get('/permits/my-requests', [WorkPermitController::class, 'myRequests']);

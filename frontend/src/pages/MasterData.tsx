@@ -33,7 +33,8 @@ import {
   Lock,
   Sparkles,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  ClipboardCheck
 } from "lucide-react";
 import { api } from "@/services/api";
 import { auth } from "@/lib/auth";
@@ -107,12 +108,26 @@ const resolvePpeCategory = (category: string | null | undefined, name: string): 
   return "General PPE";
 };
 
-type MainTab = "users_roles" | "permit_types" | "ppe" | "workflow" | "locations_vendors" | "policy_settings" | "branding";
+const CHECKLIST_CATEGORIES = [
+  { key: "apar", label: "APAR", badge: "APAR", icon: "🧯", desc: "Alat Pemadam Api Ringan (Tabung, Selang, Nozzle, Pin, Tekanan)" },
+  { key: "hydrant", label: "Hydrant", badge: "HYD", icon: "🚒", desc: "Pilar & Box Hydrant (Box, Selang, Nozzle, Valve, Tekanan)" },
+  { key: "p3k", label: "Kotak P3K", badge: "P3K", icon: "🩹", desc: "First Aid Kit (Fisik Box, Kerapian, Obat/Kasa, Expired, Akses)" },
+  { key: "assembly_point", label: "Titik Kumpul", badge: "TK", icon: "🚩", desc: "Assembly Point (Rambu, Jalur Evakuasi, Permukaan, Lampu, Marka)" },
+  { key: "safety_mirror", label: "Safety Mirror", badge: "SM", icon: "🪞", desc: "Cermin Tikungan K3 (Kaca, Sudut Pandang, Braket, Bingkai, Bebas Halangan)" },
+  { key: "emergency_door", label: "Pintu Darurat", badge: "PD", icon: "🚪", desc: "Emergency Exit (Panic Bar, Kunci Bebas, Exit Sign, Jalur Akses, Engsel)" },
+];
+
+type MainTab = "users_roles" | "permit_types" | "ppe" | "workflow" | "locations_vendors" | "policy_settings" | "branding" | "checklists";
 
 export default function MasterDataPage() {
   const [activeTab, setActiveTab] = useState<MainTab>("users_roles");
   const [userSubTab, setUserSubTab] = useState<"users" | "roles">("users");
   const [locVendorSubTab, setLocVendorSubTab] = useState<"locations" | "vendors">("locations");
+
+  // Checklist Master Data States
+  const [checklistCategory, setChecklistCategory] = useState<string>("apar");
+  const [checklists, setChecklists] = useState<any[]>([]);
+  const [loadingChecklists, setLoadingChecklists] = useState(false);
 
   // Data States
   const [users, setUsers] = useState<any[]>([]);
@@ -398,6 +413,8 @@ export default function MasterDataPage() {
           setPolicySettingsMap(sRes.data.map);
           syncGeofenceFromSettingsMap(sRes.data.map);
         }
+      } else if (activeTab === "checklists") {
+        await loadChecklists(checklistCategory);
       }
     } catch (err: any) {
       console.warn("Failed fetching master data:", err.message);
@@ -407,9 +424,45 @@ export default function MasterDataPage() {
     }
   };
 
+  const loadChecklists = async (category: string) => {
+    setLoadingChecklists(true);
+    try {
+      const res = await api.getChecklistTemplates(category);
+      if (res?.success) {
+        setChecklists(res.data || []);
+      } else {
+        setChecklists([]);
+      }
+    } catch (err: any) {
+      console.warn("Failed fetching checklist templates:", err.message);
+      showFeedback("error", "Gagal memuat template checklist: " + (err.message || ""));
+    } finally {
+      setLoadingChecklists(false);
+    }
+  };
+
+  const handleToggleChecklistActive = async (item: any) => {
+    try {
+      const updatedStatus = !item.is_active;
+      const res = await api.updateChecklistTemplate(item.id, { is_active: updatedStatus });
+      if (res?.success) {
+        setChecklists(prev => prev.map(c => c.id === item.id ? { ...c, is_active: updatedStatus } : c));
+        showFeedback("success", `Status parameter "${item.title}" diubah menjadi ${updatedStatus ? "Aktif" : "Non-aktif"}.`);
+      }
+    } catch (err: any) {
+      showFeedback("error", "Gagal memperbarui status parameter: " + (err.message || ""));
+    }
+  };
+
   useEffect(() => {
     fetchCurrentTabData();
   }, [activeTab]);
+
+  useEffect(() => {
+    if (activeTab === "checklists") {
+      loadChecklists(checklistCategory);
+    }
+  }, [checklistCategory, activeTab]);
 
   // Search filter for APD selection inside Permit Type modal
   const [permitPpeSearch, setPermitPpeSearch] = useState("");
@@ -469,6 +522,19 @@ export default function MasterDataPage() {
         pic_vendor_user_id: "",
         status: "Aktif"
       });
+    } else if (type === "checklist_item") {
+      setFormData({
+        facility_category: checklistCategory,
+        param_code: "",
+        badge_code: "",
+        title: "",
+        description: "",
+        pass_label: "Baik",
+        fail_label: "Rusak",
+        is_critical: false,
+        is_active: true,
+        sort_order: (checklists.length + 1) * 10
+      });
     } else {
       setFormData({});
     }
@@ -508,6 +574,19 @@ export default function MasterDataPage() {
         main_contact_phone: item.main_contact_phone || "",
         pic_vendor_user_id: item.pic_vendor_user_id || "",
         status: item.status || "Aktif"
+      });
+    } else if (type === "checklist_item") {
+      setFormData({
+        facility_category: item.facility_category || checklistCategory,
+        param_code: item.param_code,
+        badge_code: item.badge_code || "",
+        title: item.title,
+        description: item.description || "",
+        pass_label: item.pass_label || "Baik",
+        fail_label: item.fail_label || "Rusak",
+        is_critical: !!item.is_critical,
+        is_active: item.is_active !== false,
+        sort_order: item.sort_order ?? 0
       });
     } else {
       setFormData({ ...item });
@@ -605,6 +684,27 @@ export default function MasterDataPage() {
           await api.createVendor(payload);
           showFeedback("success", `Vendor rekanan "${formData.company_name}" berhasil didaftarkan.`);
         }
+      } else if (modalType === "checklist_item") {
+        const payload = {
+          facility_category: formData.facility_category || checklistCategory,
+          param_code: (formData.param_code || "").trim(),
+          badge_code: (formData.badge_code || "").trim() || null,
+          title: (formData.title || "").trim(),
+          description: (formData.description || "").trim() || null,
+          pass_label: (formData.pass_label || "Baik").trim(),
+          fail_label: (formData.fail_label || "Rusak").trim(),
+          is_critical: !!formData.is_critical,
+          is_active: formData.is_active !== false,
+          sort_order: Number(formData.sort_order) || 0
+        };
+        if (editingItem) {
+          await api.updateChecklistTemplate(editingItem.id, payload);
+          showFeedback("success", `Parameter checklist "${payload.title}" berhasil diperbarui.`);
+        } else {
+          await api.createChecklistTemplate(payload);
+          showFeedback("success", `Parameter checklist "${payload.title}" berhasil ditambahkan.`);
+        }
+        await loadChecklists(checklistCategory);
       }
 
       setModalType(null);
@@ -630,6 +730,10 @@ export default function MasterDataPage() {
       else if (type === "ppe") await api.deletePpeOption(id);
       else if (type === "location") await api.deleteLocation(id);
       else if (type === "vendor") await api.deleteVendor(id);
+      else if (type === "checklist_item") {
+        await api.deleteChecklistTemplate(id);
+        await loadChecklists(checklistCategory);
+      }
 
       showFeedback("success", `Data "${name}" berhasil dihapus.`);
       fetchCurrentTabData();
@@ -832,6 +936,14 @@ export default function MasterDataPage() {
                 }`}
               >
                 <Sparkles size={18} className={activeTab === "branding" ? "text-amber-300" : "text-amber-500"} /> Branding & Tampilan Login
+              </button>
+              <button
+                onClick={() => setActiveTab("checklists")}
+                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold transition-all whitespace-nowrap cursor-pointer shrink-0 ${
+                  activeTab === "checklists" ? "bg-blue-600 text-white shadow-sm ring-2 ring-blue-600/20" : "text-slate-600 hover:bg-slate-100"
+                }`}
+              >
+                <ClipboardCheck size={18} className={activeTab === "checklists" ? "text-emerald-300" : "text-emerald-600"} /> Checklist & Parameter K3
               </button>
             </div>
           </div>
@@ -2382,6 +2494,240 @@ export default function MasterDataPage() {
             </div>
           )}
 
+          {/* ========================================================================= */}
+          {/* TAB 8: MASTER CHECKLIST & PARAMETER INSPEKSI K3 */}
+          {/* ========================================================================= */}
+          {activeTab === "checklists" && (
+            <div className="space-y-6">
+              {/* Header Card */}
+              <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                <div className="flex items-center gap-3.5">
+                  <div className="p-3 bg-gradient-to-br from-emerald-600 to-teal-700 text-white rounded-2xl shadow-md">
+                    <ClipboardCheck size={24} className="text-white" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h3 className="text-lg font-bold text-slate-900">Master Checklist & Parameter Inspeksi K3</h3>
+                      <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                        {checklists.length} Butir Terdaftar
+                      </span>
+                    </div>
+                    <p className="text-xs text-slate-500 mt-0.5">
+                      Konfigurasi parameter pemeriksaan fisik yang dinamis untuk form inspeksi lapangan dan scan barcode fasilitas keselamatan kerja.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => handleOpenAdd("checklist_item")}
+                    className="flex items-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white rounded-xl text-xs font-bold transition-all shadow-sm cursor-pointer"
+                  >
+                    <Plus size={16} />
+                    <span>Tambah Parameter Baru</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Kategori Fasilitas Switcher Pills */}
+              <div className="bg-white p-3 rounded-2xl border border-slate-200 shadow-sm">
+                <div className="flex items-center justify-between gap-2 mb-2 px-1">
+                  <span className="text-xs font-bold text-slate-600 uppercase tracking-wider">
+                    Pilih Kategori Fasilitas Keselamatan:
+                  </span>
+                  <span className="text-[11px] text-slate-400">
+                    Klik kategori untuk memfilter parameter
+                  </span>
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
+                  {CHECKLIST_CATEGORIES.map((cat) => {
+                    const isSelected = checklistCategory === cat.key;
+                    return (
+                      <button
+                        key={cat.key}
+                        type="button"
+                        onClick={() => setChecklistCategory(cat.key)}
+                        className={`p-3 rounded-xl border text-left transition-all cursor-pointer flex flex-col justify-between ${
+                          isSelected
+                            ? "bg-emerald-50/80 border-emerald-500 shadow-sm ring-2 ring-emerald-500/20"
+                            : "bg-slate-50/60 border-slate-200 hover:bg-slate-100 hover:border-slate-300"
+                        }`}
+                      >
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-lg">{cat.icon}</span>
+                          <span className={`text-[10px] font-extrabold px-1.5 py-0.5 rounded ${
+                            isSelected ? "bg-emerald-600 text-white" : "bg-slate-200 text-slate-600"
+                          }`}>
+                            {cat.badge}
+                          </span>
+                        </div>
+                        <span className={`text-xs font-bold truncate ${isSelected ? "text-emerald-950" : "text-slate-700"}`}>
+                          {cat.label}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Active Category Info Banner */}
+              {(() => {
+                const currentCatInfo = CHECKLIST_CATEGORIES.find(c => c.key === checklistCategory);
+                const activeCount = checklists.filter(c => c.is_active).length;
+                return (
+                  <div className="p-4 bg-gradient-to-r from-emerald-50 via-teal-50 to-blue-50 border border-emerald-200/80 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-xl bg-white border border-emerald-200 flex items-center justify-center text-lg shrink-0 shadow-2xs">
+                        {currentCatInfo?.icon || "📋"}
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="font-extrabold text-slate-900 text-sm">{currentCatInfo?.label}</span>
+                          <span className="text-[10px] font-bold px-2 py-0.5 bg-emerald-200/80 text-emerald-900 rounded-md">
+                            {activeCount} Parameter Aktif
+                          </span>
+                        </div>
+                        <p className="text-slate-600 mt-0.5 text-[11px] leading-relaxed">
+                          {currentCatInfo?.desc}
+                        </p>
+                      </div>
+                    </div>
+                    <span className="text-[11px] font-semibold text-emerald-800 bg-white/80 border border-emerald-200 px-3 py-1.5 rounded-xl shrink-0 self-start sm:self-auto">
+                      💡 Status aktif otomatis tayang di form scan petugas
+                    </span>
+                  </div>
+                );
+              })()}
+
+              {/* Checklist Parameters Table */}
+              <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                {loadingChecklists ? (
+                  <div className="p-12 text-center text-slate-500 space-y-3">
+                    <RefreshCw size={24} className="animate-spin mx-auto text-emerald-600" />
+                    <p className="text-sm font-semibold">Memuat daftar parameter checklist K3...</p>
+                  </div>
+                ) : checklists.length === 0 ? (
+                  <div className="p-12 text-center text-slate-500 space-y-3">
+                    <ClipboardCheck size={36} className="mx-auto text-slate-300" />
+                    <div className="space-y-1">
+                      <p className="text-sm font-bold text-slate-700">Belum Ada Parameter Checklist</p>
+                      <p className="text-xs text-slate-400">
+                        Belum ada butir parameter pemeriksaan untuk kategori fasilitas ini.
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleOpenAdd("checklist_item")}
+                      className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition-all shadow-sm cursor-pointer"
+                    >
+                      <Plus size={15} /> Tambah Parameter Pertama
+                    </button>
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left border-collapse">
+                      <thead>
+                        <tr className="bg-slate-50/80 border-b border-slate-200 text-[11px] font-extrabold text-slate-600 uppercase tracking-wider">
+                          <th className="py-3.5 px-4 w-14 text-center">Urut</th>
+                          <th className="py-3.5 px-4 w-24">Badge</th>
+                          <th className="py-3.5 px-4">Nama Parameter & Panduan Standar</th>
+                          <th className="py-3.5 px-4 w-32">Kondisi Baik</th>
+                          <th className="py-3.5 px-4 w-32">Kondisi Rusak</th>
+                          <th className="py-3.5 px-4 w-28 text-center">Tipe</th>
+                          <th className="py-3.5 px-4 w-28 text-center">Status</th>
+                          <th className="py-3.5 px-4 w-24 text-right">Aksi</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100 text-xs">
+                        {checklists.map((item, idx) => (
+                          <tr key={item.id} className="hover:bg-slate-50/70 transition-colors">
+                            <td className="py-3 px-4 text-center font-bold text-slate-400 font-mono">
+                              #{item.sort_order ?? idx + 1}
+                            </td>
+                            <td className="py-3 px-4">
+                              <span className="font-mono text-[11px] font-bold px-2 py-0.5 bg-slate-100 text-slate-800 rounded border border-slate-200">
+                                {item.badge_code || item.param_code?.toUpperCase() || "-"}
+                              </span>
+                            </td>
+                            <td className="py-3 px-4">
+                              <div className="font-bold text-slate-900 text-xs">{item.title}</div>
+                              {item.description && (
+                                <div className="text-[11px] text-slate-500 mt-0.5 line-clamp-2">
+                                  {item.description}
+                                </div>
+                              )}
+                              <div className="text-[10px] text-slate-400 font-mono mt-0.5">
+                                code: {item.param_code}
+                              </div>
+                            </td>
+                            <td className="py-3 px-4">
+                              <span className="inline-flex items-center gap-1 font-bold text-[11px] px-2.5 py-1 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-lg">
+                                <CheckCircle2 size={12} className="text-emerald-600 shrink-0" />
+                                {item.pass_label || "Baik"}
+                              </span>
+                            </td>
+                            <td className="py-3 px-4">
+                              <span className="inline-flex items-center gap-1 font-bold text-[11px] px-2.5 py-1 bg-rose-50 text-rose-700 border border-rose-200 rounded-lg">
+                                <AlertTriangle size={12} className="text-rose-600 shrink-0" />
+                                {item.fail_label || "Rusak"}
+                              </span>
+                            </td>
+                            <td className="py-3 px-4 text-center">
+                              {item.is_critical ? (
+                                <span className="inline-block text-[10px] font-extrabold px-2 py-0.5 bg-rose-100 text-rose-800 border border-rose-200 rounded-full">
+                                  ⚠️ Kritis
+                                </span>
+                              ) : (
+                                <span className="inline-block text-[10px] font-semibold px-2 py-0.5 bg-slate-100 text-slate-600 rounded-full">
+                                  Standar
+                                </span>
+                              )}
+                            </td>
+                            <td className="py-3 px-4 text-center">
+                              <button
+                                type="button"
+                                onClick={() => handleToggleChecklistActive(item)}
+                                className={`text-[11px] font-bold px-2.5 py-1 rounded-full transition-all cursor-pointer border ${
+                                  item.is_active
+                                    ? "bg-emerald-100/80 text-emerald-800 border-emerald-300 hover:bg-rose-50 hover:text-rose-700 hover:border-rose-300"
+                                    : "bg-slate-100 text-slate-500 border-slate-200 hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-300"
+                                }`}
+                                title="Klik untuk mengubah status aktif/non-aktif"
+                              >
+                                {item.is_active ? "✓ Aktif" : "Non-aktif"}
+                              </button>
+                            </td>
+                            <td className="py-3 px-4 text-right">
+                              <div className="inline-flex items-center gap-1 justify-end">
+                                <button
+                                  type="button"
+                                  onClick={() => handleOpenEdit("checklist_item", item)}
+                                  className="p-1.5 text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors cursor-pointer"
+                                  title="Edit Parameter"
+                                >
+                                  <Edit3 size={15} />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleDelete("checklist_item", item.id, item.title)}
+                                  className="p-1.5 text-slate-500 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
+                                  title="Hapus Parameter"
+                                >
+                                  <Trash2 size={15} />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
         </div>
       </main>
 
@@ -2403,6 +2749,7 @@ export default function MasterDataPage() {
                 {modalType === "ppe" && (editingItem ? "Edit Item APD" : "Tambah Item APD Baru")}
                 {modalType === "location" && (editingItem ? "Edit Lokasi Pabrik" : "Tambah Lokasi Baru")}
                 {modalType === "vendor" && (editingItem ? "Edit Rekanan Vendor" : "Daftarkan Vendor Rekanan")}
+                {modalType === "checklist_item" && (editingItem ? `Edit Parameter Checklist — ${editingItem?.title}` : `Tambah Parameter Checklist K3`)}
               </h3>
               <button onClick={() => setModalType(null)} className="text-slate-400 hover:text-slate-600 p-1">
                 <X size={20} />
@@ -3010,6 +3357,155 @@ export default function MasterDataPage() {
                       <option value="Nonaktif">Nonaktif</option>
                       <option value="Blacklist">Blacklist</option>
                     </select>
+                  </div>
+                </>
+              )}
+
+              {/* 9. FORM CHECKLIST ITEM */}
+              {modalType === "checklist_item" && (
+                <>
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 uppercase mb-1">
+                      Kategori Fasilitas Keselamatan K3 *
+                    </label>
+                    <select
+                      required
+                      value={formData.facility_category || checklistCategory}
+                      onChange={(e) => setFormData({ ...formData, facility_category: e.target.value })}
+                      className="w-full p-2.5 border border-slate-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                    >
+                      {CHECKLIST_CATEGORIES.map(c => (
+                        <option key={c.key} value={c.key}>
+                          {c.icon} {c.label} — {c.badge}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 uppercase mb-1">
+                      Nama Parameter Pemeriksaan *
+                    </label>
+                    <input
+                      required
+                      type="text"
+                      placeholder="Contoh: Fisik Tabung, Selang (Hose), Panic Bar, Isi Kotak P3K"
+                      value={formData.title || ""}
+                      onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                      className="w-full p-2.5 border border-slate-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 uppercase mb-1">
+                        Kode Unik Parameter (param_code) *
+                      </label>
+                      <input
+                        required
+                        type="text"
+                        placeholder="tbg, slg, nozz, panic_bar"
+                        value={formData.param_code || ""}
+                        onChange={(e) => setFormData({ ...formData, param_code: e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, '') })}
+                        className="w-full p-2.5 border border-slate-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500 font-mono"
+                      />
+                      <span className="text-[10px] text-slate-400 mt-1 block">Huruf kecil, angka & underscore tanpa spasi.</span>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 uppercase mb-1">
+                        Kode Singkat / Badge (badge_code)
+                      </label>
+                      <input
+                        type="text"
+                        maxLength={6}
+                        placeholder="TBG, SLG, BAR, EXP"
+                        value={formData.badge_code || ""}
+                        onChange={(e) => setFormData({ ...formData, badge_code: e.target.value.toUpperCase() })}
+                        className="w-full p-2.5 border border-slate-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500 font-mono font-bold"
+                      />
+                      <span className="text-[10px] text-slate-400 mt-1 block">Maksimal 6 huruf kapital (tampil pada badge riwayat).</span>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 uppercase mb-1">
+                      Panduan Standar Pemeriksaan / Deskripsi Kriteria
+                    </label>
+                    <textarea
+                      rows={2}
+                      placeholder="Contoh: Bebas karat, penyok & keropos. Pastikan tidak ada rembesan cairan pada dasar tabung."
+                      value={formData.description || ""}
+                      onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                      className="w-full p-2.5 border border-slate-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-bold text-emerald-700 uppercase mb-1">
+                        Label Kondisi Lulus / Baik (Hijau) *
+                      </label>
+                      <input
+                        required
+                        type="text"
+                        placeholder="Baik, Utuh, Hijau, Normal, Rapat"
+                        value={formData.pass_label || ""}
+                        onChange={(e) => setFormData({ ...formData, pass_label: e.target.value })}
+                        className="w-full p-2.5 border border-emerald-300 rounded-xl text-sm outline-none focus:ring-2 focus:ring-emerald-500 bg-emerald-50/40 text-emerald-900 font-semibold"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-rose-700 uppercase mb-1">
+                        Label Kondisi Rusak / Abnormal (Merah) *
+                      </label>
+                      <input
+                        required
+                        type="text"
+                        placeholder="Rusak, Putus, Merah, Macet, Bocor"
+                        value={formData.fail_label || ""}
+                        onChange={(e) => setFormData({ ...formData, fail_label: e.target.value })}
+                        className="w-full p-2.5 border border-rose-300 rounded-xl text-sm outline-none focus:ring-2 focus:ring-rose-500 bg-rose-50/40 text-rose-900 font-semibold"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 uppercase mb-1">
+                        Nomor Urut Tampilan
+                      </label>
+                      <input
+                        type="number"
+                        min={0}
+                        value={formData.sort_order ?? 0}
+                        onChange={(e) => setFormData({ ...formData, sort_order: Number(e.target.value) })}
+                        className="w-full p-2.5 border border-slate-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500 font-mono"
+                      />
+                    </div>
+
+                    <div className="flex flex-col justify-end space-y-2 pt-2">
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={!!formData.is_critical}
+                          onChange={(e) => setFormData({ ...formData, is_critical: e.target.checked })}
+                          className="w-4 h-4 rounded text-blue-600 focus:ring-blue-500 border-slate-300"
+                        />
+                        <span className="text-xs font-bold text-slate-700">Parameter Kritis (Pemicu CAPA)</span>
+                      </label>
+
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={formData.is_active !== false}
+                          onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
+                          className="w-4 h-4 rounded text-blue-600 focus:ring-blue-500 border-slate-300"
+                        />
+                        <span className="text-xs font-bold text-slate-700">Status Aktif (Tampil di Form)</span>
+                      </label>
+                    </div>
                   </div>
                 </>
               )}

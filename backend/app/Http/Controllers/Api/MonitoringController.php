@@ -1411,11 +1411,12 @@ class MonitoringController extends Controller
             $validated = $request->validate([
                 'inspector_name' => 'required|string|max:150', // Native text input
                 'notes' => 'required|string|min:3',           // Mandatory catatan
-                'tbg' => 'required|boolean',                  // Param 1
-                'slg' => 'required|boolean',                  // Param 2
-                'nozz' => 'required|boolean',                 // Param 3
-                'sgl' => 'required|boolean',                  // Param 4
-                'lev' => 'required|boolean',                  // Param 5
+                'tbg' => 'nullable|boolean',                  // Param 1 (legacy support)
+                'slg' => 'nullable|boolean',                  // Param 2 (legacy support)
+                'nozz' => 'nullable|boolean',                 // Param 3 (legacy support)
+                'sgl' => 'nullable|boolean',                  // Param 4 (legacy support)
+                'lev' => 'nullable|boolean',                  // Param 5 (legacy support)
+                'checklist_results' => 'nullable|array',      // Dynamic checklist results
                 'foto_bukti' => 'nullable|string',            // Real-time camera photo
                 'latitude' => 'nullable|numeric',
                 'longitude' => 'nullable|numeric',
@@ -1424,9 +1425,6 @@ class MonitoringController extends Controller
                 'is_facility_geofence_valid' => 'nullable|boolean',
                 'is_camera_realtime' => 'nullable|boolean',
             ]);
-
-            $allPassed = $validated['tbg'] && $validated['slg'] && $validated['nozz'] && $validated['sgl'] && $validated['lev'];
-            $resultStatus = $allPassed ? 'Pass' : 'Fail';
 
             $rawCategory = strtolower(trim($facility->category ?? 'apar'));
             $categoryMap = [
@@ -1441,61 +1439,108 @@ class MonitoringController extends Controller
             ];
             $category = $categoryMap[$rawCategory] ?? 'apar';
 
-            $paramConfigs = [
-                'apar' => [
-                    'tbg' => ['code' => 'Tbg', 'label' => 'Kondisi Tabung', 'pass' => 'Baik', 'fail' => 'Karat / Rusak'],
-                    'slg' => ['code' => 'Slg', 'label' => 'Selang (Hose)', 'pass' => 'Baik / Fleksibel', 'fail' => 'Retak / Tersumbat'],
-                    'nozz' => ['code' => 'Nozz', 'label' => 'Nozzle (Corong)', 'pass' => 'Bersih / Utuh', 'fail' => 'Pecah / Buntu'],
-                    'sgl' => ['code' => 'Sgl', 'label' => 'Segel & Pin', 'pass' => 'Utuh Terkunci', 'fail' => 'Putus / Hilang'],
-                    'lev' => ['code' => 'Lev', 'label' => 'Lever & Tekanan', 'pass' => 'Normal (Zona Hijau)', 'fail' => 'Kurang / Macet'],
-                ],
-                'hydrant' => [
-                    'tbg' => ['code' => 'Box', 'label' => 'Box / Pilar Hydrant', 'pass' => 'Bersih & Terbuka', 'fail' => 'Karat / Terhalang'],
-                    'slg' => ['code' => 'Slg', 'label' => 'Selang Pemadam (Hose)', 'pass' => 'Rapi & Fleksibel', 'fail' => 'Bocor / Keras'],
-                    'nozz' => ['code' => 'Nozz', 'label' => 'Nozzle & Coupling', 'pass' => 'Kopling Utuh & Lancar', 'fail' => 'Pecah / Macet'],
-                    'sgl' => ['code' => 'Vlv', 'label' => 'Kran Utama (Valve)', 'pass' => 'Lancar & Tidak Bocor', 'fail' => 'Macet / Rembes'],
-                    'lev' => ['code' => 'Tek', 'label' => 'Tekanan Air (Pressure)', 'pass' => 'Siap Pakai', 'fail' => 'Drop / Kosong'],
-                ],
-                'p3k' => [
-                    'tbg' => ['code' => 'Box', 'label' => 'Fisik Kotak P3K', 'pass' => 'Bersih & Utuh', 'fail' => 'Rusak / Kotor'],
-                    'slg' => ['code' => 'Rapi', 'label' => 'Kerapian Tata Letak', 'pass' => 'Tertata Rapi', 'fail' => 'Berantakan'],
-                    'nozz' => ['code' => 'Isi', 'label' => 'Kelengkapan Obat & Perban', 'pass' => 'Sesuai Standar', 'fail' => 'Kurang / Kosong'],
-                    'sgl' => ['code' => 'Exp', 'label' => 'Masa Kadaluarsa Obat', 'pass' => 'Belum Kadaluarsa', 'fail' => 'Ada Expired'],
-                    'lev' => ['code' => 'Aks', 'label' => 'Akses & Kunci Kotak', 'pass' => 'Mudah Dijangkau', 'fail' => 'Terkunci / Terhalang'],
-                ],
-                'assembly_point' => [
-                    'tbg' => ['code' => 'Rmb', 'label' => 'Papan Rambu Kumpul', 'pass' => 'Jelas & Kokoh', 'fail' => 'Pudar / Rusak'],
-                    'slg' => ['code' => 'Jlr', 'label' => 'Jalur Akses Evakuasi', 'pass' => 'Bebas Rintangan', 'fail' => 'Terhalang Material'],
-                    'nozz' => ['code' => 'Area', 'label' => 'Kebersihan Permukaan Area', 'pass' => 'Rata & Bersih', 'fail' => 'Becek / Berlubang'],
-                    'sgl' => ['code' => 'Lmp', 'label' => 'Lampu Penerangan Darurat', 'pass' => 'Menyala Terang', 'fail' => 'Mati / Redup'],
-                    'lev' => ['code' => 'Mrk', 'label' => 'Marka & Garis Batas Kumpul', 'pass' => 'Garis Jelas', 'fail' => 'Pudar / Terhapus'],
-                ],
-                'safety_mirror' => [
-                    'tbg' => ['code' => 'Kca', 'label' => 'Kebersihan Kaca Cermin', 'pass' => 'Bening & Bersih', 'fail' => 'Buram / Kotor'],
-                    'slg' => ['code' => 'Sdt', 'label' => 'Sudut Pandang (Angle)', 'pass' => 'Optimal Blindspot', 'fail' => 'Bergeser / Tidak Pas'],
-                    'nozz' => ['code' => 'Brk', 'label' => 'Braket & Tiang Penyangga', 'pass' => 'Kokoh & Kuat', 'fail' => 'Goyang / Kendor'],
-                    'sgl' => ['code' => 'Bnk', 'label' => 'Fisik Cermin & Bingkai', 'pass' => 'Utuh Tanpa Retak', 'fail' => 'Retak / Rusak'],
-                    'lev' => ['code' => 'Hlg', 'label' => 'Bebas Halangan Pandang', 'pass' => 'Pandangan Jelas', 'fail' => 'Terhalang Pohon / Barang'],
-                ],
-                'emergency_door' => [
-                    'tbg' => ['code' => 'Bar', 'label' => 'Mekanisme Panic Bar', 'pass' => 'Lancar Sekali Dorong', 'fail' => 'Macet / Keras'],
-                    'slg' => ['code' => 'Knc', 'label' => 'Bebas Kunci & Gembok', 'pass' => 'Tidak Digembok', 'fail' => 'Tergembok / Terkunci'],
-                    'nozz' => ['code' => 'Sgn', 'label' => 'Lampu Exit Sign', 'pass' => 'Menyala Terang', 'fail' => 'Mati / Redup'],
-                    'sgl' => ['code' => 'Jlr', 'label' => 'Jalur Akses Keluar', 'pass' => 'Bebas Rintangan', 'fail' => 'Tertutup Barang'],
-                    'lev' => ['code' => 'Pnt', 'label' => 'Daun Pintu & Engsel / Closer', 'pass' => 'Menutup Rapat', 'fail' => 'Engsel Rusak / Macet'],
-                ],
-            ];
+            // Resolve checklist results: check client array, then DB templates, then legacy fallback
+            $clientChecklist = $request->input('checklist_results');
+            if (is_array($clientChecklist) && count($clientChecklist) > 0) {
+                $checklistResults = $clientChecklist;
+            } else {
+                $dbTemplates = \App\Models\FacilityChecklistTemplate::where('facility_category', $category)
+                    ->where('is_active', true)
+                    ->orderBy('sort_order')
+                    ->get();
 
-            $cfg = $paramConfigs[$category] ?? $paramConfigs['apar'];
+                if ($dbTemplates->isNotEmpty()) {
+                    $checklistResults = [];
+                    $tbgPassed = $validated['tbg'] ?? true;
+                    $slgPassed = $validated['slg'] ?? true;
+                    $nozzPassed = $validated['nozz'] ?? true;
+                    $sglPassed = $validated['sgl'] ?? true;
+                    $levPassed = $validated['lev'] ?? true;
+                    $legacyMap = [0 => $tbgPassed, 1 => $slgPassed, 2 => $nozzPassed, 3 => $sglPassed, 4 => $levPassed];
 
-            // Checklists breakdown matching category parameters
-            $checklistResults = [
-                ['id' => 'tbg', 'code' => $cfg['tbg']['code'], 'label' => $cfg['tbg']['label'], 'passed' => $validated['tbg'], 'jawaban' => $validated['tbg'] ? $cfg['tbg']['pass'] : $cfg['tbg']['fail']],
-                ['id' => 'slg', 'code' => $cfg['slg']['code'], 'label' => $cfg['slg']['label'], 'passed' => $validated['slg'], 'jawaban' => $validated['slg'] ? $cfg['slg']['pass'] : $cfg['slg']['fail']],
-                ['id' => 'nozz', 'code' => $cfg['nozz']['code'], 'label' => $cfg['nozz']['label'], 'passed' => $validated['nozz'], 'jawaban' => $validated['nozz'] ? $cfg['nozz']['pass'] : $cfg['nozz']['fail']],
-                ['id' => 'sgl', 'code' => $cfg['sgl']['code'], 'label' => $cfg['sgl']['label'], 'passed' => $validated['sgl'], 'jawaban' => $validated['sgl'] ? $cfg['sgl']['pass'] : $cfg['sgl']['fail']],
-                ['id' => 'lev', 'code' => $cfg['lev']['code'], 'label' => $cfg['lev']['label'], 'passed' => $validated['lev'], 'jawaban' => $validated['lev'] ? $cfg['lev']['pass'] : $cfg['lev']['fail']],
-            ];
+                    foreach ($dbTemplates as $idx => $tpl) {
+                        $isPass = $legacyMap[$idx] ?? true;
+                        $checklistResults[] = [
+                            'id' => $tpl->param_code,
+                            'code' => $tpl->badge_code ?: strtoupper(substr($tpl->param_code, 0, 3)),
+                            'label' => $tpl->title,
+                            'passed' => $isPass,
+                            'jawaban' => $isPass ? $tpl->pass_label : $tpl->fail_label,
+                            'damage_description' => null,
+                        ];
+                    }
+                } else {
+                    $paramConfigs = [
+                        'apar' => [
+                            'tbg' => ['code' => 'Tbg', 'label' => 'Kondisi Tabung', 'pass' => 'Baik', 'fail' => 'Karat / Rusak'],
+                            'slg' => ['code' => 'Slg', 'label' => 'Selang (Hose)', 'pass' => 'Baik / Fleksibel', 'fail' => 'Retak / Tersumbat'],
+                            'nozz' => ['code' => 'Nozz', 'label' => 'Nozzle (Corong)', 'pass' => 'Bersih / Utuh', 'fail' => 'Pecah / Buntu'],
+                            'sgl' => ['code' => 'Sgl', 'label' => 'Segel & Pin', 'pass' => 'Utuh Terkunci', 'fail' => 'Putus / Hilang'],
+                            'lev' => ['code' => 'Lev', 'label' => 'Lever & Tekanan', 'pass' => 'Normal (Zona Hijau)', 'fail' => 'Kurang / Macet'],
+                        ],
+                        'hydrant' => [
+                            'tbg' => ['code' => 'Box', 'label' => 'Box / Pilar Hydrant', 'pass' => 'Bersih & Terbuka', 'fail' => 'Karat / Terhalang'],
+                            'slg' => ['code' => 'Slg', 'label' => 'Selang Pemadam (Hose)', 'pass' => 'Rapi & Fleksibel', 'fail' => 'Bocor / Keras'],
+                            'nozz' => ['code' => 'Nozz', 'label' => 'Nozzle & Coupling', 'pass' => 'Kopling Utuh & Lancar', 'fail' => 'Pecah / Macet'],
+                            'sgl' => ['code' => 'Vlv', 'label' => 'Kran Utama (Valve)', 'pass' => 'Lancar & Tidak Bocor', 'fail' => 'Macet / Rembes'],
+                            'lev' => ['code' => 'Tek', 'label' => 'Tekanan Air (Pressure)', 'pass' => 'Siap Pakai', 'fail' => 'Drop / Kosong'],
+                        ],
+                        'p3k' => [
+                            'tbg' => ['code' => 'Box', 'label' => 'Fisik Kotak P3K', 'pass' => 'Bersih & Utuh', 'fail' => 'Rusak / Kotor'],
+                            'slg' => ['code' => 'Rapi', 'label' => 'Kerapian Tata Letak', 'pass' => 'Tertata Rapi', 'fail' => 'Berantakan'],
+                            'nozz' => ['code' => 'Isi', 'label' => 'Kelengkapan Obat & Perban', 'pass' => 'Sesuai Standar', 'fail' => 'Kurang / Kosong'],
+                            'sgl' => ['code' => 'Exp', 'label' => 'Masa Kadaluarsa Obat', 'pass' => 'Belum Kadaluarsa', 'fail' => 'Ada Expired'],
+                            'lev' => ['code' => 'Aks', 'label' => 'Akses & Kunci Kotak', 'pass' => 'Mudah Dijangkau', 'fail' => 'Terkunci / Terhalang'],
+                        ],
+                        'assembly_point' => [
+                            'tbg' => ['code' => 'Rmb', 'label' => 'Papan Rambu Kumpul', 'pass' => 'Jelas & Kokoh', 'fail' => 'Pudar / Rusak'],
+                            'slg' => ['code' => 'Jlr', 'label' => 'Jalur Akses Evakuasi', 'pass' => 'Bebas Rintangan', 'fail' => 'Terhalang Material'],
+                            'nozz' => ['code' => 'Area', 'label' => 'Kebersihan Permukaan Area', 'pass' => 'Rata & Bersih', 'fail' => 'Becek / Berlubang'],
+                            'sgl' => ['code' => 'Lmp', 'label' => 'Lampu Penerangan Darurat', 'pass' => 'Menyala Terang', 'fail' => 'Mati / Redup'],
+                            'lev' => ['code' => 'Mrk', 'label' => 'Marka & Garis Batas Kumpul', 'pass' => 'Garis Jelas', 'fail' => 'Pudar / Terhapus'],
+                        ],
+                        'safety_mirror' => [
+                            'tbg' => ['code' => 'Kca', 'label' => 'Kebersihan Kaca Cermin', 'pass' => 'Bening & Bersih', 'fail' => 'Buram / Kotor'],
+                            'slg' => ['code' => 'Sdt', 'label' => 'Sudut Pandang (Angle)', 'pass' => 'Optimal Blindspot', 'fail' => 'Bergeser / Tidak Pas'],
+                            'nozz' => ['code' => 'Brk', 'label' => 'Braket & Tiang Penyangga', 'pass' => 'Kokoh & Kuat', 'fail' => 'Goyang / Kendor'],
+                            'sgl' => ['code' => 'Bnk', 'label' => 'Fisik Cermin & Bingkai', 'pass' => 'Utuh Tanpa Retak', 'fail' => 'Retak / Rusak'],
+                            'lev' => ['code' => 'Hlg', 'label' => 'Bebas Halangan Pandang', 'pass' => 'Pandangan Jelas', 'fail' => 'Terhalang Pohon / Barang'],
+                        ],
+                        'emergency_door' => [
+                            'tbg' => ['code' => 'Bar', 'label' => 'Mekanisme Panic Bar', 'pass' => 'Lancar Sekali Dorong', 'fail' => 'Macet / Keras'],
+                            'slg' => ['code' => 'Knc', 'label' => 'Bebas Kunci & Gembok', 'pass' => 'Tidak Digembok', 'fail' => 'Tergembok / Terkunci'],
+                            'nozz' => ['code' => 'Sgn', 'label' => 'Lampu Exit Sign', 'pass' => 'Menyala Terang', 'fail' => 'Mati / Redup'],
+                            'sgl' => ['code' => 'Jlr', 'label' => 'Jalur Akses Keluar', 'pass' => 'Bebas Rintangan', 'fail' => 'Tertutup Barang'],
+                            'lev' => ['code' => 'Pnt', 'label' => 'Daun Pintu & Engsel / Closer', 'pass' => 'Menutup Rapat', 'fail' => 'Engsel Rusak / Macet'],
+                        ],
+                    ];
+
+                    $cfg = $paramConfigs[$category] ?? $paramConfigs['apar'];
+                    $tbgVal = $validated['tbg'] ?? true;
+                    $slgVal = $validated['slg'] ?? true;
+                    $nozzVal = $validated['nozz'] ?? true;
+                    $sglVal = $validated['sgl'] ?? true;
+                    $levVal = $validated['lev'] ?? true;
+
+                    $checklistResults = [
+                        ['id' => 'tbg', 'code' => $cfg['tbg']['code'], 'label' => $cfg['tbg']['label'], 'passed' => $tbgVal, 'jawaban' => $tbgVal ? $cfg['tbg']['pass'] : $cfg['tbg']['fail']],
+                        ['id' => 'slg', 'code' => $cfg['slg']['code'], 'label' => $cfg['slg']['label'], 'passed' => $slgVal, 'jawaban' => $slgVal ? $cfg['slg']['pass'] : $cfg['slg']['fail']],
+                        ['id' => 'nozz', 'code' => $cfg['nozz']['code'], 'label' => $cfg['nozz']['label'], 'passed' => $nozzVal, 'jawaban' => $nozzVal ? $cfg['nozz']['pass'] : $cfg['nozz']['fail']],
+                        ['id' => 'sgl', 'code' => $cfg['sgl']['code'], 'label' => $cfg['sgl']['label'], 'passed' => $sglVal, 'jawaban' => $sglVal ? $cfg['sgl']['pass'] : $cfg['sgl']['fail']],
+                        ['id' => 'lev', 'code' => $cfg['lev']['code'], 'label' => $cfg['lev']['label'], 'passed' => $levVal, 'jawaban' => $levVal ? $cfg['lev']['pass'] : $cfg['lev']['fail']],
+                    ];
+                }
+            }
+
+            // Determine overall result status
+            $allPassed = true;
+            foreach ($checklistResults as $cr) {
+                if (isset($cr['passed']) && $cr['passed'] === false) {
+                    $allPassed = false;
+                    break;
+                }
+            }
+            $resultStatus = $allPassed ? 'Pass' : 'Fail';
 
             $tipeChecklist = in_array($category, ['apar', 'p3k']) ? 'CONSUMABLE_CHECK' : 'KONDISI_CHECK';
             $photos = $request->filled('foto_bukti') ? [$request->input('foto_bukti')] : [];

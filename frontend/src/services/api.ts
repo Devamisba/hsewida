@@ -269,6 +269,43 @@ export const api = {
     });
   },
 
+  // 6b. Facility Checklist Templates (Master Data Parameter K3)
+  getChecklistTemplates: async (category?: string) => {
+    const query = category && category !== 'all' ? `?category=${encodeURIComponent(category)}` : '';
+    return apiRequest(`/master/checklists${query}`);
+  },
+
+  getCategoryChecklistsPublic: async (category: string) => {
+    return apiRequest(`/monitoring/checklists/${encodeURIComponent(category)}`);
+  },
+
+  createChecklistTemplate: async (payload: any) => {
+    return apiRequest('/master/checklists', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
+
+  updateChecklistTemplate: async (id: number | string, payload: any) => {
+    return apiRequest(`/master/checklists/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(payload),
+    });
+  },
+
+  deleteChecklistTemplate: async (id: number | string) => {
+    return apiRequest(`/master/checklists/${id}`, {
+      method: 'DELETE',
+    });
+  },
+
+  reorderChecklistTemplates: async (items: { id: number; sort_order: number }[]) => {
+    return apiRequest('/master/checklists/reorder', {
+      method: 'POST',
+      body: JSON.stringify({ items }),
+    });
+  },
+
   // 7. Locations
   getLocations: async () => {
     return apiRequest('/master/locations');

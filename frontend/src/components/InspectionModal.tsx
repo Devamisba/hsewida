@@ -453,6 +453,50 @@ export function InspectionModal({ isOpen, onClose, item, type, onSuccess }: Insp
     return getInspectionConfig(item?.category, type);
   }, [item?.category, type]);
 
+  // Dynamic Checklist Master Data State
+  const [dynamicQuestions, setDynamicQuestions] = useState<CategoryQuestion[] | null>(null);
+
+  useEffect(() => {
+    if (isOpen && item) {
+      const cat = (item.category || type || "apar").toLowerCase().trim();
+      const cleanCat = cat.includes("p3k") ? "p3k"
+        : cat.includes("hydrant") ? "hydrant"
+        : cat.includes("assembly") || cat.includes("kumpul") ? "assembly_point"
+        : cat.includes("mirror") || cat.includes("cermin") ? "safety_mirror"
+        : cat.includes("door") || cat.includes("pintu") ? "emergency_door"
+        : "apar";
+
+      api.getCategoryChecklistsPublic(cleanCat)
+        .then(res => {
+          if (res?.success && Array.isArray(res.data) && res.data.length > 0) {
+            const formatted: CategoryQuestion[] = res.data.map((t: any, idx: number) => ({
+              id: t.param_code,
+              code: t.badge_code || t.param_code.substring(0, 3).toUpperCase(),
+              label: t.title,
+              question: `${idx + 1}. ${t.title} (${t.description || "Pemeriksaan fisik standar K3"})?`,
+              options: [
+                { label: t.pass_label || "Baik", isPass: true },
+                { label: t.fail_label || "Rusak", isPass: false },
+              ],
+              defaultAnswer: t.pass_label || "Baik",
+            }));
+            setDynamicQuestions(formatted);
+          } else {
+            setDynamicQuestions(null);
+          }
+        })
+        .catch(() => {
+          setDynamicQuestions(null);
+        });
+    }
+  }, [isOpen, item, type]);
+
+  const questions: CategoryQuestion[] = useMemo(() => {
+    return dynamicQuestions && dynamicQuestions.length > 0
+      ? dynamicQuestions
+      : config.questions;
+  }, [dynamicQuestions, config.questions]);
+
   // Answers state mapped by question ID
   const [answers, setAnswers] = useState<Record<string, string>>({});
 
@@ -460,7 +504,7 @@ export function InspectionModal({ isOpen, onClose, item, type, onSuccess }: Insp
   useEffect(() => {
     if (isOpen && item) {
       const initial: Record<string, string> = {};
-      config.questions.forEach((q) => {
+      questions.forEach((q) => {
         initial[q.id] = q.defaultAnswer;
       });
       setAnswers(initial);
@@ -469,16 +513,16 @@ export function InspectionModal({ isOpen, onClose, item, type, onSuccess }: Insp
       setFindingNotes("");
       setActionPlan("");
     }
-  }, [isOpen, item, config]);
+  }, [isOpen, item, questions]);
 
   // Evaluated failed questions
   const failedQuestions = useMemo(() => {
-    return config.questions.filter((q) => {
+    return questions.filter((q) => {
       const currentVal = answers[q.id] ?? q.defaultAnswer;
       const opt = q.options.find((o) => o.label === currentVal);
       return opt ? !opt.isPass : false;
     });
-  }, [config, answers]);
+  }, [questions, answers]);
 
   const isFailed = failedQuestions.length > 0;
 
@@ -504,7 +548,7 @@ export function InspectionModal({ isOpen, onClose, item, type, onSuccess }: Insp
     setError("");
 
     try {
-      const checklistResults = config.questions.map((q) => {
+      const checklistResults = questions.map((q) => {
         const currentVal = answers[q.id] ?? q.defaultAnswer;
         const opt = q.options.find((o) => o.label === currentVal);
         return {
@@ -529,7 +573,7 @@ export function InspectionModal({ isOpen, onClose, item, type, onSuccess }: Insp
         facility_id: item.rawId || item.id,
         tipe_checklist: config.isConsumable ? "CONSUMABLE_CHECK" : "KONDISI_CHECK",
         checklist_results: checklistResults,
-        notes: `Semua 5 parameter checklist ${config.name} terverifikasi baik dan aman sesuai standar teknis K3.`,
+        notes: `Semua parameter checklist ${config.name} (${questions.length} butir) terverifikasi baik dan aman sesuai standar teknis K3.`,
       });
 
       if (res.success) {
@@ -550,7 +594,7 @@ export function InspectionModal({ isOpen, onClose, item, type, onSuccess }: Insp
     setError("");
 
     try {
-      const checklistResults = config.questions.map((q) => {
+      const checklistResults = questions.map((q) => {
         const currentVal = answers[q.id] ?? q.defaultAnswer;
         const opt = q.options.find((o) => o.label === currentVal);
         return {
@@ -678,16 +722,16 @@ export function InspectionModal({ isOpen, onClose, item, type, onSuccess }: Insp
                   <span className={`font-bold block text-sm ${config.isConsumable ? "text-purple-900" : "text-blue-900"}`}>
                     {config.bannerTitle}
                   </span>
-                  <span className="text-[11px] text-slate-500">5 Poin Standar Teknis K3 PT Widatra Bhakti</span>
+                  <span className="text-[11px] text-slate-500">{questions.length} Butir Parameter Standar Teknis K3 PT Widatra Bhakti</span>
                 </div>
                 <span className={`px-2.5 py-1 rounded-lg border font-extrabold text-xs ${conditionStatus.color}`}>
                   {conditionStatus.label}
                 </span>
               </div>
 
-              {/* Pertanyaan 5 Parameter */}
+              {/* Pertanyaan Checklist Parameter */}
               <div className="space-y-3">
-                {config.questions.map((q) => {
+                {questions.map((q) => {
                   const currentVal = answers[q.id] ?? q.defaultAnswer;
                   return (
                     <div key={q.id} className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
