@@ -34,13 +34,23 @@ import {
   Sparkles,
   ChevronLeft,
   ChevronRight,
-  ClipboardCheck
+  ClipboardCheck,
+  Flame,
+  Droplet,
+  DoorOpen,
+  Cross
 } from "lucide-react";
 import { api } from "@/services/api";
 import { auth } from "@/lib/auth";
 import { resolveImageUrl } from "@/utils/imageUrl";
 import { RolePermissionMatrixView } from "@/components/RolePermissionMatrixView";
 import { syncGeofenceFromSettingsMap, DEFAULT_PLANT_CENTER } from "@/utils/facilityCoordinates";
+
+const MirrorIcon = ({ size = 14, className = "" }: { size?: number; className?: string }) => (
+  <span style={{ fontSize: `${size}px`, lineHeight: 1 }} className={`inline-flex items-center justify-center select-none ${className}`}>
+    🪞
+  </span>
+);
 
 const PPE_CATEGORIES_INFO: Record<string, { label: string; desc: string; color: string; bg: string; border: string }> = {
   "Head & Face": {
@@ -109,12 +119,12 @@ const resolvePpeCategory = (category: string | null | undefined, name: string): 
 };
 
 const CHECKLIST_CATEGORIES = [
-  { key: "apar", label: "APAR", badge: "APAR", icon: "🧯", desc: "Alat Pemadam Api Ringan (Tabung, Selang, Nozzle, Pin, Tekanan)" },
-  { key: "hydrant", label: "Hydrant", badge: "HYD", icon: "🚒", desc: "Pilar & Box Hydrant (Box, Selang, Nozzle, Valve, Tekanan)" },
-  { key: "p3k", label: "Kotak P3K", badge: "P3K", icon: "🩹", desc: "First Aid Kit (Fisik Box, Kerapian, Obat/Kasa, Expired, Akses)" },
-  { key: "assembly_point", label: "Titik Kumpul", badge: "TK", icon: "🚩", desc: "Assembly Point (Rambu, Jalur Evakuasi, Permukaan, Lampu, Marka)" },
-  { key: "safety_mirror", label: "Safety Mirror", badge: "SM", icon: "🪞", desc: "Cermin Tikungan K3 (Kaca, Sudut Pandang, Braket, Bingkai, Bebas Halangan)" },
-  { key: "emergency_door", label: "Pintu Darurat", badge: "PD", icon: "🚪", desc: "Emergency Exit (Panic Bar, Kunci Bebas, Exit Sign, Jalur Akses, Engsel)" },
+  { key: "apar", label: "APAR", badge: "APAR", icon: Flame, desc: "Alat Pemadam Api Ringan (Tabung, Selang, Nozzle, Pin, Tekanan)" },
+  { key: "hydrant", label: "Hydrant", badge: "HYD", icon: Droplet, desc: "Pilar & Box Hydrant (Box, Selang, Nozzle, Valve, Tekanan)" },
+  { key: "emergency_door", label: "Pintu Emergency", badge: "PD", icon: DoorOpen, desc: "Emergency Exit (Panic Bar, Kunci Bebas, Exit Sign, Jalur Akses, Engsel)" },
+  { key: "p3k", label: "P3K", badge: "P3K", icon: Cross, desc: "First Aid Kit (Fisik Box, Kerapian, Obat/Kasa, Expired, Akses)" },
+  { key: "safety_mirror", label: "Safety Mirror", badge: "SM", icon: MirrorIcon, desc: "Cermin Tikungan K3 (Kaca, Sudut Pandang, Braket, Bingkai, Bebas Halangan)" },
+  { key: "assembly_point", label: "Assembly Point", badge: "TK", icon: MapPin, desc: "Assembly Point (Rambu, Jalur Evakuasi, Permukaan, Lampu, Marka)" },
 ];
 
 type MainTab = "users_roles" | "permit_types" | "ppe" | "workflow" | "locations_vendors" | "policy_settings" | "branding" | "checklists";
@@ -935,7 +945,7 @@ export default function MasterDataPage() {
                   activeTab === "branding" ? "bg-blue-600 text-white shadow-sm ring-2 ring-blue-600/20" : "text-slate-600 hover:bg-slate-100"
                 }`}
               >
-                <Sparkles size={18} className={activeTab === "branding" ? "text-amber-300" : "text-amber-500"} /> Branding & Tampilan Login
+                <Sparkles size={18} /> Branding & Tampilan Login
               </button>
               <button
                 onClick={() => setActiveTab("checklists")}
@@ -943,7 +953,7 @@ export default function MasterDataPage() {
                   activeTab === "checklists" ? "bg-blue-600 text-white shadow-sm ring-2 ring-blue-600/20" : "text-slate-600 hover:bg-slate-100"
                 }`}
               >
-                <ClipboardCheck size={18} className={activeTab === "checklists" ? "text-emerald-300" : "text-emerald-600"} /> Checklist & Parameter K3
+                <ClipboardCheck size={18} /> Checklist & Parameter K3
               </button>
             </div>
           </div>
@@ -2530,56 +2540,52 @@ export default function MasterDataPage() {
                 </div>
               </div>
 
-              {/* Kategori Fasilitas Switcher Pills */}
-              <div className="bg-white p-3 rounded-2xl border border-slate-200 shadow-sm">
-                <div className="flex items-center justify-between gap-2 mb-2 px-1">
-                  <span className="text-xs font-bold text-slate-600 uppercase tracking-wider">
-                    Pilih Kategori Fasilitas Keselamatan:
-                  </span>
-                  <span className="text-[11px] text-slate-400">
-                    Klik kategori untuk memfilter parameter
-                  </span>
-                </div>
-                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
-                  {CHECKLIST_CATEGORIES.map((cat) => {
-                    const isSelected = checklistCategory === cat.key;
-                    return (
-                      <button
-                        key={cat.key}
-                        type="button"
-                        onClick={() => setChecklistCategory(cat.key)}
-                        className={`p-3 rounded-xl border text-left transition-all cursor-pointer flex flex-col justify-between ${
-                          isSelected
-                            ? "bg-emerald-50/80 border-emerald-500 shadow-sm ring-2 ring-emerald-500/20"
-                            : "bg-slate-50/60 border-slate-200 hover:bg-slate-100 hover:border-slate-300"
-                        }`}
-                      >
-                        <div className="flex items-center justify-between mb-1">
-                          <span className="text-lg">{cat.icon}</span>
-                          <span className={`text-[10px] font-extrabold px-1.5 py-0.5 rounded ${
-                            isSelected ? "bg-emerald-600 text-white" : "bg-slate-200 text-slate-600"
-                          }`}>
-                            {cat.badge}
-                          </span>
-                        </div>
-                        <span className={`text-xs font-bold truncate ${isSelected ? "text-emerald-950" : "text-slate-700"}`}>
-                          {cat.label}
-                        </span>
-                      </button>
-                    );
-                  })}
-                </div>
+              {/* Kategori Fasilitas Switcher Pills (Style Gambar 1) */}
+              <div className="flex items-center gap-1.5 overflow-x-auto pb-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+                {CHECKLIST_CATEGORIES.map((cat) => {
+                  const Icon = cat.icon;
+                  const isSelected = checklistCategory === cat.key;
+                  let activeClass = "bg-primary text-on-primary border-primary shadow-sm font-bold";
+                  if (isSelected) {
+                    if (cat.key === 'apar' || cat.key === 'hydrant') {
+                      activeClass = "bg-red-50 text-red-600 border-red-200 shadow-sm font-bold";
+                    } else if (cat.key === 'p3k' || cat.key === 'assembly_point') {
+                      activeClass = "bg-emerald-50 text-emerald-600 border-emerald-200 shadow-sm font-bold";
+                    } else if (cat.key === 'emergency_door') {
+                      activeClass = "bg-teal-50 text-teal-600 border-teal-200 shadow-sm font-bold";
+                    } else if (cat.key === 'safety_mirror') {
+                      activeClass = "bg-amber-50 text-amber-700 border-amber-200 shadow-sm font-bold";
+                    }
+                  }
+
+                  return (
+                    <button
+                      key={cat.key}
+                      type="button"
+                      onClick={() => setChecklistCategory(cat.key)}
+                      className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-semibold whitespace-nowrap transition-colors border cursor-pointer ${
+                        isSelected
+                          ? activeClass
+                          : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50 hover:text-slate-900"
+                      }`}
+                    >
+                      <Icon size={14} />
+                      <span>{cat.label}</span>
+                    </button>
+                  );
+                })}
               </div>
 
               {/* Active Category Info Banner */}
               {(() => {
                 const currentCatInfo = CHECKLIST_CATEGORIES.find(c => c.key === checklistCategory);
+                const Icon = currentCatInfo?.icon;
                 const activeCount = checklists.filter(c => c.is_active).length;
                 return (
                   <div className="p-4 bg-gradient-to-r from-emerald-50 via-teal-50 to-blue-50 border border-emerald-200/80 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
                     <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-xl bg-white border border-emerald-200 flex items-center justify-center text-lg shrink-0 shadow-2xs">
-                        {currentCatInfo?.icon || "📋"}
+                      <div className="w-9 h-9 rounded-xl bg-white border border-emerald-200 flex items-center justify-center shrink-0 shadow-2xs text-emerald-700">
+                        {Icon && <Icon size={18} />}
                       </div>
                       <div>
                         <div className="flex items-center gap-2">
@@ -3376,7 +3382,7 @@ export default function MasterDataPage() {
                     >
                       {CHECKLIST_CATEGORIES.map(c => (
                         <option key={c.key} value={c.key}>
-                          {c.icon} {c.label} — {c.badge}
+                          {c.label} ({c.badge})
                         </option>
                       ))}
                     </select>

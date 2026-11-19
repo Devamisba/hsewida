@@ -44,13 +44,19 @@ import { ImportFacilityModal } from "@/components/ImportFacilityModal";
 import { syncGeofenceFromSettingsMap } from "@/utils/facilityCoordinates";
 import { api, SafetyFacility, AlertsSummary } from "@/services/api";
 
+const MirrorIcon = ({ size = 14, className = "" }: { size?: number; className?: string }) => (
+  <span style={{ fontSize: `${size}px`, lineHeight: 1 }} className={`inline-flex items-center justify-center select-none ${className}`}>
+    🪞
+  </span>
+);
+
 const TABS = [
   { id: "all", label: "Semua Unit", icon: ShieldCheck },
   { id: "apar", label: "APAR", icon: Flame },
   { id: "hydrant", label: "Hydrant", icon: Droplet },
   { id: "emergency", label: "Pintu Emergency", icon: DoorOpen },
   { id: "p3k", label: "P3K", icon: Cross },
-  { id: "mirror", label: "Safety Mirror", icon: Eye },
+  { id: "mirror", label: "Safety Mirror", icon: MirrorIcon },
   { id: "assembly", label: "Assembly Point", icon: MapPin },
   { id: "spi", label: "SPI", icon: LineChart },
 ];
