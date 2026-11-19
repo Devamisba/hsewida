@@ -65,7 +65,7 @@ export default function DashboardGAPage() {
           {/* Section 1: GA Metrics */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <MetricCard 
-              title="Menunggu Validasi GA" 
+              title="Menunggu Validasi" 
               value={dashboardData.pendingValidationCount || 0} 
               icon={Clock} 
               color="warning" 
@@ -86,7 +86,7 @@ export default function DashboardGAPage() {
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             
-            {/* Kiri: Izin Menunggu Validasi GA */}
+            {/* Kiri: Izin Menunggu Validasi */}
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden flex flex-col">
               <div className="p-4 md:p-5 border-b border-warning-container bg-warning-container/10 flex justify-between items-center">
                 <h3 className="text-base font-bold text-gray-900 flex items-center gap-2">
@@ -130,7 +130,7 @@ export default function DashboardGAPage() {
                       <tr>
                         <td colSpan={3} className="px-4 py-8 text-center text-gray-500">
                           <CheckCircle2 size={28} className="mx-auto mb-1 text-emerald-500 opacity-60" />
-                          <p className="text-xs font-semibold text-gray-700">Tidak ada permit menunggu validasi GA</p>
+                          <p className="text-xs font-semibold text-gray-700">Tidak ada permit menunggu validasi</p>
                           <p className="text-[11px] text-gray-400">Semua izin telah selesai ditinjau.</p>
                         </td>
                       </tr>
