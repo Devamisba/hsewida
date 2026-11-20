@@ -318,6 +318,7 @@ class DashboardController extends Controller
      */
     public function gaDashboard(Request $request)
     {
+        WorkPermitService::syncExpiredPermits();
         $today = Carbon::today()->toDateString();
         $user = $request->user();
         $roleCode = ($user && $user->role) ? $user->role->code : '';

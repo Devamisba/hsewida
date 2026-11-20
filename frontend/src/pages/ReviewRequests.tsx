@@ -73,7 +73,19 @@ function mapApiToReview(item: any) {
     pengawasHse: item.hse_officer_name || item.pengawasHse || "-",
     noHpHse: item.hse_officer_phone || item.noHpHse || "-",
     risiko: item.risk_level || "Rendah",
-    status: item.status,
+    status: (() => {
+      const todayStr = new Date().toLocaleDateString('en-CA');
+      const now = new Date();
+      const currentHourMinute = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+      const endTime = item.daily_end_time || item.jamKerjaAkhir || "23:59";
+      const isPeriodEnded = Boolean(
+        currentEnd && (
+          currentEnd < todayStr || 
+          (currentEnd === todayStr && endTime <= currentHourMinute)
+        )
+      );
+      return (item.status === 'Disetujui' && isPeriodEnded) ? 'Selesai' : item.status;
+    })(),
     permitTypes: item.permit_types ? item.permit_types.map((p: any) => p.name) : (item.permitTypes || []),
     ppe: item.ppes ? item.ppes.map((p: any) => p.name) : (item.ppe || []),
     workEquipment: item.equipments ? item.equipments.map((e: any) => e.equipment_name) : (item.workEquipment || []),

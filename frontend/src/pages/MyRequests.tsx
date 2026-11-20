@@ -50,10 +50,23 @@ function mapApiToRequest(item: any) {
 
   const cumulativeStartDate = rootStartDate || item.cumulative_start_date || parentStartDate || currentStart;
 
+  // Real-time lifecycle auto-resolution: jika izin berstatus Disetujui tapi masa kerja telah selesai, status efektif adalah Selesai
+  const todayStr = new Date().toLocaleDateString('en-CA');
+  const now = new Date();
+  const currentHourMinute = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+  const endTime = item.daily_end_time || item.jamKerjaAkhir || "23:59";
+  const isPeriodEnded = Boolean(
+    currentEnd && (
+      currentEnd < todayStr || 
+      (currentEnd === todayStr && endTime <= currentHourMinute)
+    )
+  );
+  const effectiveStatus = (item.status === 'Disetujui' && isPeriodEnded) ? 'Selesai' : item.status;
+
   return {
     id: item.permit_number || `WP-${item.id}`,
     rawId: item.id,
-    status: item.status,
+    status: effectiveStatus,
     requestType: item.request_type || "Baru",
     extensionPhase,
     rootPermitId: item.root_permit_id || (root?.id ?? null),

@@ -13,6 +13,7 @@ use App\Models\FacilityAlert;
 use App\Models\InspectionCapa;
 use App\Models\WorkPermit;
 use App\Models\Location;
+use App\Services\WorkPermitService;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -1295,6 +1296,7 @@ class MonitoringController extends Controller
      */
     public function getSpiMetrics()
     {
+        WorkPermitService::syncExpiredPermits();
         $approvedPermits = WorkPermit::where('status', 'Disetujui')->get();
         $totalWorkers = $approvedPermits->sum('total_workers');
         $calculatedHours = 12500 + ($totalWorkers * 8 * 14);
