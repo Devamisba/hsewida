@@ -28,30 +28,28 @@ class WorkPermitService
             // 1. Izin Disetujui yang masa kerjanya telah tuntas:
             // - end_date < today (lewat hari)
             // - ATAU end_date == today dan daily_end_time <= currentTime (jam kerja hari ini sudah selesai)
-            $expiredApproved = WorkPermit::where('status', 'Disetujui')
+            $expiredApprovedCount = WorkPermit::where('status', 'Disetujui')
                 ->where(function ($q) use ($today, $currentTime) {
-                    $q->where('end_date', '<', $today)
+                    $q->whereDate('end_date', '<', $today)
                       ->orWhere(function ($sub) use ($today, $currentTime) {
-                          $sub->where('end_date', '=', $today)
+                          $sub->whereDate('end_date', '=', $today)
                               ->whereNotNull('daily_end_time')
                               ->where('daily_end_time', '<=', $currentTime);
                       });
                 })
-                ->get();
+                ->update([
+                    'status' => 'Selesai',
+                    'updated_at' => $now,
+                ]);
 
-            foreach ($expiredApproved as $p) {
-                $p->status = 'Selesai';
-                $p->updated_at = $now;
-                $p->save();
-                $totalChanged++;
-            }
+            $totalChanged += $expiredApprovedCount;
 
             // 2. Izin belum disetujui (Menunggu Review / Draft) yang masa kerjanya telah lewat -> Ubah menjadi 'Ditolak'
             $expiredPending = WorkPermit::whereNotIn('status', ['Disetujui', 'Selesai', 'Ditolak'])
                 ->where(function ($q) use ($today, $currentTime) {
-                    $q->where('end_date', '<', $today)
+                    $q->whereDate('end_date', '<', $today)
                       ->orWhere(function ($sub) use ($today, $currentTime) {
-                          $sub->where('end_date', '=', $today)
+                          $sub->whereDate('end_date', '=', $today)
                               ->whereNotNull('daily_end_time')
                               ->where('daily_end_time', '<=', $currentTime);
                       });

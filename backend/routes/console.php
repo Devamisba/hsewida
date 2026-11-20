@@ -145,4 +145,4 @@ Artisan::command('hse:sync-permit-status', function () {
     $count = \App\Services\WorkPermitService::syncExpiredPermits();
     $this->info("Sukses! Sebanyak {$count} izin kerja kedaluwarsa telah diperbarui statusnya (Selesai/Ditolak Sistem).");
     return 0;
-})->purpose('Sinkronisasi status izin kerja yang tanggal akhirnya telah berakhir (Selesai jika sudah disetujui, Ditolak jika belum disetujui)');
+})->purpose('Sinkronisasi status izin kerja yang tanggal akhirnya telah berakhir (Selesai jika sudah disetujui, Ditolak jika belum disetujui)')->everyMinute();

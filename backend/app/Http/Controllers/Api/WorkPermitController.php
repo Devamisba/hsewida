@@ -367,6 +367,31 @@ class WorkPermitController extends Controller
             ->orderBy('id', 'desc')
             ->get();
 
+        // INLINE AUDIT & REMEDIATION (Riwayat Izin Kerja):
+        // Memastikan izin kerja yang periode kerjanya sudah berakhir berstatus 'Selesai'
+        $jakartaNow = Carbon::now('Asia/Jakarta');
+        $todayStr = $jakartaNow->toDateString();
+        $currentTimeStr = $jakartaNow->format('H:i');
+
+        foreach ($permits as $p) {
+            $endDate = $p->end_date ? Carbon::parse($p->end_date)->toDateString() : null;
+            $endTime = $p->daily_end_time ?: '23:59';
+            $isPeriodEnded = false;
+            if ($endDate) {
+                if ($endDate < $todayStr) {
+                    $isPeriodEnded = true;
+                } elseif ($endDate === $todayStr && $endTime <= $currentTimeStr) {
+                    $isPeriodEnded = true;
+                }
+            }
+
+            if ($p->status === 'Disetujui' && $isPeriodEnded) {
+                $p->status = 'Selesai';
+                $p->updated_at = now();
+                $p->save();
+            }
+        }
+
         return response()->json([
             'success' => true,
             'data' => $permits,
