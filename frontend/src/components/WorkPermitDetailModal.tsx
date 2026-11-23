@@ -15,6 +15,7 @@ import {
   XCircle
 } from "lucide-react";
 import { cn, calculateInclusiveDays, formatPermitStatus, formatDateDDMMYY } from "@/lib/utils";
+import { auth } from "@/lib/auth";
 import { ApprovalWorkflowStepper } from "./ApprovalWorkflowStepper";
 import { ProjectPhaseTimeline } from "./ProjectPhaseTimeline";
 import { PrintPermitModal } from "./PrintPermitModal";
@@ -37,6 +38,64 @@ export const isEligibleForExtension = (selesaiKerja: string, status: string, win
   windowDate.setHours(0, 0, 0, 0);
   
   return today >= windowDate && today <= endDate;
+};
+
+export const canUserExtendPermit = (
+  permit: any,
+  currentUser: any,
+  windowDays: number = 3
+): boolean => {
+  if (!permit || !currentUser) return false;
+  if (!isEligibleForExtension(permit.selesaiKerja, permit.status, windowDays)) return false;
+  if (permit.hasActiveChild) return false;
+
+  const roleCode = (currentUser?.role?.code || auth.getRole() || "").toLowerCase().trim();
+  if (roleCode === "admin") return true;
+
+  const allowedCreateRoles = ["admin", "hse", "pic_k3", "kontraktor", "contractor", "pemohon", "vendor"];
+  if (!allowedCreateRoles.includes(roleCode)) return false;
+
+  const permitUserId = permit.userId || permit.user_id || permit.user?.id;
+  const currentUserId = currentUser.id;
+  if (permitUserId && currentUserId && Number(permitUserId) === Number(currentUserId)) {
+    return true;
+  }
+
+  const permitVendorId = permit.vendorId || permit.vendor_id || permit.vendor?.id;
+  const currentVendorId = currentUser.vendor_id || currentUser.vendor?.id;
+  if (permitVendorId && currentVendorId && Number(permitVendorId) === Number(currentVendorId)) {
+    return true;
+  }
+
+  return false;
+};
+
+export const canUserResubmitPermit = (
+  permit: any,
+  currentUser: any
+): boolean => {
+  if (!permit || !currentUser) return false;
+  if (permit.status !== "Ditolak") return false;
+
+  const roleCode = (currentUser?.role?.code || auth.getRole() || "").toLowerCase().trim();
+  if (roleCode === "admin") return true;
+
+  const allowedCreateRoles = ["admin", "hse", "pic_k3", "kontraktor", "contractor", "pemohon", "vendor"];
+  if (!allowedCreateRoles.includes(roleCode)) return false;
+
+  const permitUserId = permit.userId || permit.user_id || permit.user?.id;
+  const currentUserId = currentUser.id;
+  if (permitUserId && currentUserId && Number(permitUserId) === Number(currentUserId)) {
+    return true;
+  }
+
+  const permitVendorId = permit.vendorId || permit.vendor_id || permit.vendor?.id;
+  const currentVendorId = currentUser.vendor_id || currentUser.vendor?.id;
+  if (permitVendorId && currentVendorId && Number(permitVendorId) === Number(currentVendorId)) {
+    return true;
+  }
+
+  return false;
 };
 
 export const getStatusBadge = (status: string) => {
@@ -83,6 +142,8 @@ export function mapApiToPermitDetail(item: any) {
   return {
     id: item.permit_number || `WP-${item.id}`,
     rawId: item.id,
+    userId: item.user_id || item.userId || item.user?.id || null,
+    vendorId: item.vendor_id || item.vendorId || item.vendor?.id || null,
     status: item.status,
     requestType: item.request_type || "Baru",
     extensionPhase,
@@ -164,6 +225,7 @@ export function WorkPermitDetailModal({
   onResubmit,
   extensionWindowDays = 3,
 }: WorkPermitDetailModalProps) {
+  const currentUser = auth.getUser();
   const [previewPhoto, setPreviewPhoto] = useState<string | null>(null);
   const [printModalPermit, setPrintModalPermit] = useState<any | null>(null);
 
@@ -478,7 +540,7 @@ export function WorkPermitDetailModal({
               )}
             </div>
             <div className="flex items-center gap-3 w-full sm:w-auto justify-end flex-wrap sm:flex-nowrap">
-              {permit.status === "Ditolak" && onResubmit && (
+              {canUserResubmitPermit(permit, currentUser) && onResubmit && (
                 <button 
                   type="button"
                   onClick={() => {
@@ -492,7 +554,7 @@ export function WorkPermitDetailModal({
                   <RotateCcw size={16} /> Ajukan Kembali
                 </button>
               )}
-              {isEligibleForExtension(permit.selesaiKerja, permit.status, extensionWindowDays) && onExtend && (
+              {canUserExtendPermit(permit, currentUser, extensionWindowDays) && onExtend && (
                 <button 
                   type="button"
                   onClick={() => {

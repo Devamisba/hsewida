@@ -74,6 +74,8 @@ function mapApiToHistory(item: any) {
   return {
     id: item.permit_number || `WP-${item.id}`,
     rawId: item.id,
+    userId: item.user_id || item.userId || item.user?.id || null,
+    vendorId: item.vendor_id || item.vendorId || item.vendor?.id || null,
     status: effectiveStatus,
     requestType: item.request_type || "Baru",
     extensionPhase,
@@ -172,6 +174,68 @@ const isEligibleForExtension = (selesaiKerja: string, status: string, windowDays
   windowDate.setDate(windowDate.getDate() - windowDays);
   windowDate.setHours(0, 0, 0, 0);
   return today >= windowDate && today <= endDate;
+};
+
+export const canUserExtendPermit = (
+  permit: any,
+  currentUser: any,
+  windowDays: number = 3
+): boolean => {
+  if (!permit || !currentUser) return false;
+  if (!isEligibleForExtension(permit.selesaiKerja, permit.status, windowDays)) return false;
+  if (permit.hasActiveChild) return false;
+
+  const roleCode = (currentUser?.role?.code || auth.getRole() || "").toLowerCase().trim();
+  // 1. Pengecualian: Admin bisa apa saja
+  if (roleCode === "admin") return true;
+
+  // 2. Wajib dari role yang memiliki hak membuat izin kerja
+  const allowedCreateRoles = ["admin", "hse", "pic_k3", "kontraktor", "contractor", "pemohon", "vendor"];
+  if (!allowedCreateRoles.includes(roleCode)) return false;
+
+  // 3. Wajib merupakan pihak yang membuat izin kerja tersebut (Ownership check)
+  const permitUserId = permit.userId || permit.user_id || permit.user?.id;
+  const currentUserId = currentUser.id;
+  if (permitUserId && currentUserId && Number(permitUserId) === Number(currentUserId)) {
+    return true;
+  }
+
+  // Jika vendor, cek kecocokan vendor_id
+  const permitVendorId = permit.vendorId || permit.vendor_id || permit.vendor?.id;
+  const currentVendorId = currentUser.vendor_id || currentUser.vendor?.id;
+  if (permitVendorId && currentVendorId && Number(permitVendorId) === Number(currentVendorId)) {
+    return true;
+  }
+
+  return false;
+};
+
+export const canUserResubmitPermit = (
+  permit: any,
+  currentUser: any
+): boolean => {
+  if (!permit || !currentUser) return false;
+  if (permit.status !== "Ditolak") return false;
+
+  const roleCode = (currentUser?.role?.code || auth.getRole() || "").toLowerCase().trim();
+  if (roleCode === "admin") return true;
+
+  const allowedCreateRoles = ["admin", "hse", "pic_k3", "kontraktor", "contractor", "pemohon", "vendor"];
+  if (!allowedCreateRoles.includes(roleCode)) return false;
+
+  const permitUserId = permit.userId || permit.user_id || permit.user?.id;
+  const currentUserId = currentUser.id;
+  if (permitUserId && currentUserId && Number(permitUserId) === Number(currentUserId)) {
+    return true;
+  }
+
+  const permitVendorId = permit.vendorId || permit.vendor_id || permit.vendor?.id;
+  const currentVendorId = currentUser.vendor_id || currentUser.vendor?.id;
+  if (permitVendorId && currentVendorId && Number(permitVendorId) === Number(currentVendorId)) {
+    return true;
+  }
+
+  return false;
 };
 
 export default function HistoryPage() {
@@ -907,6 +971,24 @@ export default function HistoryPage() {
                             {/* 5. Aksi */}
                             <td className="px-5 py-4 text-right whitespace-nowrap">
                               <div className="flex items-center justify-end gap-2">
+                                {canUserResubmitPermit(req, user) && (
+                                  <button
+                                    onClick={() => handleResubmit(req)}
+                                    className="p-2 text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors cursor-pointer"
+                                    title="Ajukan Kembali Izin Kerja Ini (Koreksi Tanggal & Kirim Ulang)"
+                                  >
+                                    <RotateCcw size={18} />
+                                  </button>
+                                )}
+                                {canUserExtendPermit(req, user, extensionWindowDays) && (
+                                  <button
+                                    onClick={() => handleExtend(req)}
+                                    className="p-2 text-amber-600 hover:text-amber-700 hover:bg-amber-50 rounded-lg transition-colors cursor-pointer"
+                                    title={`Perpanjang Izin Kerja (Fase ${(req.extensionPhase || 0) + 1})`}
+                                  >
+                                    <CalendarPlus size={18} />
+                                  </button>
+                                )}
                                 <button 
                                   onClick={() => handleOpenDetail(req)}
                                   className="p-2 text-gray-400 hover:text-primary hover:bg-primary-container/50 rounded-lg transition-colors cursor-pointer" 
@@ -977,7 +1059,7 @@ export default function HistoryPage() {
                             </td>
                             <td className="px-5 py-4 text-right whitespace-nowrap">
                               <div className="flex items-center justify-end gap-2">
-                                {isVendorRole && req.status === "Ditolak" && (
+                                {canUserResubmitPermit(req, user) && (
                                   <button
                                     onClick={() => handleResubmit(req)}
                                     className="p-2 text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors cursor-pointer"
@@ -986,7 +1068,7 @@ export default function HistoryPage() {
                                     <RotateCcw size={18} />
                                   </button>
                                 )}
-                                {isEligibleForExtension(req.selesaiKerja, req.status, extensionWindowDays) && !req.hasActiveChild && (
+                                {canUserExtendPermit(req, user, extensionWindowDays) && (
                                   <button
                                     onClick={() => handleExtend(req)}
                                     className="p-2 text-amber-600 hover:text-amber-700 hover:bg-amber-50 rounded-lg transition-colors cursor-pointer"
@@ -1125,16 +1207,16 @@ export default function HistoryPage() {
                       )}
                     </div>
                     <div className="flex gap-2">
-                      {isVendorRole && req.status === "Ditolak" && (
-                      <button
-                        onClick={() => handleResubmit(req)}
-                        className="p-2 text-blue-600 hover:text-blue-700 bg-blue-50 rounded-lg transition-colors cursor-pointer"
-                        title="Ajukan Kembali Izin Kerja Ini"
-                      >
-                        <RotateCcw size={18} />
-                      </button>
-                    )}
-                      {isEligibleForExtension(req.selesaiKerja, req.status, extensionWindowDays) && !req.hasActiveChild && (
+                      {canUserResubmitPermit(req, user) && (
+                        <button
+                          onClick={() => handleResubmit(req)}
+                          className="p-2 text-blue-600 hover:text-blue-700 bg-blue-50 rounded-lg transition-colors cursor-pointer"
+                          title="Ajukan Kembali Izin Kerja Ini"
+                        >
+                          <RotateCcw size={18} />
+                        </button>
+                      )}
+                      {canUserExtendPermit(req, user, extensionWindowDays) && (
                         <button
                           onClick={() => handleExtend(req)}
                           className="p-2 text-amber-600 hover:text-amber-700 bg-amber-50 rounded-lg transition-colors cursor-pointer"
@@ -1490,7 +1572,7 @@ export default function HistoryPage() {
                 )}
               </div>
               <div className="flex items-center gap-3 w-full sm:w-auto justify-end">
-                {selectedRequest.status === "Ditolak" && (
+                {canUserResubmitPermit(selectedRequest, user) && (
                   <button 
                     onClick={() => {
                       const req = selectedRequest;
@@ -1503,7 +1585,7 @@ export default function HistoryPage() {
                     <RotateCcw size={18} /> Ajukan Kembali
                   </button>
                 )}
-                {isEligibleForExtension(selectedRequest.selesaiKerja, selectedRequest.status, extensionWindowDays) && !selectedRequest.hasActiveChild && (
+                {canUserExtendPermit(selectedRequest, user, extensionWindowDays) && (
                   <button 
                     onClick={() => {
                       const req = selectedRequest;

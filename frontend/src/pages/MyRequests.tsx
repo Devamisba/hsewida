@@ -23,11 +23,13 @@ import {
 } from "lucide-react";
 import { cn, calculateInclusiveDays, formatPermitStatus, formatDateDDMMYY } from "@/lib/utils";
 import { api } from "@/services/api";
+import { auth } from "@/lib/auth";
 import { PrintPermitModal } from "@/components/PrintPermitModal";
 import { ApprovalWorkflowStepper } from "@/components/ApprovalWorkflowStepper";
 import { ProjectPhaseTimeline } from "@/components/ProjectPhaseTimeline";
 import { resolveImageUrl } from "@/utils/imageUrl";
 import { K3Loader } from "@/components/K3Loader";
+import { canUserExtendPermit, canUserResubmitPermit } from "@/components/WorkPermitDetailModal";
 
 function mapApiToRequest(item: any) {
   const parent = item.parent_permit || item.parentPermit || null;
@@ -67,6 +69,8 @@ function mapApiToRequest(item: any) {
   return {
     id: item.permit_number || `WP-${item.id}`,
     rawId: item.id,
+    userId: item.user_id || item.userId || item.user?.id || null,
+    vendorId: item.vendor_id || item.vendorId || item.vendor?.id || null,
     status: effectiveStatus,
     requestType: item.request_type || "Baru",
     extensionPhase,
@@ -166,23 +170,9 @@ const canPrintPermit = (status: string) => {
   return status === "Disetujui" || status === "Selesai";
 };
 
-const isEligibleForExtension = (selesaiKerja: string, status: string, windowDays: number = 3) => {
-  if (status !== "Disetujui") return false;
-  if (!selesaiKerja) return false;
-  
-  const endDate = new Date(selesaiKerja);
-  endDate.setHours(23, 59, 59, 999); 
-  
-  const today = new Date();
-  const windowDate = new Date(endDate);
-  windowDate.setDate(windowDate.getDate() - windowDays);
-  windowDate.setHours(0, 0, 0, 0);
-  
-  return today >= windowDate && today <= endDate;
-};
-
 export default function MyRequestsPage() {
   const navigate = useNavigate();
+  const user = auth.getUser();
   const [requests, setRequests] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedRequest, setSelectedRequest] = useState<any>(null);
@@ -639,7 +629,7 @@ export default function MyRequestsPage() {
                         </td>
                         <td className="px-5 py-4 text-right whitespace-nowrap">
                           <div className="flex items-center justify-end gap-2">
-                            {req.status === "Ditolak" && (
+                            {canUserResubmitPermit(req, user) && (
                               <button 
                                 onClick={() => handleResubmit(req)}
                                 className="p-2 text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors cursor-pointer" 
@@ -648,7 +638,7 @@ export default function MyRequestsPage() {
                                 <RotateCcw size={18} />
                               </button>
                             )}
-                            {isEligibleForExtension(req.selesaiKerja, req.status, extensionWindowDays) && !req.hasActiveChild && (
+                            {canUserExtendPermit(req, user, extensionWindowDays) && (
                               <button 
                                 onClick={() => handleExtend(req)}
                                 className="p-2 text-amber-600 hover:text-amber-700 hover:bg-amber-50 rounded-lg transition-colors cursor-pointer" 
@@ -768,7 +758,7 @@ export default function MyRequestsPage() {
                     )}
                   </div>
                   <div className="flex gap-2">
-                    {req.status === "Ditolak" && (
+                    {canUserResubmitPermit(req, user) && (
                       <button 
                         onClick={() => handleResubmit(req)}
                         className="p-2 text-blue-700 hover:text-blue-800 bg-blue-50 rounded-lg transition-colors cursor-pointer" 
@@ -777,7 +767,7 @@ export default function MyRequestsPage() {
                         <RotateCcw size={16} />
                       </button>
                     )}
-                    {isEligibleForExtension(req.selesaiKerja, req.status, extensionWindowDays) && !req.hasActiveChild && (
+                    {canUserExtendPermit(req, user, extensionWindowDays) && (
                       <button 
                         onClick={() => handleExtend(req)}
                         className="p-2 text-amber-600 hover:text-amber-700 bg-amber-50 rounded-lg transition-colors cursor-pointer"
@@ -1114,7 +1104,7 @@ export default function MyRequestsPage() {
                 )}
               </div>
               <div className="flex items-center gap-3 w-full sm:w-auto justify-end">
-                {selectedRequest.status === "Ditolak" && (
+                {canUserResubmitPermit(selectedRequest, user) && (
                   <button 
                     onClick={() => {
                       const req = selectedRequest;
@@ -1127,7 +1117,7 @@ export default function MyRequestsPage() {
                     <RotateCcw size={16} /> Ajukan Kembali
                   </button>
                 )}
-                {isEligibleForExtension(selectedRequest.selesaiKerja, selectedRequest.status, extensionWindowDays) && (
+                {canUserExtendPermit(selectedRequest, user, extensionWindowDays) && (
                   <button 
                     onClick={() => {
                       const req = selectedRequest;

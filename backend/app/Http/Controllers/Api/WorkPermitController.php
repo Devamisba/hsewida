@@ -564,6 +564,34 @@ class WorkPermitController extends Controller
                 ], 422);
             }
 
+            // Authorization check: Admin can do anything, others can only extend their own permit
+            $roleCode = strtolower($user->role ? $user->role->code : '');
+            if ($roleCode !== 'admin') {
+                $allowedRoles = ['admin', 'hse', 'pic_k3', 'pemohon', 'kontraktor', 'vendor', 'contractor'];
+                $hasCreatePermission = in_array($roleCode, $allowedRoles) || ($user->role && $user->role->hasPermission('permits.create'));
+
+                if (!$hasCreatePermission) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Role Anda tidak memiliki hak akses untuk mengajukan perpanjangan izin kerja.'
+                    ], 403);
+                }
+
+                $isOwner = false;
+                if ($parentPermit->user_id && (int)$parentPermit->user_id === (int)$user->id) {
+                    $isOwner = true;
+                } elseif ($parentPermit->vendor_id && !empty($user->vendor_id) && (int)$parentPermit->vendor_id === (int)$user->vendor_id) {
+                    $isOwner = true;
+                }
+
+                if (!$isOwner) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Anda tidak memiliki hak akses untuk memperpanjang izin kerja ini karena Anda bukan pembuat izin kerja tersebut.'
+                    ], 403);
+                }
+            }
+
             // Anti-branching check: ensure parent permit has no active child extension
             $activeChild = WorkPermit::where('parent_permit_id', $parentPermit->id)
                 ->whereNotIn('status', ['Ditolak'])
@@ -883,6 +911,36 @@ class WorkPermitController extends Controller
                 'success' => false,
                 'message' => 'Hanya izin kerja yang telah Disetujui yang dapat diajukan perpanjangan.'
             ], 422);
+        }
+
+        $user = $request->user();
+        $roleCode = strtolower($user->role ? $user->role->code : '');
+
+        // Rule: Admin can do anything, other roles can only extend their own permits
+        if ($roleCode !== 'admin') {
+            $allowedRoles = ['admin', 'hse', 'pic_k3', 'pemohon', 'kontraktor', 'vendor', 'contractor'];
+            $hasCreatePermission = in_array($roleCode, $allowedRoles) || ($user->role && $user->role->hasPermission('permits.create'));
+
+            if (!$hasCreatePermission) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Role Anda tidak memiliki hak akses untuk mengajukan perpanjangan izin kerja.'
+                ], 403);
+            }
+
+            $isOwner = false;
+            if ($parent->user_id && (int)$parent->user_id === (int)$user->id) {
+                $isOwner = true;
+            } elseif ($parent->vendor_id && !empty($user->vendor_id) && (int)$parent->vendor_id === (int)$user->vendor_id) {
+                $isOwner = true;
+            }
+
+            if (!$isOwner) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Anda tidak memiliki hak akses untuk memperpanjang izin kerja ini karena Anda bukan pembuat izin kerja tersebut.'
+                ], 403);
+            }
         }
 
         // Anti-branching check: ensure this permit has no active child extension
