@@ -191,7 +191,7 @@ export default function HistoryPage() {
   const [previewPhoto, setPreviewPhoto] = useState<string | null>(null);
   const [printModalPermit, setPrintModalPermit] = useState<any>(null);
   const [showExpiringOnly, setShowExpiringOnly] = useState(filterExpiringSoon);
-  const [extensionWindowDays] = useState(3);
+  const [extensionWindowDays, setExtensionWindowDays] = useState(7);
 
   const handleResubmit = (req: any) => {
     navigate("/create-request", { 
@@ -235,6 +235,13 @@ export default function HistoryPage() {
   };
 
   useEffect(() => {
+    // Load extension window setting from system settings
+    api.getSettings().then(sRes => {
+      if (sRes?.success && sRes.data?.map?.extension_window_days) {
+        setExtensionWindowDays(Number(sRes.data.map.extension_window_days) || 7);
+      }
+    }).catch(() => {});
+
     const fetchHistory = async (silent = false) => {
       if (!silent) setLoading(true);
       try {
@@ -308,7 +315,7 @@ export default function HistoryPage() {
     const end = new Date(req.selesaiKerja);
     end.setHours(0, 0, 0, 0);
     const diffDays = Math.ceil((end.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-    return diffDays >= 0 && diffDays <= 3;
+    return diffDays >= 0 && diffDays <= extensionWindowDays;
   });
 
   // Filter States sesuai Foto Referensi
@@ -979,7 +986,7 @@ export default function HistoryPage() {
                                     <RotateCcw size={18} />
                                   </button>
                                 )}
-                                {isVendorRole && isEligibleForExtension(req.selesaiKerja, req.status, extensionWindowDays) && !req.hasActiveChild && (
+                                {isEligibleForExtension(req.selesaiKerja, req.status, extensionWindowDays) && !req.hasActiveChild && (
                                   <button
                                     onClick={() => handleExtend(req)}
                                     className="p-2 text-amber-600 hover:text-amber-700 hover:bg-amber-50 rounded-lg transition-colors cursor-pointer"
@@ -1127,7 +1134,7 @@ export default function HistoryPage() {
                         <RotateCcw size={18} />
                       </button>
                     )}
-                      {isVendorRole && isEligibleForExtension(req.selesaiKerja, req.status, extensionWindowDays) && !req.hasActiveChild && (
+                      {isEligibleForExtension(req.selesaiKerja, req.status, extensionWindowDays) && !req.hasActiveChild && (
                         <button
                           onClick={() => handleExtend(req)}
                           className="p-2 text-amber-600 hover:text-amber-700 bg-amber-50 rounded-lg transition-colors cursor-pointer"
@@ -1474,7 +1481,7 @@ export default function HistoryPage() {
                 )}
               </div>
               <div className="flex items-center gap-3 w-full sm:w-auto justify-end">
-                {isVendorRole && selectedRequest.status === "Ditolak" && (
+                {selectedRequest.status === "Ditolak" && (
                   <button 
                     onClick={() => {
                       const req = selectedRequest;
@@ -1485,6 +1492,19 @@ export default function HistoryPage() {
                     title="Ajukan kembali izin kerja ini dengan mengisi periode tanggal baru"
                   >
                     <RotateCcw size={18} /> Ajukan Kembali
+                  </button>
+                )}
+                {isEligibleForExtension(selectedRequest.selesaiKerja, selectedRequest.status, extensionWindowDays) && !selectedRequest.hasActiveChild && (
+                  <button 
+                    onClick={() => {
+                      const req = selectedRequest;
+                      setSelectedRequest(null);
+                      handleExtend(req);
+                    }}
+                    className="px-5 py-2.5 text-sm font-medium text-amber-800 bg-amber-100 hover:bg-amber-200 rounded-lg flex items-center gap-2 transition-colors cursor-pointer whitespace-nowrap"
+                    title={`Perpanjang Izin Kerja (Masa H-${extensionWindowDays})`}
+                  >
+                    <CalendarPlus size={18} /> Perpanjang Izin
                   </button>
                 )}
                 <button 
