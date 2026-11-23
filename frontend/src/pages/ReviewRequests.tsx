@@ -7,6 +7,7 @@ import { auth } from "@/lib/auth";
 import { PrintPermitModal } from "@/components/PrintPermitModal";
 import { ApprovalWorkflowStepper } from "@/components/ApprovalWorkflowStepper";
 import { ProjectPhaseTimeline } from "@/components/ProjectPhaseTimeline";
+import { resolveImageUrl } from "@/utils/imageUrl";
 import { K3Loader } from "@/components/K3Loader";
 
 function mapApiToReview(item: any) {
@@ -578,34 +579,14 @@ export default function ReviewRequestsPage() {
                 />
 
                 {/* 0.4. Timeline Rantai Fase Proyek */}
-                {(selectedRequest.extensionPhase > 0 || (selectedRequest.projectChain && selectedRequest.projectChain.length > 1) || selectedRequest.hasActiveChild) && (
-                  <ProjectPhaseTimeline
-                    currentPermitId={selectedRequest.rawId || selectedRequest.id}
-                    phases={selectedRequest.projectChain?.length ? selectedRequest.projectChain : [
-                      ...(selectedRequest.rootPermit ? [{
-                        id: selectedRequest.rootPermit.id,
-                        permit_number: selectedRequest.rootPermit.permitNumber,
-                        request_type: "Baru",
-                        extension_phase: 0,
-                        start_date: selectedRequest.rootPermit.startDate,
-                        end_date: selectedRequest.rootPermit.endDate,
-                        status: "Disetujui"
-                      }] : []),
-                      {
-                        id: selectedRequest.rawId,
-                        permit_number: selectedRequest.id,
-                        request_type: selectedRequest.requestType,
-                        extension_phase: selectedRequest.extensionPhase,
-                        start_date: selectedRequest.mulaiKerja,
-                        end_date: selectedRequest.selesaiKerja,
-                        status: selectedRequest.status
-                      }
-                    ]}
-                    rootPermitNumber={selectedRequest.rootPermit?.permitNumber || selectedRequest.parentPermit?.permitNumber || selectedRequest.id}
-                    cumulativeStartDate={selectedRequest.cumulativeStartDate}
-                    cumulativeEndDate={selectedRequest.cumulativeEndDate}
-                  />
-                )}
+                <ProjectPhaseTimeline
+                  currentPermitId={selectedRequest.rawId || selectedRequest.id}
+                  permit={selectedRequest}
+                  phases={selectedRequest.projectChain?.length ? selectedRequest.projectChain : undefined}
+                  rootPermitNumber={selectedRequest.rootPermit?.permitNumber || selectedRequest.parentPermit?.permitNumber || selectedRequest.id}
+                  cumulativeStartDate={selectedRequest.cumulativeStartDate}
+                  cumulativeEndDate={selectedRequest.cumulativeEndDate}
+                />
 
                 {/* 0.5. Info Audit Jejak Perpanjangan Izin (Khusus Tipe Perpanjangan) */}
                 {selectedRequest.requestType === 'Perpanjangan' && (
@@ -1077,7 +1058,7 @@ export default function ReviewRequestsPage() {
             </div>
             <div className="p-6 flex flex-col items-center justify-center bg-gray-950/5">
               <img
-                src={previewPhoto}
+                src={resolveImageUrl(previewPhoto)}
                 alt="Foto ID Card Pekerja"
                 className="max-h-[70vh] w-auto object-contain rounded-lg shadow-md border border-gray-200"
               />

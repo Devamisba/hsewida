@@ -12,9 +12,110 @@ export interface ProjectPhase {
   created_at?: string;
 }
 
+export function resolveProjectPhases(item: any): ProjectPhase[] {
+  if (!item) return [];
+
+  // 1. If projectChain is already available from API with elements
+  if (Array.isArray(item.projectChain) && item.projectChain.length > 0) {
+    const map = new Map<string, ProjectPhase>();
+    item.projectChain.forEach((p: any) => {
+      const key = String(p.id || p.permit_number);
+      if (!map.has(key)) {
+        map.set(key, {
+          id: p.id,
+          permit_number: p.permit_number || `WP-${p.id}`,
+          request_type: p.request_type || (p.extension_phase > 0 ? "Perpanjangan" : "Baru"),
+          extension_phase: typeof p.extension_phase === 'number' ? p.extension_phase : 0,
+          start_date: p.start_date || "-",
+          end_date: p.end_date || "-",
+          status: p.status || "Disetujui",
+          created_at: p.created_at,
+        });
+      }
+    });
+    return Array.from(map.values()).sort((a, b) => a.extension_phase - b.extension_phase);
+  }
+
+  // 2. Fallback reconstruction from rootPermit, parentPermit, item itself, and childPermits
+  const map = new Map<string, ProjectPhase>();
+  const currentId = String(item.rawId || item.id);
+  const currentNum = item.permitNumber || item.permit_number || item.id;
+
+  // Root permit (Fase 0)
+  if (item.rootPermit) {
+    const rootId = String(item.rootPermit.id);
+    const rootNum = item.rootPermit.permitNumber || item.rootPermit.permit_number;
+    if (rootId !== currentId && rootNum !== currentNum) {
+      map.set(rootId || rootNum, {
+        id: item.rootPermit.id,
+        permit_number: rootNum || `WP-${rootId}`,
+        request_type: "Baru",
+        extension_phase: 0,
+        start_date: item.rootPermit.startDate || item.rootPermit.start_date || "-",
+        end_date: item.rootPermit.endDate || item.rootPermit.end_date || "-",
+        status: item.rootPermit.status || "Disetujui",
+      });
+    }
+  }
+
+  // Parent permit
+  if (item.parentPermit) {
+    const parentId = String(item.parentPermit.id);
+    const parentNum = item.parentPermit.permitNumber || item.parentPermit.permit_number;
+    if (parentId !== currentId && parentNum !== currentNum && !map.has(parentId) && !map.has(parentNum)) {
+      map.set(parentId || parentNum, {
+        id: item.parentPermit.id,
+        permit_number: parentNum || `WP-${parentId}`,
+        request_type: item.parentPermit.requestType || item.parentPermit.request_type || "Perpanjangan",
+        extension_phase: typeof item.parentPermit.extensionPhase === 'number' ? item.parentPermit.extensionPhase : (item.parentPermit.extension_phase || 1),
+        start_date: item.parentPermit.startDate || item.parentPermit.start_date || "-",
+        end_date: item.parentPermit.endDate || item.parentPermit.end_date || "-",
+        status: item.parentPermit.status || "Disetujui",
+      });
+    }
+  }
+
+  // Current permit
+  const currentKey = currentId || currentNum;
+  if (!map.has(currentKey)) {
+    map.set(currentKey, {
+      id: item.rawId || item.id,
+      permit_number: currentNum,
+      request_type: item.requestType || item.request_type || (item.extensionPhase > 0 ? "Perpanjangan" : "Baru"),
+      extension_phase: typeof item.extensionPhase === 'number' ? item.extensionPhase : (item.extension_phase || 0),
+      start_date: item.mulaiKerja || item.start_date || "-",
+      end_date: item.selesaiKerja || item.end_date || "-",
+      status: item.status || "Disetujui",
+    });
+  }
+
+  // Child permits (perpanjangan selanjutnya)
+  const children = item.childPermits || item.child_permits;
+  if (Array.isArray(children)) {
+    children.forEach((c: any) => {
+      const cId = String(c.id);
+      const cNum = c.permit_number || c.permitNumber || `WP-${cId}`;
+      if (!map.has(cId) && !map.has(cNum) && (!c.status || c.status !== 'Ditolak')) {
+        map.set(cId || cNum, {
+          id: c.id,
+          permit_number: cNum,
+          request_type: c.request_type || c.requestType || "Perpanjangan",
+          extension_phase: typeof c.extension_phase === 'number' ? c.extension_phase : ((item.extensionPhase || 0) + 1),
+          start_date: c.start_date || c.startDate || "-",
+          end_date: c.end_date || c.endDate || "-",
+          status: c.status || "Menunggu Review",
+        });
+      }
+    });
+  }
+
+  return Array.from(map.values()).sort((a, b) => a.extension_phase - b.extension_phase);
+}
+
 interface ProjectPhaseTimelineProps {
   currentPermitId?: number | string;
   phases?: ProjectPhase[];
+  permit?: any;
   rootPermitNumber?: string;
   cumulativeStartDate?: string;
   cumulativeEndDate?: string;
@@ -23,17 +124,34 @@ interface ProjectPhaseTimelineProps {
 export function ProjectPhaseTimeline({
   currentPermitId,
   phases = [],
+  permit,
   rootPermitNumber,
   cumulativeStartDate,
   cumulativeEndDate,
 }: ProjectPhaseTimelineProps) {
-  if (!phases || phases.length === 0) {
+  // If raw permit passed or phases need resolution/deduplication
+  const rawPhases = (phases && phases.length > 0) 
+    ? phases 
+    : (permit ? resolveProjectPhases(permit) : []);
+
+  // Strict deduplication by ID and permit_number
+  const map = new Map<string, ProjectPhase>();
+  rawPhases.forEach((p: any) => {
+    const key = String(p.id || p.permit_number);
+    if (!map.has(key)) {
+      map.set(key, p);
+    }
+  });
+  const effectivePhases = Array.from(map.values()).sort((a, b) => (a.extension_phase ?? 0) - (b.extension_phase ?? 0));
+
+  // Only display timeline when there are actually 2 or more distinct phases
+  if (!effectivePhases || effectivePhases.length <= 1) {
     return null;
   }
 
   // Calculate cumulative stats
-  const firstPhase = phases[0];
-  const lastPhase = phases[phases.length - 1];
+  const firstPhase = effectivePhases[0];
+  const lastPhase = effectivePhases[effectivePhases.length - 1];
   const effectiveStart = cumulativeStartDate || (firstPhase?.start_date ? firstPhase.start_date.substring(0, 10) : '-');
   const effectiveEnd = cumulativeEndDate || (lastPhase?.end_date ? lastPhase.end_date.substring(0, 10) : '-');
   const totalDays = calculateInclusiveDays(effectiveStart, effectiveEnd);
@@ -75,7 +193,7 @@ export function ProjectPhaseTimeline({
             <h4 className="text-sm font-bold text-amber-950 flex items-center gap-2">
               Timeline Rantai Fase Proyek
               <span className="text-[11px] font-semibold bg-amber-200 text-amber-900 px-2 py-0.5 rounded-full">
-                {phases.length} Fase Terdaftar
+                {effectivePhases.length} Fase Terdaftar
               </span>
             </h4>
             <p className="text-xs text-amber-800 mt-0.5">
@@ -98,7 +216,7 @@ export function ProjectPhaseTimeline({
       {/* Horizontal Multi-Phase Flow */}
       <div className="relative">
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-          {phases.map((phase, idx) => {
+          {effectivePhases.map((phase, idx) => {
             const isCurrent = currentPermitId && (
               String(phase.id) === String(currentPermitId) || 
               phase.permit_number === currentPermitId

@@ -64,7 +64,7 @@ class WorkPermitController extends Controller
             'approvals.user:id,name',
             'parentPermit:id,permit_number,start_date,end_date,job_title,request_type,extension_phase',
             'rootPermit:id,permit_number,start_date,end_date,job_title,status',
-            'childPermits:id,parent_permit_id,permit_number,status,request_type,extension_phase'
+            'childPermits:id,parent_permit_id,permit_number,status,request_type,extension_phase,start_date,end_date'
         ])
             ->where(function ($sub) use ($user) {
                 $sub->where('user_id', $user->id);
@@ -152,7 +152,7 @@ class WorkPermitController extends Controller
             'approvals.user:id,name', 
             'parentPermit:id,permit_number,start_date,end_date,job_title,request_type,extension_phase',
             'rootPermit:id,permit_number,start_date,end_date,job_title,status',
-            'childPermits:id,parent_permit_id,permit_number,status,request_type,extension_phase'
+            'childPermits:id,parent_permit_id,permit_number,status,request_type,extension_phase,start_date,end_date'
         ]);
 
         $tab = $request->query('tab', 'pending');
@@ -239,7 +239,7 @@ class WorkPermitController extends Controller
             'approvals.user:id,name', 
             'parentPermit:id,permit_number,start_date,end_date,job_title,request_type,extension_phase',
             'rootPermit:id,permit_number,start_date,end_date,job_title,status',
-            'childPermits:id,parent_permit_id,permit_number,status,request_type,extension_phase'
+            'childPermits:id,parent_permit_id,permit_number,status,request_type,extension_phase,start_date,end_date'
         ]);
 
         $today = now()->format('Y-m-d');
@@ -698,7 +698,7 @@ class WorkPermitController extends Controller
             'approvals.user:id,name',
             'parentPermit:id,permit_number,start_date,end_date,job_title,request_type,extension_phase',
             'rootPermit:id,permit_number,start_date,end_date,job_title,status',
-            'childPermits:id,parent_permit_id,permit_number,status,request_type,extension_phase'
+            'childPermits:id,parent_permit_id,permit_number,status,request_type,extension_phase,start_date,end_date'
         ]);
 
         $permit = is_numeric($id) 

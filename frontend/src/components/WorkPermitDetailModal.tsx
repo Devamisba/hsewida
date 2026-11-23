@@ -18,6 +18,7 @@ import { cn, calculateInclusiveDays, formatPermitStatus, formatDateDDMMYY } from
 import { ApprovalWorkflowStepper } from "./ApprovalWorkflowStepper";
 import { ProjectPhaseTimeline } from "./ProjectPhaseTimeline";
 import { PrintPermitModal } from "./PrintPermitModal";
+import { resolveImageUrl } from "@/utils/imageUrl";
 
 export const canPrintPermit = (status: string) => {
   return status === "Disetujui" || status === "Selesai";
@@ -216,34 +217,14 @@ export function WorkPermitDetailModal({
               />
 
               {/* 0.4. Timeline Rantai Fase Proyek */}
-              {(permit.extensionPhase > 0 || (permit.projectChain && permit.projectChain.length > 1) || permit.hasActiveChild) && (
-                <ProjectPhaseTimeline
-                  currentPermitId={permit.rawId || permit.id}
-                  phases={permit.projectChain?.length ? permit.projectChain : [
-                    ...(permit.rootPermit ? [{
-                      id: permit.rootPermit.id,
-                      permit_number: permit.rootPermit.permitNumber,
-                      request_type: "Baru",
-                      extension_phase: 0,
-                      start_date: permit.rootPermit.startDate,
-                      end_date: permit.rootPermit.endDate,
-                      status: "Disetujui"
-                    }] : []),
-                    {
-                      id: permit.rawId,
-                      permit_number: permit.id,
-                      request_type: permit.requestType,
-                      extension_phase: permit.extensionPhase,
-                      start_date: permit.mulaiKerja,
-                      end_date: permit.selesaiKerja,
-                      status: permit.status
-                    }
-                  ]}
-                  rootPermitNumber={permit.rootPermit?.permitNumber || permit.parentPermit?.permitNumber || permit.id}
-                  cumulativeStartDate={permit.cumulativeStartDate}
-                  cumulativeEndDate={permit.cumulativeEndDate}
-                />
-              )}
+              <ProjectPhaseTimeline
+                currentPermitId={permit.rawId || permit.id}
+                permit={permit}
+                phases={permit.projectChain?.length ? permit.projectChain : undefined}
+                rootPermitNumber={permit.rootPermit?.permitNumber || permit.parentPermit?.permitNumber || permit.id}
+                cumulativeStartDate={permit.cumulativeStartDate}
+                cumulativeEndDate={permit.cumulativeEndDate}
+              />
 
               {/* 0.5. Info Audit Jejak Perpanjangan Izin (Khusus Tipe Perpanjangan) */}
               {permit.requestType === 'Perpanjangan' && (
@@ -564,7 +545,7 @@ export function WorkPermitDetailModal({
             </div>
             <div className="p-4 flex items-center justify-center bg-gray-50 max-h-[70vh] overflow-auto">
               <img
-                src={previewPhoto}
+                src={resolveImageUrl(previewPhoto)}
                 alt="ID Card Pekerja"
                 className="max-h-[60vh] max-w-full object-contain rounded-lg shadow-sm border border-gray-200"
               />

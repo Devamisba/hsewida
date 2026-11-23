@@ -33,6 +33,7 @@ import { PrintPermitModal } from "@/components/PrintPermitModal";
 import { ApprovalWorkflowStepper } from "@/components/ApprovalWorkflowStepper";
 import { ProjectPhaseTimeline } from "@/components/ProjectPhaseTimeline";
 import { exportWorkPermitsToExcel } from "@/utils/exportPermitExcel";
+import { resolveImageUrl } from "@/utils/imageUrl";
 import { K3Loader } from "@/components/K3Loader";
 
 function mapApiToHistory(item: any) {
@@ -187,6 +188,7 @@ export default function HistoryPage() {
   const [requests, setRequests] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedRequest, setSelectedRequest] = useState<any>(null);
+  const [previewPhoto, setPreviewPhoto] = useState<string | null>(null);
   const [printModalPermit, setPrintModalPermit] = useState<any>(null);
   const [showExpiringOnly, setShowExpiringOnly] = useState(filterExpiringSoon);
   const [extensionWindowDays] = useState(3);
@@ -1237,34 +1239,14 @@ export default function HistoryPage() {
                 />
 
                 {/* 0.4. Timeline Rantai Fase Proyek */}
-                {(selectedRequest.extensionPhase > 0 || (selectedRequest.projectChain && selectedRequest.projectChain.length > 1) || selectedRequest.hasActiveChild) && (
-                  <ProjectPhaseTimeline
-                    currentPermitId={selectedRequest.rawId || selectedRequest.id}
-                    phases={selectedRequest.projectChain?.length ? selectedRequest.projectChain : [
-                      ...(selectedRequest.rootPermit ? [{
-                        id: selectedRequest.rootPermit.id,
-                        permit_number: selectedRequest.rootPermit.permitNumber,
-                        request_type: "Baru",
-                        extension_phase: 0,
-                        start_date: selectedRequest.rootPermit.startDate,
-                        end_date: selectedRequest.rootPermit.endDate,
-                        status: "Disetujui"
-                      }] : []),
-                      {
-                        id: selectedRequest.rawId,
-                        permit_number: selectedRequest.id,
-                        request_type: selectedRequest.requestType,
-                        extension_phase: selectedRequest.extensionPhase,
-                        start_date: selectedRequest.mulaiKerja,
-                        end_date: selectedRequest.selesaiKerja,
-                        status: selectedRequest.status
-                      }
-                    ]}
-                    rootPermitNumber={selectedRequest.rootPermit?.permitNumber || selectedRequest.parentPermit?.permitNumber || selectedRequest.id}
-                    cumulativeStartDate={selectedRequest.cumulativeStartDate}
-                    cumulativeEndDate={selectedRequest.cumulativeEndDate}
-                  />
-                )}
+                <ProjectPhaseTimeline
+                  currentPermitId={selectedRequest.rawId || selectedRequest.id}
+                  permit={selectedRequest}
+                  phases={selectedRequest.projectChain?.length ? selectedRequest.projectChain : undefined}
+                  rootPermitNumber={selectedRequest.rootPermit?.permitNumber || selectedRequest.parentPermit?.permitNumber || selectedRequest.id}
+                  cumulativeStartDate={selectedRequest.cumulativeStartDate}
+                  cumulativeEndDate={selectedRequest.cumulativeEndDate}
+                />
 
                 {/* 0.5. Info Audit Jejak Perpanjangan Izin (Khusus Tipe Perpanjangan) */}
                 {selectedRequest.requestType === 'Perpanjangan' && (
@@ -1407,6 +1389,7 @@ export default function HistoryPage() {
                           <th className="px-4 py-3 text-xs font-semibold text-gray-600 border-b border-gray-200">Nama Lengkap</th>
                           <th className="px-4 py-3 text-xs font-semibold text-gray-600 border-b border-gray-200">Jabatan</th>
                           <th className="px-4 py-3 text-xs font-semibold text-gray-600 border-b border-gray-200">Alamat</th>
+                          <th className="px-4 py-3 text-xs font-semibold text-gray-600 border-b border-gray-200 text-center w-36">ID Card / Foto</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-gray-100">
@@ -1416,6 +1399,20 @@ export default function HistoryPage() {
                             <td className="px-4 py-3 font-medium text-gray-900">{p.nama}</td>
                             <td className="px-4 py-3 text-gray-700">{p.jabatan}</td>
                             <td className="px-4 py-3 text-gray-500">{p.alamat}</td>
+                            <td className="px-4 py-3 text-center">
+                              {p.id_card_photo ? (
+                                <button
+                                  type="button"
+                                  onClick={() => setPreviewPhoto(p.id_card_photo)}
+                                  className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-xs font-semibold rounded-lg border border-emerald-200 transition-colors cursor-pointer"
+                                >
+                                  <Eye size={13} />
+                                  <span>Lihat Foto</span>
+                                </button>
+                              ) : (
+                                <span className="text-xs text-gray-400 italic">Tidak ada foto</span>
+                              )}
+                            </td>
                           </tr>
                         ))}
                       </tbody>
@@ -1521,6 +1518,49 @@ export default function HistoryPage() {
       {/* Printable Permit Sheet Modal */}
       {printModalPermit && (
         <PrintPermitModal permit={printModalPermit} onClose={() => setPrintModalPermit(null)} />
+      )}
+
+      {/* Modal Preview Foto Pekerja / ID Card */}
+      {previewPhoto && (
+        <div 
+          className="fixed inset-0 z-[70] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200"
+          onClick={() => setPreviewPhoto(null)}
+        >
+          <div 
+            className="bg-white rounded-2xl shadow-2xl max-w-lg w-full overflow-hidden animate-in zoom-in-95 duration-200"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 bg-gray-50/80">
+              <h3 className="font-bold text-gray-900 text-sm sm:text-base flex items-center gap-2">
+                <Users className="text-primary" size={18} />
+                Pratinjau Foto / ID Card Pekerja
+              </h3>
+              <button
+                type="button"
+                onClick={() => setPreviewPhoto(null)}
+                className="p-1 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors cursor-pointer"
+              >
+                <X size={20} />
+              </button>
+            </div>
+            <div className="p-6 flex flex-col items-center justify-center bg-gray-950/5">
+              <img
+                src={resolveImageUrl(previewPhoto)}
+                alt="Foto ID Card Pekerja"
+                className="max-h-[70vh] w-auto object-contain rounded-lg shadow-md border border-gray-200"
+              />
+            </div>
+            <div className="p-4 bg-gray-50 border-t border-gray-100 flex justify-end">
+              <button
+                type="button"
+                onClick={() => setPreviewPhoto(null)}
+                className="px-4 py-2 text-sm font-semibold text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 rounded-xl transition-colors shadow-sm cursor-pointer"
+              >
+                Tutup
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
     </div>

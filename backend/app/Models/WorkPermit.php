@@ -49,6 +49,7 @@ class WorkPermit extends Model
     protected $appends = [
         'cumulative_start_date',
         'has_active_child_extension',
+        'project_chain',
     ];
 
     public function user()
@@ -88,13 +89,28 @@ class WorkPermit extends Model
 
     public function getProjectChainAttribute()
     {
-        $rootId = $this->root_permit_id ?: $this->id;
-        return self::where('root_permit_id', $rootId)
-            ->orWhere('id', $rootId)
+        $rootId = ($this->root_permit_id && $this->root_permit_id !== $this->id) 
+            ? $this->root_permit_id 
+            : ($this->parent_permit_id ?: $this->id);
+
+        if ($this->parent_permit_id && (!$this->root_permit_id || $this->root_permit_id === $this->id)) {
+            $parent = $this->relationLoaded('parentPermit') ? $this->parentPermit : WorkPermit::find($this->parent_permit_id);
+            if ($parent) {
+                $rootId = $parent->root_permit_id ?: $parent->id;
+            }
+        }
+
+        return self::where(function ($q) use ($rootId) {
+                $q->where('root_permit_id', $rootId)
+                  ->orWhere('id', $rootId)
+                  ->orWhere('parent_permit_id', $rootId);
+            })
             ->select('id', 'permit_number', 'request_type', 'extension_phase', 'start_date', 'end_date', 'status', 'created_at')
             ->orderBy('extension_phase', 'asc')
             ->orderBy('id', 'asc')
-            ->get();
+            ->get()
+            ->unique('id')
+            ->values();
     }
 
     public function getCumulativeStartDateAttribute()
