@@ -186,4 +186,53 @@ chown -R www:www storage bootstrap/cache
 
 ---
 
+## 7. PANDUAN SETUP & DEPLOY SERVER DEV (BRANCH `dev`)
+
+Untuk memfasilitasi pengujian fitur baru tanpa mengganggu sistem produksi, server development (dev) menggunakan branch `dev` dan database terpisah.
+
+### ⚙️ Pengaturan Situs Dev di aaPanel
+1. **Database:** Buat database baru bernama `hse_db_dev` di menu **Database** aaPanel.
+2. **Backend Dev (`dev-api.hse.widatra.com`):**
+   - Direktori Situs: `/www/wwwroot/dev-api.hse.widatra.com/backend`
+   - Direktori Menjalankan: `/public`
+   - Versi PHP: PHP-8.2
+3. **Frontend Dev (`dev.hse.widatra.com`):**
+   - Direktori Situs: `/www/wwwroot/dev.hse.widatra.com/frontend`
+
+### 🚀 Perintah Inisialisasi Pertama Kali Server Dev (Terminal aaPanel):
+```bash
+# 1. Clone repository khusus branch dev
+cd /www/wwwroot
+git clone -b dev https://github.com/Devamisba/hsewida.git dev-api.hse.widatra.com
+
+# 2. Setup .env Backend Dev (Gunakan DB hse_db_dev)
+cd /www/wwwroot/dev-api.hse.widatra.com/backend
+cp .env.example .env
+sed -i 's/APP_ENV=production/APP_ENV=local/g' .env
+sed -i 's/APP_DEBUG=false/APP_DEBUG=true/g' .env
+sed -i 's/DB_DATABASE=hse_db/DB_DATABASE=hse_db_dev/g' .env
+sed -i 's|APP_URL=.*|APP_URL=https://dev-api.hse.widatra.com|g' .env
+php artisan key:generate
+php artisan migrate:fresh --seed
+php artisan storage:link
+
+# 3. Setup Frontend Dev
+mkdir -p /www/wwwroot/dev.hse.widatra.com/frontend
+cp -rf /www/wwwroot/dev-api.hse.widatra.com/frontend/dist/* /www/wwwroot/dev.hse.widatra.com/frontend/
+
+# 4. Set Hak Akses
+chown -R www:www /www/wwwroot/dev-api.hse.widatra.com 2>/dev/null || true
+chown -R www:www /www/wwwroot/dev.hse.widatra.com 2>/dev/null || true
+chmod -R 755 /www/wwwroot/dev-api.hse.widatra.com
+chmod -R 755 /www/wwwroot/dev.hse.widatra.com
+echo "=== INISIALISASI SERVER DEV SELESAI 100% ==="
+```
+
+### 🔄 Perintah Deploy Rutin Server Dev (Setiap Ada Update di Branch `dev`):
+```bash
+cd /www/wwwroot/dev-api.hse.widatra.com && git pull origin dev && php backend/artisan migrate --force && php backend/artisan config:clear && php backend/artisan route:clear && php backend/artisan cache:clear && mkdir -p /www/wwwroot/dev.hse.widatra.com/frontend && cp -rf frontend/dist/* /www/wwwroot/dev.hse.widatra.com/frontend/ && chown -R www:www /www/wwwroot/dev.hse.widatra.com/frontend 2>/dev/null || true && echo "=== SERVER DEV TERUPDATE 100% ==="
+```
+
+---
+
 *Dokumen ini merupakan panduan operasional resmi Sistem HSE PT Widatra Bhakti.*
