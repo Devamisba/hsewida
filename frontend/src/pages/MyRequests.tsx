@@ -1036,16 +1036,10 @@ export default function MyRequestsPage() {
                                   <button
                                     type="button"
                                     onClick={() => setPreviewPhoto(p.id_card_photo)}
-                                    className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-xs font-semibold rounded-lg border border-emerald-200 transition-colors cursor-pointer"
+                                    className="inline-flex items-center gap-1.5 px-3 py-1 bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs font-semibold rounded-lg border border-blue-200 transition-colors cursor-pointer"
                                     title="Klik untuk melihat foto ID Card / KTP"
                                   >
-                                    <img
-                                      src={resolveImageUrl(p.id_card_photo)}
-                                      alt="KTP"
-                                      className="w-4 h-4 rounded object-cover border border-emerald-300 shrink-0"
-                                      onError={(e: any) => { e.currentTarget.style.display = 'none'; }}
-                                    />
-                                    <Eye size={13} />
+                                    <Eye size={14} />
                                     <span>Lihat Foto</span>
                                   </button>
                                 ) : (
