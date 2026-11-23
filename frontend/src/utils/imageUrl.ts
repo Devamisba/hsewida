@@ -24,7 +24,8 @@ export function resolveImageUrl(
     return cleanUrl;
   }
 
-  if (cleanUrl.startsWith("/storage/")) {
+  if (cleanUrl.startsWith("/storage/") || cleanUrl.startsWith("storage/")) {
+    const pathWithSlash = cleanUrl.startsWith("/") ? cleanUrl : `/${cleanUrl}`;
     if (typeof window !== "undefined" && window.location) {
       const isDev =
         window.location.hostname === "localhost" ||
@@ -32,9 +33,14 @@ export function resolveImageUrl(
       const isVitePort =
         window.location.port === "5173" || window.location.port === "3000";
       if (isDev && isVitePort) {
-        return `http://localhost:8000${cleanUrl}`;
+        return `http://localhost:8000${pathWithSlash}`;
+      }
+      // Production live environment: point to Laravel API domain
+      if (window.location.hostname.includes("widatra.com")) {
+        return `https://api.hse.widatra.com${pathWithSlash}`;
       }
     }
+    return pathWithSlash;
   }
 
   return cleanUrl;

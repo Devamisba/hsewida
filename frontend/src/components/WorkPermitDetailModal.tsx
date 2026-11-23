@@ -123,16 +123,16 @@ export function mapApiToPermitDetail(item: any) {
     pengawasHse: item.hse_officer_name || item.pengawasHse || "-",
     noHpHse: item.hse_officer_phone || item.noHpHse || "-",
     totalTenagaKerja: item.total_workers || item.workers?.length || 0,
-    permitTypes: item.permit_types ? item.permit_types.map((p: any) => p.name) : (item.permitTypes || []),
-    ppe: item.ppes ? item.ppes.map((p: any) => p.name) : (item.ppe || []),
-    workEquipment: item.equipments ? item.equipments.map((e: any) => e.equipment_name) : (item.workEquipment || []),
-    pekerja: item.workers ? item.workers.map((w: any) => ({
-      id: w.id,
-      nama: w.worker_name || w.nama,
-      jabatan: w.position || w.jabatan,
-      alamat: w.address || w.alamat,
-      id_card_photo: w.id_card_photo || null,
-    })) : (item.pekerja || []),
+    permitTypes: item.permit_types ? item.permit_types.map((p: any) => typeof p === 'object' ? (p.pivot?.custom_type ? `${p.name} (${p.pivot.custom_type})` : p.name) : p) : (item.permitTypes || []),
+    ppe: item.ppes ? item.ppes.map((p: any) => typeof p === 'object' ? p.name : p) : (item.ppe || []),
+    workEquipment: item.equipments ? item.equipments.map((e: any) => typeof e === 'object' ? e.equipment_name : e) : (item.workEquipment || []),
+    pekerja: (item.workers || item.pekerja || []).map((w: any, idx: number) => ({
+      id: w.id || idx,
+      nama: w.worker_name || w.nama || "-",
+      jabatan: w.position || w.jabatan || "-",
+      alamat: w.address || w.alamat || "-",
+      id_card_photo: w.id_card_photo || w.idCardPhoto || null,
+    })),
     jsa: item.jsas ? item.jsas.map((j: any) => ({
       id: j.id,
       tahapan: j.work_step || j.tahapan,
@@ -372,28 +372,43 @@ export function WorkPermitDetailModal({
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-100">
-                      {permit.pekerja.map((p: any, i: number) => (
-                        <tr key={p.id || i}>
-                          <td className="px-4 py-3 text-center text-gray-500">{i + 1}</td>
-                          <td className="px-4 py-3 font-medium text-gray-900">{p.nama}</td>
-                          <td className="px-4 py-3 text-gray-700">{p.jabatan}</td>
-                          <td className="px-4 py-3 text-gray-500">{p.alamat}</td>
-                          <td className="px-4 py-3 text-center">
-                            {p.id_card_photo ? (
-                              <button
-                                type="button"
-                                onClick={() => setPreviewPhoto(p.id_card_photo)}
-                                className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-xs font-semibold rounded-lg border border-emerald-200 transition-colors cursor-pointer"
-                              >
-                                <Eye size={13} />
-                                <span>Lihat Foto</span>
-                              </button>
-                            ) : (
-                              <span className="text-xs text-gray-400 italic">Tidak ada foto</span>
-                            )}
+                      {permit.pekerja && permit.pekerja.length > 0 ? (
+                        permit.pekerja.map((p: any, i: number) => (
+                          <tr key={p.id || i}>
+                            <td className="px-4 py-3 text-center text-gray-500">{i + 1}</td>
+                            <td className="px-4 py-3 font-medium text-gray-900">{p.nama}</td>
+                            <td className="px-4 py-3 text-gray-700">{p.jabatan}</td>
+                            <td className="px-4 py-3 text-gray-500">{p.alamat || "-"}</td>
+                            <td className="px-4 py-3 text-center">
+                              {p.id_card_photo ? (
+                                <button
+                                  type="button"
+                                  onClick={() => setPreviewPhoto(p.id_card_photo)}
+                                  className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-xs font-semibold rounded-lg border border-emerald-200 transition-colors cursor-pointer"
+                                  title="Klik untuk melihat foto ID Card / KTP"
+                                >
+                                  <img
+                                    src={resolveImageUrl(p.id_card_photo)}
+                                    alt="KTP"
+                                    className="w-4 h-4 rounded object-cover border border-emerald-300 shrink-0"
+                                    onError={(e: any) => { e.currentTarget.style.display = 'none'; }}
+                                  />
+                                  <Eye size={13} />
+                                  <span>Lihat Foto</span>
+                                </button>
+                              ) : (
+                                <span className="text-xs text-gray-400 italic">Tidak ada foto</span>
+                              )}
+                            </td>
+                          </tr>
+                        ))
+                      ) : (
+                        <tr>
+                          <td colSpan={5} className="px-4 py-6 text-center text-gray-400 italic">
+                            Tidak ada data tenaga kerja terdaftar
                           </td>
                         </tr>
-                      ))}
+                      )}
                     </tbody>
                   </table>
                 </div>
