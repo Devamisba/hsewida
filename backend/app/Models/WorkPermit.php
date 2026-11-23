@@ -100,7 +100,8 @@ class WorkPermit extends Model
             }
         }
 
-        return self::where(function ($q) use ($rootId) {
+        return \Illuminate\Support\Facades\DB::table('work_permits')
+            ->where(function ($q) use ($rootId) {
                 $q->where('root_permit_id', $rootId)
                   ->orWhere('id', $rootId)
                   ->orWhere('parent_permit_id', $rootId);
