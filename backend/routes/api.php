@@ -91,6 +91,7 @@ Route::prefix('v1')->group(function () {
         Route::get('/permits/my-requests', [WorkPermitController::class, 'myRequests']);
         Route::get('/permits/review-queue', [WorkPermitController::class, 'reviewQueue']);
         Route::get('/permits/history', [WorkPermitController::class, 'history']);
+        Route::get('/permits/eligible-extensions', [WorkPermitController::class, 'getEligibleExtensions']);
         Route::post('/permits', [WorkPermitController::class, 'store']);
         Route::get('/permits/{id}', [WorkPermitController::class, 'show']);
         Route::post('/permits/{id}/approve', [WorkPermitController::class, 'approve']);

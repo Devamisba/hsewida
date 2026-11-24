@@ -254,6 +254,11 @@ export default function CreateRequestPage() {
     setSubmitError("");
 
     if (currentStep === 1) {
+      if (formData.requestType === "Perpanjangan" && !formData.parentPermitId) {
+        focusAndScrollToField("parentPermitSelect", "Mohon pilih dokumen izin kerja yang akan diperpanjang terlebih dahulu.");
+        return;
+      }
+
       if (!formData.namaKontraktor?.trim()) {
         focusAndScrollToField("namaKontraktor", "Mohon isi Nama Perusahaan Vendor.");
         return;
@@ -507,13 +512,13 @@ export default function CreateRequestPage() {
           {/* Page Titles directly on background */}
           <div className="mb-6">
             <h2 className="text-2xl font-bold text-gray-900">
-              {extendState?.extendMode 
+              {formData.requestType === "Perpanjangan"
                 ? `Perpanjangan Izin Kerja Ke-${formData.extensionPhase || 1} (Fase ${formData.extensionPhase || 1})` 
                 : "Pengajuan Izin Kerja"}
             </h2>
             <p className="text-sm text-gray-500 mt-1">
-              {extendState?.extendMode 
-                ? `Pengajuan perpanjangan masa berlaku untuk Dokumen Izin Kerja ${extendState.permitNumber || extendState.id || ""} (Izin Induk: ${formData.rootPermitNumber || extendState.permitNumber}).`
+              {formData.requestType === "Perpanjangan" && formData.parentPermitNumber
+                ? `Pengajuan perpanjangan masa berlaku untuk Dokumen Izin Kerja ${formData.parentPermitNumber} (Izin Induk: ${formData.rootPermitNumber || formData.parentPermitNumber}).`
                 : "Formulir digital Izin Kerja, Safety Induction & JSA untuk rekanan dan tim operasional."}
             </p>
           </div>

@@ -1,7 +1,18 @@
 import { useState, useEffect } from "react";
 import { format, addDays, isBefore, startOfToday } from "date-fns";
-import { ClipboardList, HardHat, Building2, CalendarClock } from "lucide-react";
-import { calculateInclusiveDays, formatDateDDMMYY } from "@/lib/utils";
+import { 
+  ClipboardList, 
+  HardHat, 
+  Building2, 
+  CalendarClock, 
+  FilePlus2, 
+  CalendarPlus, 
+  AlertTriangle, 
+  RotateCcw, 
+  CheckCircle2, 
+  Loader2 
+} from "lucide-react";
+import { calculateInclusiveDays, formatDateDDMMYY, cn } from "@/lib/utils";
 import { DateInputDDMMYY } from "@/components/DateInputDDMMYY";
 import { api } from "@/services/api";
 import { auth } from "@/lib/auth";
@@ -11,6 +22,9 @@ export function Step1DataKontraktor({ data, updateData }: { data: any, updateDat
   const [locations, setLocations] = useState<string[]>([]);
   const [maxPermitDays, setMaxPermitDays] = useState(6);
   const [minLeadDays, setMinLeadDays] = useState(3);
+  const [eligiblePermits, setEligiblePermits] = useState<any[]>([]);
+  const [loadingEligible, setLoadingEligible] = useState<boolean>(false);
+  const [selectedParentId, setSelectedParentId] = useState<string | number>(data.parentPermitId || "");
 
   useEffect(() => {
     const today = startOfToday();
@@ -65,7 +79,106 @@ export function Step1DataKontraktor({ data, updateData }: { data: any, updateDat
         setLocations(res.data.filter((l: any) => l.is_active !== false).map((l: any) => l.name));
       }
     }).catch(err => console.error("Error fetching locations:", err));
+
+    // 4. Fetch eligible extension permits
+    setLoadingEligible(true);
+    api.getEligibleExtensions().then(res => {
+      if (res?.success && Array.isArray(res.data)) {
+        setEligiblePermits(res.data);
+        if (data.parentPermitId) {
+          setSelectedParentId(data.parentPermitId);
+        }
+      }
+    }).catch(err => {
+      console.warn("Could not fetch eligible extension permits:", err);
+    }).finally(() => {
+      setLoadingEligible(false);
+    });
   }, []);
+
+  const handleTypeSelect = (type: "Baru" | "Perpanjangan") => {
+    if (type === "Baru") {
+      setSelectedParentId("");
+      updateData({
+        requestType: "Baru",
+        parentPermitId: null,
+        parentPermitNumber: "",
+        rootPermitId: null,
+        rootPermitNumber: "",
+        rootStartDate: "",
+        cumulativeStartDate: "",
+        extensionPhase: 0,
+        mulaiKerja: "",
+        selesaiKerja: "",
+      });
+      setMinStartDate(format(addDays(startOfToday(), minLeadDays), 'yyyy-MM-dd'));
+    } else {
+      updateData({
+        requestType: "Perpanjangan",
+      });
+      setMinStartDate(format(startOfToday(), 'yyyy-MM-dd'));
+      if (eligiblePermits.length === 1 && !data.parentPermitId) {
+        handleApplyParentPermit(eligiblePermits[0]);
+      }
+    }
+  };
+
+  const handleApplyParentPermit = (parent: any) => {
+    if (!parent) return;
+    setSelectedParentId(parent.id);
+
+    const nextStart = parent.suggested_start_date || (parent.end_date ? format(addDays(new Date(parent.end_date), 1), 'yyyy-MM-dd') : "");
+    const nextEnd = parent.suggested_end_date || (nextStart ? format(addDays(new Date(nextStart), 5), 'yyyy-MM-dd') : "");
+    const nextPhase = parent.next_phase || ((parent.extension_phase || 0) + 1);
+
+    const mappedWorkers = (parent.workers || []).map((w: any, idx: number) => ({
+      id: Date.now() + idx,
+      nama: w.worker_name || w.nama || "",
+      jabatan: w.position || w.jabatan || "",
+      alamat: w.address || w.alamat || "",
+      id_card_photo: w.id_card_photo || null,
+      photoName: w.id_card_photo ? "KTP Tersimpan (Dari Izin Sebelumnya)" : "",
+    }));
+
+    const mappedJsa = (parent.jsas || []).map((j: any, idx: number) => ({
+      id: Date.now() + idx,
+      tahapan: j.work_step || j.tahapan || "",
+      peralatan: j.equipment_used || j.peralatan || "",
+      potensi: j.hazard_potential || j.potensi || "",
+      pengendalian: j.mitigation_control || j.pengendalian || "",
+      tanggapDarurat: j.emergency_response || j.tanggapDarurat || "",
+    }));
+
+    updateData({
+      requestType: "Perpanjangan",
+      parentPermitId: parent.id,
+      parentPermitNumber: parent.permit_number,
+      rootPermitId: parent.root_permit_id || parent.id,
+      rootPermitNumber: parent.root_permit_number || parent.permit_number,
+      rootStartDate: parent.cumulative_start_date || parent.start_date,
+      cumulativeStartDate: parent.cumulative_start_date || parent.start_date,
+      extensionPhase: nextPhase,
+      namaKontraktor: parent.vendor?.company_name || parent.namaKontraktor || data.namaKontraktor,
+      jenisPekerjaan: parent.job_title || data.jenisPekerjaan,
+      lokasi: parent.location?.name || (typeof parent.location === 'string' ? parent.location : data.lokasi),
+      mulaiKerja: nextStart,
+      selesaiKerja: nextEnd,
+      projectEndDate: parent.project_end_date || parent.end_date,
+      jamKerjaMulai: parent.daily_start_time || "08:00",
+      jamKerjaAkhir: parent.daily_end_time || "17:00",
+      penanggungJawab: parent.pic_name || data.penanggungJawab,
+      noHpPJ: parent.pic_phone || data.noHpPJ,
+      pengawasPekerjaan: parent.supervisor_name || data.pengawasPekerjaan,
+      noHpPengawas: parent.supervisor_phone || data.noHpPengawas,
+      pengawasHse: parent.hse_officer_name || data.pengawasHse || "Ahli K3 Umum",
+      noHpHse: parent.hse_officer_phone || data.noHpHse || "085566778899",
+      totalTenagaKerja: String(mappedWorkers.length > 0 ? mappedWorkers.length : (data.totalTenagaKerja || "1")),
+      permitTypes: parent.permit_types || [],
+      ppe: parent.ppes || [],
+      pekerja: mappedWorkers.length > 0 ? mappedWorkers : data.pekerja,
+      jsa: mappedJsa.length > 0 ? mappedJsa : data.jsa,
+    });
+  };
   
   const handleStartDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newStart = e.target.value;
@@ -110,6 +223,175 @@ export function Step1DataKontraktor({ data, updateData }: { data: any, updateDat
           <h3 className="text-lg font-bold text-gray-900">Izin Kerja & Data Vendor</h3>
           <p className="text-sm text-gray-500">Data dasar pengajuan izin kerja. Harap isi dengan lengkap dan sesuai dengan kontrak.</p>
         </div>
+      </div>
+
+      {/* Pilihan Tipe Pengajuan Izin Kerja: Baru vs Perpanjangan */}
+      <div className="space-y-3">
+        <label className="block text-sm font-bold text-gray-800">
+          Tipe Pengajuan Izin Kerja <span className="text-red-500">*</span>
+        </label>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {/* Card 1: Izin Kerja Baru */}
+          <button
+            type="button"
+            onClick={() => handleTypeSelect("Baru")}
+            className={cn(
+              "flex items-start gap-3.5 p-4 rounded-xl border-2 text-left transition-all cursor-pointer relative",
+              data.requestType !== "Perpanjangan"
+                ? "border-blue-600 bg-blue-50/60 shadow-xs ring-2 ring-blue-500/20"
+                : "border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50/50"
+            )}
+          >
+            <div className={cn(
+              "p-2.5 rounded-lg shrink-0 mt-0.5",
+              data.requestType !== "Perpanjangan" ? "bg-blue-600 text-white shadow-xs" : "bg-gray-100 text-gray-500"
+            )}>
+              <FilePlus2 size={20} />
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center justify-between gap-2">
+                <span className={cn(
+                  "font-bold text-sm",
+                  data.requestType !== "Perpanjangan" ? "text-blue-900" : "text-gray-900"
+                )}>
+                  Izin Kerja Baru
+                </span>
+                <span className={cn(
+                  "w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0",
+                  data.requestType !== "Perpanjangan" ? "border-blue-600 bg-blue-600" : "border-gray-300"
+                )}>
+                  {data.requestType !== "Perpanjangan" && <span className="w-1.5 h-1.5 rounded-full bg-white" />}
+                </span>
+              </div>
+              <p className="text-xs text-gray-500 mt-1 leading-relaxed">
+                Pengajuan izin kerja awal untuk pekerjaan baru atau proyek terpisah dari awal.
+              </p>
+            </div>
+          </button>
+
+          {/* Card 2: Perpanjangan Izin Kerja */}
+          <button
+            type="button"
+            onClick={() => handleTypeSelect("Perpanjangan")}
+            className={cn(
+              "flex items-start gap-3.5 p-4 rounded-xl border-2 text-left transition-all cursor-pointer relative",
+              data.requestType === "Perpanjangan"
+                ? "border-amber-500 bg-amber-50/60 shadow-xs ring-2 ring-amber-500/20"
+                : "border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50/50"
+            )}
+          >
+            <div className={cn(
+              "p-2.5 rounded-lg shrink-0 mt-0.5",
+              data.requestType === "Perpanjangan" ? "bg-amber-600 text-white shadow-xs" : "bg-gray-100 text-gray-500"
+            )}>
+              <CalendarPlus size={20} />
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <span className={cn(
+                    "font-bold text-sm",
+                    data.requestType === "Perpanjangan" ? "text-amber-900" : "text-gray-900"
+                  )}>
+                    Perpanjangan Izin
+                  </span>
+                  <span className={cn(
+                    "text-[10px] font-bold px-2 py-0.5 rounded-full",
+                    eligiblePermits.length > 0 
+                      ? "bg-amber-100 text-amber-800 border border-amber-200" 
+                      : "bg-gray-100 text-gray-500 border border-gray-200"
+                  )}>
+                    {loadingEligible ? "Memuat..." : `${eligiblePermits.length} Tersedia`}
+                  </span>
+                </div>
+                <span className={cn(
+                  "w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0",
+                  data.requestType === "Perpanjangan" ? "border-amber-500 bg-amber-500" : "border-gray-300"
+                )}>
+                  {data.requestType === "Perpanjangan" && <span className="w-1.5 h-1.5 rounded-full bg-white" />}
+                </span>
+              </div>
+              <p className="text-xs text-gray-500 mt-1 leading-relaxed">
+                Melanjutkan izin kerja aktif yang mendekati masa berakhir (periode H-3).
+              </p>
+            </div>
+          </button>
+        </div>
+
+        {/* Dropdown / Alert saat Mode Perpanjangan */}
+        {data.requestType === "Perpanjangan" && (
+          <div className="mt-3 animate-in fade-in slide-in-from-top-2 duration-300">
+            {loadingEligible ? (
+              <div className="p-4 bg-gray-50 rounded-xl border border-gray-200 flex items-center gap-3 text-sm text-gray-600">
+                <Loader2 className="w-5 h-5 animate-spin text-amber-600" />
+                <span>Memeriksa daftar izin kerja yang dapat diperpanjang...</span>
+              </div>
+            ) : eligiblePermits.length === 0 ? (
+              <div className="p-4 bg-rose-50 border border-rose-200 rounded-xl space-y-2 text-rose-900 text-sm shadow-xs">
+                <div className="flex items-center gap-2 font-bold text-rose-800">
+                  <AlertTriangle size={18} className="text-rose-600 shrink-0" />
+                  <span>Tidak Ada Izin Kerja yang Memenuhi Syarat untuk Diperpanjang</span>
+                </div>
+                <p className="text-xs text-rose-700 leading-relaxed">
+                  Syarat perpanjangan izin: Dokumen izin kerja berstatus <strong>Disetujui</strong>, berada dalam rentang masa berlaku <strong>H-3 sebelum berakhir</strong>, dan <strong>belum memiliki pengajuan perpanjangan aktif</strong>. Saat ini tidak ditemukan izin kerja yang memenuhi kriteria tersebut pada akun Anda.
+                </p>
+                <div className="pt-2">
+                  <button
+                    type="button"
+                    onClick={() => handleTypeSelect("Baru")}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-xs font-semibold shadow-xs transition-colors cursor-pointer"
+                  >
+                    <RotateCcw size={14} /> Beralih ke Izin Kerja Baru
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="p-4 bg-amber-50/80 border border-amber-200 rounded-xl space-y-3 text-amber-950 text-sm shadow-xs">
+                <div>
+                  <label htmlFor="parentPermitSelect" className="block text-xs font-bold text-amber-900 mb-1.5">
+                    Pilih Dokumen Izin Kerja yang Akan Diperpanjang <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    id="parentPermitSelect"
+                    value={selectedParentId}
+                    onChange={(e) => {
+                      const found = eligiblePermits.find(p => String(p.id) === String(e.target.value));
+                      if (found) {
+                        handleApplyParentPermit(found);
+                      }
+                    }}
+                    className="w-full px-3.5 py-2.5 bg-white border border-amber-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 shadow-xs cursor-pointer font-medium"
+                  >
+                    <option value="">-- Pilih Dokumen Izin Kerja Acuan --</option>
+                    {eligiblePermits.map((p) => (
+                      <option key={p.id} value={p.id}>
+                        {p.permit_number} - {p.job_title} | Berakhir: {formatDateDDMMYY(p.end_date)} (Sisa {p.days_remaining} Hari) | Lanjut ke Fase {p.next_phase}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {data.parentPermitId ? (
+                  <div className="flex items-start gap-2.5 p-2.5 bg-white/90 border border-amber-200 rounded-lg text-xs text-amber-900">
+                    <CheckCircle2 size={16} className="text-emerald-600 shrink-0 mt-0.5" />
+                    <div>
+                      <p className="font-semibold text-gray-900">
+                        Izin acuan terpilih: <span className="font-mono text-amber-800 font-bold">{data.parentPermitNumber || data.parentPermitId}</span> (Fase {data.extensionPhase || 1})
+                      </p>
+                      <p className="text-gray-600 mt-0.5">
+                        Data vendor, personel, jenis izin, APD, pekerja, dan JSA telah dimuat otomatis. Periode lanjutan kerja disesuaikan ke <strong>{formatDateDDMMYY(data.mulaiKerja)} s/d {formatDateDDMMYY(data.selesaiKerja)}</strong>.
+                      </p>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-xs text-amber-700 italic">
+                    * Silakan pilih salah satu izin kerja di atas untuk memuat data acuan secara otomatis.
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       <div className="space-y-6">

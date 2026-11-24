@@ -1001,6 +1001,131 @@ class WorkPermitController extends Controller
     }
 
     /**
+     * Get list of approved permits eligible for extension for the logged-in user.
+     */
+    public function getEligibleExtensions(Request $request)
+    {
+        WorkPermitService::syncExpiredPermits();
+
+        $user = $request->user();
+        $roleCode = strtolower($user->role ? $user->role->code : '');
+
+        // Only roles that can create permits can extend
+        $allowedRoles = ['admin', 'hse', 'pic_k3', 'pemohon', 'kontraktor', 'vendor', 'contractor'];
+        $hasCreatePermission = in_array($roleCode, $allowedRoles) || ($user->role && $user->role->hasPermission('permits.create'));
+
+        if (!$hasCreatePermission) {
+            return response()->json([
+                'success' => true,
+                'data' => [],
+                'extension_window_days' => 3,
+                'message' => 'Role Anda tidak memiliki hak akses untuk memperpanjang izin kerja.'
+            ]);
+        }
+
+        $extensionWindowDays = (int) SystemSetting::getValue('extension_window_days', 3);
+        $maxPermitDays = (int) SystemSetting::getValue('max_permit_duration_days', 6);
+        $durationToAdd = $maxPermitDays > 0 ? ($maxPermitDays - 1) : 5;
+        $today = Carbon::today();
+
+        $query = WorkPermit::with([
+            'location', 
+            'vendor', 
+            'permitTypes', 
+            'ppes', 
+            'workers', 
+            'jsas',
+            'parentPermit',
+            'rootPermit',
+            'childPermits:id,parent_permit_id,status,permit_number'
+        ])
+        ->where('status', 'Disetujui');
+
+        // Ownership rule: Admin can see all, other roles only see permits they created
+        if ($roleCode !== 'admin') {
+            $query->where(function ($sub) use ($user) {
+                $sub->where('user_id', $user->id);
+                if (!empty($user->vendor_id)) {
+                    $sub->orWhere('vendor_id', $user->vendor_id);
+                }
+            });
+        }
+
+        $permits = $query->orderBy('end_date', 'asc')->get();
+
+        // Filter: must be within extension window AND have no active child extension
+        $eligible = $permits->filter(function ($permit) use ($extensionWindowDays, $today) {
+            // Anti-branching: no active child
+            $hasActiveChild = $permit->childPermits->contains(function ($child) {
+                return $child->status !== 'Ditolak';
+            });
+            if ($hasActiveChild) {
+                return false;
+            }
+
+            // Window check: remaining days <= extensionWindowDays AND not expired (end_date >= today)
+            $endDate = Carbon::parse($permit->end_date)->startOfDay();
+            if ($endDate->lt($today)) {
+                return false;
+            }
+            $diffDays = $today->diffInDays($endDate, false);
+            return $diffDays <= $extensionWindowDays;
+        })->map(function ($permit) use ($durationToAdd, $today) {
+            $endDate = Carbon::parse($permit->end_date)->startOfDay();
+            $diffDays = $today->diffInDays($endDate, false);
+            $nextPhase = ($permit->extension_phase ?: 0) + 1;
+            $rootPermit = $permit->root_permit_id ? WorkPermit::find($permit->root_permit_id) : $permit;
+            $parentProjectEnd = $permit->project_end_date ? Carbon::parse($permit->project_end_date)->startOfDay() : $endDate;
+            $nextStartDate = $endDate->copy()->addDay();
+            $maxNextEndDate = $nextStartDate->copy()->addDays($durationToAdd);
+            $suggestedEndDate = ($parentProjectEnd->gt($nextStartDate) && $parentProjectEnd->lt($maxNextEndDate)) 
+                ? $parentProjectEnd 
+                : $maxNextEndDate;
+
+            return [
+                'id' => $permit->id,
+                'permit_number' => $permit->permit_number,
+                'job_title' => $permit->job_title,
+                'vendor_id' => $permit->vendor_id,
+                'user_id' => $permit->user_id,
+                'status' => $permit->status,
+                'request_type' => $permit->request_type,
+                'extension_phase' => $permit->extension_phase ?: 0,
+                'next_phase' => $nextPhase,
+                'start_date' => $permit->start_date ? Carbon::parse($permit->start_date)->toDateString() : null,
+                'end_date' => $permit->end_date ? Carbon::parse($permit->end_date)->toDateString() : null,
+                'project_end_date' => $parentProjectEnd->toDateString(),
+                'days_remaining' => $diffDays,
+                'suggested_start_date' => $nextStartDate->toDateString(),
+                'suggested_end_date' => $suggestedEndDate->toDateString(),
+                'location' => $permit->location,
+                'vendor' => $permit->vendor,
+                'pic_name' => $permit->pic_name,
+                'pic_phone' => $permit->pic_phone,
+                'supervisor_name' => $permit->supervisor_name,
+                'supervisor_phone' => $permit->supervisor_phone,
+                'hse_officer_name' => $permit->hse_officer_name,
+                'hse_officer_phone' => $permit->hse_officer_phone,
+                'daily_start_time' => $permit->daily_start_time ?: '08:00',
+                'daily_end_time' => $permit->daily_end_time ?: '17:00',
+                'permit_types' => $permit->permitTypes ? $permit->permitTypes->pluck('name')->toArray() : [],
+                'ppes' => $permit->ppes ? $permit->ppes->pluck('name')->toArray() : [],
+                'workers' => $permit->workers,
+                'jsas' => $permit->jsas,
+                'root_permit_id' => $rootPermit ? $rootPermit->id : $permit->id,
+                'root_permit_number' => $rootPermit ? $rootPermit->permit_number : $permit->permit_number,
+                'cumulative_start_date' => $rootPermit && $rootPermit->start_date ? Carbon::parse($rootPermit->start_date)->toDateString() : ($permit->start_date ? Carbon::parse($permit->start_date)->toDateString() : null),
+            ];
+        })->values();
+
+        return response()->json([
+            'success' => true,
+            'data' => $eligible,
+            'extension_window_days' => $extensionWindowDays,
+        ]);
+    }
+
+    /**
      * Safety close-out / Housekeeping sign-off after work completion.
      */
     public function closePermit(Request $request, $id)

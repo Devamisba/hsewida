@@ -111,6 +111,10 @@ export const api = {
     return apiRequest(`/permits/${id}`);
   },
 
+  getEligibleExtensions: async () => {
+    return apiRequest('/permits/eligible-extensions');
+  },
+
   checkExtendEligibility: async (id: string | number) => {
     return apiRequest(`/permits/${id}/extend`);
   },
