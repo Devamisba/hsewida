@@ -96,21 +96,65 @@ export function Step1DataKontraktor({ data, updateData }: { data: any, updateDat
     });
   }, []);
 
+  const getCleanNewPermitState = () => {
+    const user = auth.getUser();
+    return {
+      requestType: "Baru",
+      parentPermitId: null,
+      parentPermitNumber: "",
+      rootPermitId: null,
+      rootPermitNumber: "",
+      rootStartDate: "",
+      cumulativeStartDate: "",
+      extensionPhase: 0,
+      namaKontraktor: user?.company_name || "",
+      jenisPekerjaan: "",
+      mulaiKerja: "",
+      selesaiKerja: "",
+      projectEndDate: "",
+      penanggungJawab: "",
+      noHpPJ: "",
+      pengawasPekerjaan: "",
+      noHpPengawas: "",
+      pengawasHse: "Ahli K3 Umum",
+      noHpHse: "085566778899",
+      totalTenagaKerja: "1",
+      jamKerjaMulai: "08:00",
+      jamKerjaAkhir: "17:00",
+      lokasi: "",
+      permitTypes: [] as string[],
+      otherPermitType: "",
+      ppe: [] as string[],
+      otherPpe: "",
+      workEquipment: ["", "", ""],
+      pekerja: [
+        {
+          id: Date.now(),
+          nama: "",
+          jabatan: "",
+          alamat: "",
+          id_card_photo: null,
+          photoName: ""
+        }
+      ],
+      jsa: [
+        {
+          id: Date.now(),
+          tahapan: "",
+          peralatan: "",
+          potensi: "",
+          pengendalian: "",
+          tanggapDarurat: ""
+        }
+      ],
+      disclaimerAccepted: false
+    };
+  };
+
   const handleTypeSelect = (type: "Baru" | "Perpanjangan") => {
     if (type === "Baru") {
       setSelectedParentId("");
-      updateData({
-        requestType: "Baru",
-        parentPermitId: null,
-        parentPermitNumber: "",
-        rootPermitId: null,
-        rootPermitNumber: "",
-        rootStartDate: "",
-        cumulativeStartDate: "",
-        extensionPhase: 0,
-        mulaiKerja: "",
-        selesaiKerja: "",
-      });
+      updateData(getCleanNewPermitState());
       setMinStartDate(format(addDays(startOfToday(), minLeadDays), 'yyyy-MM-dd'));
     } else {
       updateData({
@@ -355,7 +399,16 @@ export function Step1DataKontraktor({ data, updateData }: { data: any, updateDat
                     id="parentPermitSelect"
                     value={selectedParentId}
                     onChange={(e) => {
-                      const found = eligiblePermits.find(p => String(p.id) === String(e.target.value));
+                      const val = e.target.value;
+                      if (!val) {
+                        setSelectedParentId("");
+                        updateData({
+                          ...getCleanNewPermitState(),
+                          requestType: "Perpanjangan",
+                        });
+                        return;
+                      }
+                      const found = eligiblePermits.find(p => String(p.id) === String(val));
                       if (found) {
                         handleApplyParentPermit(found);
                       }
