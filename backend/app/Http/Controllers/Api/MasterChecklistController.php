@@ -81,12 +81,23 @@ class MasterChecklistController extends Controller
             $validated['fail_label'] = 'Rusak';
         }
 
-        if (!isset($validated['sort_order']) || $validated['sort_order'] === null) {
-            $maxSort = FacilityChecklistTemplate::where('facility_category', $cat)->max('sort_order') ?? 0;
-            $validated['sort_order'] = $maxSort + 1;
+        $totalCount = FacilityChecklistTemplate::where('facility_category', $cat)->count();
+        if (isset($validated['sort_order']) && $validated['sort_order'] !== null) {
+            $targetOrder = max(1, min($totalCount + 1, (int) $validated['sort_order']));
+            // Jika disisipkan sebelum item terakhir, geser item yang ada ke bawah (+1)
+            if ($targetOrder <= $totalCount) {
+                FacilityChecklistTemplate::where('facility_category', $cat)
+                    ->where('sort_order', '>=', $targetOrder)
+                    ->increment('sort_order');
+            }
+            $validated['sort_order'] = $targetOrder;
+        } else {
+            $validated['sort_order'] = $totalCount + 1;
         }
 
         $template = FacilityChecklistTemplate::create($validated);
+        $this->resequenceCategory($cat);
+        $template->refresh();
 
         return response()->json([
             'success' => true,
@@ -127,7 +138,45 @@ class MasterChecklistController extends Controller
             $validated['title'] = trim(preg_replace('/^\d+[\.\s\-]+/', '', $validated['title']));
         }
 
+        $oldCategory = $template->facility_category;
+        $targetCategory = $validated['facility_category'] ?? $oldCategory;
+        $oldOrder = (int) $template->sort_order;
+
+        if (isset($validated['sort_order'])) {
+            $totalCount = FacilityChecklistTemplate::where('facility_category', $targetCategory)->count();
+            // Batasi nomor urut baru antara 1 dan total item yang ada (tidak boleh lebih dari jumlah item)
+            $newOrder = max(1, min($totalCount, (int) $validated['sort_order']));
+            $validated['sort_order'] = $newOrder;
+
+            // Jika ada perubahan urutan di dalam kategori yang sama
+            if ($targetCategory === $oldCategory && $newOrder !== $oldOrder) {
+                if ($newOrder < $oldOrder) {
+                    // Geser item di rentang [newOrder, oldOrder - 1] naik (+1)
+                    FacilityChecklistTemplate::where('facility_category', $targetCategory)
+                        ->where('id', '!=', $template->id)
+                        ->where('sort_order', '>=', $newOrder)
+                        ->where('sort_order', '<', $oldOrder)
+                        ->increment('sort_order');
+                } else {
+                    // Geser item di rentang [oldOrder + 1, newOrder] turun (-1)
+                    FacilityChecklistTemplate::where('facility_category', $targetCategory)
+                        ->where('id', '!=', $template->id)
+                        ->where('sort_order', '>', $oldOrder)
+                        ->where('sort_order', '<=', $newOrder)
+                        ->decrement('sort_order');
+                }
+            }
+        }
+
         $template->update($validated);
+
+        // Pastikan urutan selalu sekuensial sempurna
+        $this->resequenceCategory($targetCategory);
+        if ($oldCategory !== $targetCategory) {
+            $this->resequenceCategory($oldCategory);
+        }
+
+        $template->refresh();
 
         return response()->json([
             'success' => true,
@@ -142,7 +191,11 @@ class MasterChecklistController extends Controller
     public function destroy($id)
     {
         $template = FacilityChecklistTemplate::findOrFail($id);
+        $cat = $template->facility_category;
         $template->delete();
+
+        // Rapikan kembali nomor urut setelah penghapusan
+        $this->resequenceCategory($cat);
 
         return response()->json([
             'success' => true,
@@ -161,15 +214,41 @@ class MasterChecklistController extends Controller
             'items.*.sort_order' => 'required|integer',
         ]);
 
+        $category = null;
         foreach ($validated['items'] as $item) {
-            FacilityChecklistTemplate::where('id', $item['id'])
-                ->update(['sort_order' => $item['sort_order']]);
+            $record = FacilityChecklistTemplate::find($item['id']);
+            if ($record) {
+                $record->update(['sort_order' => $item['sort_order']]);
+                $category = $record->facility_category;
+            }
+        }
+
+        if ($category) {
+            $this->resequenceCategory($category);
         }
 
         return response()->json([
             'success' => true,
             'message' => 'Urutan parameter checklist berhasil diperbarui.',
         ]);
+    }
+
+    /**
+     * Menata ulang nomor urut agar sekuensial murni (1, 2, 3... N) tanpa celah dan tanpa duplikasi
+     */
+    private function resequenceCategory(string $facilityCategory): void
+    {
+        $items = FacilityChecklistTemplate::where('facility_category', $facilityCategory)
+            ->orderBy('sort_order', 'asc')
+            ->orderBy('id', 'asc')
+            ->get();
+
+        foreach ($items as $idx => $item) {
+            $expectedOrder = $idx + 1;
+            if ($item->sort_order !== $expectedOrder) {
+                $item->update(['sort_order' => $expectedOrder]);
+            }
+        }
     }
 
     /**
