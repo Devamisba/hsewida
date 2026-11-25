@@ -38,9 +38,7 @@ import {
   Flame,
   Droplet,
   DoorOpen,
-  Cross,
-  ArrowUp,
-  ArrowDown
+  Cross
 } from "lucide-react";
 import { api } from "@/services/api";
 import { auth } from "@/lib/auth";
@@ -476,38 +474,6 @@ export default function MasterDataPage() {
       }
     } catch (err: any) {
       showFeedback("error", "Gagal memperbarui status parameter: " + (err.message || ""));
-    }
-  };
-
-  const handleMoveChecklist = async (index: number, direction: -1 | 1) => {
-    const targetIndex = index + direction;
-    if (targetIndex < 0 || targetIndex >= checklists.length) return;
-
-    // Buat clone array dan tukar posisi item
-    const updated = [...checklists];
-    const temp = updated[index];
-    updated[index] = updated[targetIndex];
-    updated[targetIndex] = temp;
-
-    // Normalisasi sort_order 1 s/d N
-    const reorderedPayload = updated.map((item, idx) => ({
-      id: item.id,
-      sort_order: idx + 1,
-    }));
-
-    // Optimistic UI update
-    setChecklists(updated.map((item, idx) => ({ ...item, sort_order: idx + 1 })));
-
-    try {
-      const res = await api.reorderChecklistTemplates(reorderedPayload);
-      if (res?.success) {
-        showFeedback("success", `Urutan parameter berhasil dipindahkan ke posisi #${targetIndex + 1}.`);
-      } else {
-        await loadChecklists(checklistCategory);
-      }
-    } catch (err: any) {
-      showFeedback("error", "Gagal memperbarui urutan: " + (err.message || ""));
-      await loadChecklists(checklistCategory);
     }
   };
 
@@ -2689,7 +2655,7 @@ export default function MasterDataPage() {
                           <th className="py-3.5 px-4 w-32">Kondisi Rusak</th>
                           <th className="py-3.5 px-4 w-28 text-center">Tipe</th>
                           <th className="py-3.5 px-4 w-28 text-center">Status</th>
-                          <th className="py-3.5 px-4 w-32 text-right">Aksi</th>
+                          <th className="py-3.5 px-4 w-24 text-right">Aksi</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-100 text-xs">
@@ -2753,24 +2719,6 @@ export default function MasterDataPage() {
                             </td>
                             <td className="py-3 px-4 text-right">
                               <div className="inline-flex items-center gap-1 justify-end">
-                                <button
-                                  type="button"
-                                  disabled={idx === 0}
-                                  onClick={() => handleMoveChecklist(idx, -1)}
-                                  className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors cursor-pointer disabled:opacity-20 disabled:cursor-not-allowed"
-                                  title={idx === 0 ? "Posisi paling atas" : "Pindahkan ke atas (Naikkan urutan)"}
-                                >
-                                  <ArrowUp size={14} />
-                                </button>
-                                <button
-                                  type="button"
-                                  disabled={idx === checklists.length - 1}
-                                  onClick={() => handleMoveChecklist(idx, 1)}
-                                  className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors cursor-pointer disabled:opacity-20 disabled:cursor-not-allowed"
-                                  title={idx === checklists.length - 1 ? "Posisi paling bawah" : "Pindahkan ke bawah (Turunkan urutan)"}
-                                >
-                                  <ArrowDown size={14} />
-                                </button>
                                 <button
                                   type="button"
                                   onClick={() => handleOpenEdit("checklist_item", item)}
