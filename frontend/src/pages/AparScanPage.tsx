@@ -67,11 +67,11 @@ const CATEGORY_CONFIG: Record<string, CategoryInspectionConfig> = {
     badge: "APAR",
     isConsumable: true,
     params: [
-      { id: "tbg", num: 1, title: "1. Fisik Tabung", desc: "Bebas karat, penyok & keropos", passLabel: "Baik", failLabel: "Rusak" },
-      { id: "slg", num: 2, title: "2. Selang (Hose)", desc: "Fleksibel, tidak retak/getas", passLabel: "Baik", failLabel: "Rusak" },
-      { id: "nozz", num: 3, title: "3. Corong / Nozzle", desc: "Bersih, tidak tersumbat/buntu", passLabel: "Baik", failLabel: "Rusak" },
-      { id: "sgl", num: 4, title: "4. Segel & Safety Pin", desc: "Kawat/plastik segel masih utuh", passLabel: "Utuh", failLabel: "Putus" },
-      { id: "lev", num: 5, title: "5. Indikator Tekanan", desc: "Jarum berada di zona hijau", passLabel: "Hijau", failLabel: "Merah" },
+      { id: "tbg", num: 1, title: "Fisik Tabung", desc: "Bebas karat, penyok & keropos", passLabel: "Baik", failLabel: "Rusak" },
+      { id: "slg", num: 2, title: "Selang (Hose)", desc: "Fleksibel, tidak retak/getas", passLabel: "Baik", failLabel: "Rusak" },
+      { id: "nozz", num: 3, title: "Corong / Nozzle", desc: "Bersih, tidak tersumbat/buntu", passLabel: "Baik", failLabel: "Rusak" },
+      { id: "sgl", num: 4, title: "Segel & Safety Pin", desc: "Kawat/plastik segel masih utuh", passLabel: "Utuh", failLabel: "Putus" },
+      { id: "lev", num: 5, title: "Indikator Tekanan", desc: "Jarum berada di zona hijau", passLabel: "Hijau", failLabel: "Merah" },
     ],
   },
   hydrant: {
@@ -80,11 +80,11 @@ const CATEGORY_CONFIG: Record<string, CategoryInspectionConfig> = {
     badge: "Hydrant",
     isConsumable: false,
     params: [
-      { id: "tbg", num: 1, title: "1. Box / Pilar Hydrant", desc: "Bersih, tertutup rapi & tidak terhalang", passLabel: "Baik", failLabel: "Rusak" },
-      { id: "slg", num: 2, title: "2. Selang Pemadam (Hose)", desc: "Tergulung rapi, fleksibel & tidak bocor", passLabel: "Baik", failLabel: "Rusak" },
-      { id: "nozz", num: 3, title: "3. Nozzle & Coupling", desc: "Kopling terpasang presisi, tidak aus", passLabel: "Baik", failLabel: "Rusak" },
-      { id: "sgl", num: 4, title: "4. Kran Utama (Main Valve)", desc: "Dapat diputar lancar & tidak rembes", passLabel: "Lancar", failLabel: "Macet" },
-      { id: "lev", num: 5, title: "5. Tekanan Air (Pressure)", desc: "Tekanan air siap pakai & gauge normal", passLabel: "Normal", failLabel: "Drop" },
+      { id: "tbg", num: 1, title: "Box / Pilar Hydrant", desc: "Bersih, tertutup rapi & tidak terhalang", passLabel: "Baik", failLabel: "Rusak" },
+      { id: "slg", num: 2, title: "Selang Pemadam (Hose)", desc: "Tergulung rapi, fleksibel & tidak bocor", passLabel: "Baik", failLabel: "Rusak" },
+      { id: "nozz", num: 3, title: "Nozzle & Coupling", desc: "Kopling terpasang presisi, tidak aus", passLabel: "Baik", failLabel: "Rusak" },
+      { id: "sgl", num: 4, title: "Kran Utama (Main Valve)", desc: "Dapat diputar lancar & tidak rembes", passLabel: "Lancar", failLabel: "Macet" },
+      { id: "lev", num: 5, title: "Tekanan Air (Pressure)", desc: "Tekanan air siap pakai & gauge normal", passLabel: "Normal", failLabel: "Drop" },
     ],
   },
   p3k: {
@@ -93,11 +93,11 @@ const CATEGORY_CONFIG: Record<string, CategoryInspectionConfig> = {
     badge: "Kotak P3K",
     isConsumable: true,
     params: [
-      { id: "tbg", num: 1, title: "1. Fisik Kotak P3K", desc: "Kondisi kotak bersih, kokoh & tidak rusak", passLabel: "Baik", failLabel: "Rusak" },
-      { id: "slg", num: 2, title: "2. Kerapian Tata Letak", desc: "Obat & alat tertata rapi sesuai sekat", passLabel: "Rapi", failLabel: "Berantakan" },
-      { id: "nozz", num: 3, title: "3. Kelengkapan Isi & Obat", desc: "Sesuai daftar standar item P3K pabrik", passLabel: "Lengkap", failLabel: "Kurang" },
-      { id: "sgl", num: 4, title: "4. Masa Kadaluarsa Obat", desc: "Seluruh obat & antiseptik belum expired", passLabel: "Aman", failLabel: "Expired" },
-      { id: "lev", num: 5, title: "5. Akses & Kunci Kotak", desc: "Mudah dijangkau darurat & kunci tersedia", passLabel: "Siap", failLabel: "Terhalang" },
+      { id: "tbg", num: 1, title: "Fisik Kotak P3K", desc: "Kondisi kotak bersih, kokoh & tidak rusak", passLabel: "Baik", failLabel: "Rusak" },
+      { id: "slg", num: 2, title: "Kerapian Tata Letak", desc: "Obat & alat tertata rapi sesuai sekat", passLabel: "Rapi", failLabel: "Berantakan" },
+      { id: "nozz", num: 3, title: "Kelengkapan Isi & Obat", desc: "Sesuai daftar standar item P3K pabrik", passLabel: "Lengkap", failLabel: "Kurang" },
+      { id: "sgl", num: 4, title: "Masa Kadaluarsa Obat", desc: "Seluruh obat & antiseptik belum expired", passLabel: "Aman", failLabel: "Expired" },
+      { id: "lev", num: 5, title: "Akses & Kunci Kotak", desc: "Mudah dijangkau darurat & kunci tersedia", passLabel: "Siap", failLabel: "Terhalang" },
     ],
   },
   assembly_point: {
@@ -106,11 +106,11 @@ const CATEGORY_CONFIG: Record<string, CategoryInspectionConfig> = {
     badge: "Titik Kumpul",
     isConsumable: false,
     params: [
-      { id: "tbg", num: 1, title: "1. Papan Rambu Kumpul", desc: "Jelas terbaca, tegak lurus & kokoh", passLabel: "Jelas", failLabel: "Rusak" },
-      { id: "slg", num: 2, title: "2. Jalur Akses Evakuasi", desc: "Bebas rintangan, material atau kendaraan", passLabel: "Bebas", failLabel: "Terhalang" },
-      { id: "nozz", num: 3, title: "3. Kebersihan Area", desc: "Permukaan rata, bersih, bebas genangan/licin", passLabel: "Bersih", failLabel: "Kotor" },
-      { id: "sgl", num: 4, title: "4. Penerangan Darurat", desc: "Lampu area malam/darurat berfungsi terang", passLabel: "Menyala", failLabel: "Mati" },
-      { id: "lev", num: 5, title: "5. Marka Batas Kumpul", desc: "Garis batas kumpul cat hijau/kuning terlihat jelas", passLabel: "Jelas", failLabel: "Pudar" },
+      { id: "tbg", num: 1, title: "Papan Rambu Kumpul", desc: "Jelas terbaca, tegak lurus & kokoh", passLabel: "Jelas", failLabel: "Rusak" },
+      { id: "slg", num: 2, title: "Jalur Akses Evakuasi", desc: "Bebas rintangan, material atau kendaraan", passLabel: "Bebas", failLabel: "Terhalang" },
+      { id: "nozz", num: 3, title: "Kebersihan Area", desc: "Permukaan rata, bersih, bebas genangan/licin", passLabel: "Bersih", failLabel: "Kotor" },
+      { id: "sgl", num: 4, title: "Penerangan Darurat", desc: "Lampu area malam/darurat berfungsi terang", passLabel: "Menyala", failLabel: "Mati" },
+      { id: "lev", num: 5, title: "Marka Batas Kumpul", desc: "Garis batas kumpul cat hijau/kuning terlihat jelas", passLabel: "Jelas", failLabel: "Pudar" },
     ],
   },
   safety_mirror: {
@@ -119,11 +119,11 @@ const CATEGORY_CONFIG: Record<string, CategoryInspectionConfig> = {
     badge: "Safety Mirror",
     isConsumable: false,
     params: [
-      { id: "tbg", num: 1, title: "1. Kebersihan Cermin", desc: "Bening, bebas debu pekat, lumpur & minyak", passLabel: "Bening", failLabel: "Buram" },
-      { id: "slg", num: 2, title: "2. Sudut Pandang (Angle)", desc: "Mengarah tepat ke blindspot persimpangan", passLabel: "Tepat", failLabel: "Bergeser" },
-      { id: "nozz", num: 3, title: "3. Braket & Tiang", desc: "Baut kencang, tiang tegak & tidak goyang", passLabel: "Kokoh", failLabel: "Goyang" },
-      { id: "sgl", num: 4, title: "4. Fisik Cermin & Topi", desc: "Tidak retak, pecah, ataupun berkarat parah", passLabel: "Utuh", failLabel: "Retak" },
-      { id: "lev", num: 5, title: "5. Bebas Halangan", desc: "Tidak tertutup dahan pohon, spanduk atau barang", passLabel: "Bebas", failLabel: "Terhalang" },
+      { id: "tbg", num: 1, title: "Kebersihan Cermin", desc: "Bening, bebas debu pekat, lumpur & minyak", passLabel: "Bening", failLabel: "Buram" },
+      { id: "slg", num: 2, title: "Sudut Pandang (Angle)", desc: "Mengarah tepat ke blindspot persimpangan", passLabel: "Tepat", failLabel: "Bergeser" },
+      { id: "nozz", num: 3, title: "Braket & Tiang", desc: "Baut kencang, tiang tegak & tidak goyang", passLabel: "Kokoh", failLabel: "Goyang" },
+      { id: "sgl", num: 4, title: "Fisik Cermin & Topi", desc: "Tidak retak, pecah, ataupun berkarat parah", passLabel: "Utuh", failLabel: "Retak" },
+      { id: "lev", num: 5, title: "Bebas Halangan", desc: "Tidak tertutup dahan pohon, spanduk atau barang", passLabel: "Bebas", failLabel: "Terhalang" },
     ],
   },
   emergency_door: {
@@ -132,11 +132,11 @@ const CATEGORY_CONFIG: Record<string, CategoryInspectionConfig> = {
     badge: "Pintu Darurat",
     isConsumable: false,
     params: [
-      { id: "tbg", num: 1, title: "1. Mekanisme Panic Bar", desc: "Buka mudah sekali tekan dari arah dalam", passLabel: "Lancar", failLabel: "Macet" },
-      { id: "slg", num: 2, title: "2. Bebas Gembok & Kunci", desc: "Tidak terhalang gembok saat jam operasional", passLabel: "Bebas", failLabel: "Terkunci" },
-      { id: "nozz", num: 3, title: "3. Lampu Exit Sign", desc: "Lampu tanda keluar hijau darurat menyala", passLabel: "Menyala", failLabel: "Mati" },
-      { id: "sgl", num: 4, title: "4. Akses Koridor Keluar", desc: "Area depan dan belakang pintu bebas barang", passLabel: "Lapang", failLabel: "Terhalang" },
-      { id: "lev", num: 5, title: "5. Daun Pintu & Closer", desc: "Engsel presisi, door closer menutup rapat otomatis", passLabel: "Rapat", failLabel: "Rusak" },
+      { id: "tbg", num: 1, title: "Mekanisme Panic Bar", desc: "Buka mudah sekali tekan dari arah dalam", passLabel: "Lancar", failLabel: "Macet" },
+      { id: "slg", num: 2, title: "Bebas Gembok & Kunci", desc: "Tidak terhalang gembok saat jam operasional", passLabel: "Bebas", failLabel: "Terkunci" },
+      { id: "nozz", num: 3, title: "Lampu Exit Sign", desc: "Lampu tanda keluar hijau darurat menyala", passLabel: "Menyala", failLabel: "Mati" },
+      { id: "sgl", num: 4, title: "Akses Koridor Keluar", desc: "Area depan dan belakang pintu bebas barang", passLabel: "Lapang", failLabel: "Terhalang" },
+      { id: "lev", num: 5, title: "Daun Pintu & Closer", desc: "Engsel presisi, door closer menutup rapat otomatis", passLabel: "Rapat", failLabel: "Rusak" },
     ],
   },
 };
@@ -593,22 +593,30 @@ export default function AparScanPage() {
   // --- SUBMIT FORM 1 (Petugas HSE) ---
   const activeInspectionParams = useMemo(() => {
     if (dynamicChecklists && dynamicChecklists.length > 0) {
-      return dynamicChecklists.map((item, idx) => ({
-        id: item.param_code,
-        code: item.badge_code || item.param_code.substring(0, 3).toUpperCase(),
-        num: idx + 1,
-        title: `${idx + 1}. ${item.title}`,
-        desc: item.description || "",
-        passLabel: item.pass_label || "Baik",
-        failLabel: item.fail_label || "Rusak",
-        isCritical: !!item.is_critical,
-      }));
+      return dynamicChecklists.map((item, idx) => {
+        const cleanTitle = (item.title || "").replace(/^\d+[\.\s\-]+/, "").trim();
+        return {
+          id: item.param_code,
+          code: item.badge_code || item.param_code.substring(0, 3).toUpperCase(),
+          num: idx + 1,
+          title: `${idx + 1}. ${cleanTitle}`,
+          desc: item.description || "",
+          passLabel: item.pass_label || "Baik",
+          failLabel: item.fail_label || "Rusak",
+          isCritical: !!item.is_critical,
+        };
+      });
     }
-    return categoryConfig.params.map(p => ({
-      ...p,
-      code: p.id.toUpperCase(),
-      isCritical: false,
-    }));
+    return categoryConfig.params.map((p, idx) => {
+      const cleanTitle = (p.title || "").replace(/^\d+[\.\s\-]+/, "").trim();
+      return {
+        ...p,
+        num: idx + 1,
+        title: `${idx + 1}. ${cleanTitle}`,
+        code: p.id.toUpperCase(),
+        isCritical: false,
+      };
+    });
   }, [dynamicChecklists, categoryConfig]);
 
   const handlePetugasSubmit = async (e: FormEvent) => {

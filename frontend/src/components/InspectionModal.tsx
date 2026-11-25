@@ -469,17 +469,20 @@ export function InspectionModal({ isOpen, onClose, item, type, onSuccess }: Insp
       api.getCategoryChecklistsPublic(cleanCat)
         .then(res => {
           if (res?.success && Array.isArray(res.data) && res.data.length > 0) {
-            const formatted: CategoryQuestion[] = res.data.map((t: any, idx: number) => ({
-              id: t.param_code,
-              code: t.badge_code || t.param_code.substring(0, 3).toUpperCase(),
-              label: t.title,
-              question: `${idx + 1}. ${t.title} (${t.description || "Pemeriksaan fisik standar K3"})?`,
-              options: [
-                { label: t.pass_label || "Baik", isPass: true },
-                { label: t.fail_label || "Rusak", isPass: false },
-              ],
-              defaultAnswer: t.pass_label || "Baik",
-            }));
+            const formatted: CategoryQuestion[] = res.data.map((t: any, idx: number) => {
+              const cleanTitle = (t.title || "").replace(/^\d+[\.\s\-]+/, "").trim();
+              return {
+                id: t.param_code,
+                code: t.badge_code || t.param_code.substring(0, 3).toUpperCase(),
+                label: cleanTitle,
+                question: `${idx + 1}. ${cleanTitle} (${t.description || "Pemeriksaan fisik standar K3"})?`,
+                options: [
+                  { label: t.pass_label || "Baik", isPass: true },
+                  { label: t.fail_label || "Rusak", isPass: false },
+                ],
+                defaultAnswer: t.pass_label || "Baik",
+              };
+            });
             setDynamicQuestions(formatted);
           } else {
             setDynamicQuestions(null);

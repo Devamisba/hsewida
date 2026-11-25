@@ -61,6 +61,9 @@ class MasterChecklistController extends Controller
         if ($cat === 'pintu_darurat') $cat = 'emergency_door';
         $validated['facility_category'] = $cat;
 
+        // Bersihkan prefix nomor urut dari judul jika ada (misal: "1. Fisik Tabung" -> "Fisik Tabung")
+        $validated['title'] = trim(preg_replace('/^\d+[\.\s\-]+/', '', $validated['title']));
+
         if (empty($validated['param_code'])) {
             $validated['param_code'] = 'p_' . Str::slug(substr($validated['title'], 0, 15), '_') . '_' . rand(10, 99);
         }
@@ -117,6 +120,11 @@ class MasterChecklistController extends Controller
             if ($cat === 'titik_kumpul') $cat = 'assembly_point';
             if ($cat === 'pintu_darurat') $cat = 'emergency_door';
             $validated['facility_category'] = $cat;
+        }
+
+        // Bersihkan prefix nomor urut dari judul jika ada
+        if (isset($validated['title'])) {
+            $validated['title'] = trim(preg_replace('/^\d+[\.\s\-]+/', '', $validated['title']));
         }
 
         $template->update($validated);

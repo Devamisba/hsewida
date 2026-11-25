@@ -712,7 +712,7 @@ export default function MasterDataPage() {
           facility_category: formData.facility_category || checklistCategory,
           param_code: (formData.param_code || "").trim(),
           badge_code: (formData.badge_code || "").trim() || null,
-          title: (formData.title || "").trim(),
+          title: (formData.title || "").replace(/^\d+[\.\s\-]+/, "").trim(),
           description: (formData.description || "").trim() || null,
           pass_label: (formData.pass_label || "Baik").trim(),
           fail_label: (formData.fail_label || "Rusak").trim(),
@@ -2670,7 +2670,7 @@ export default function MasterDataPage() {
                               </span>
                             </td>
                             <td className="py-3 px-4">
-                              <div className="font-bold text-slate-900 text-xs">{item.title}</div>
+                              <div className="font-bold text-slate-900 text-xs">{(item.title || "").replace(/^\d+[\.\s\-]+/, "").trim()}</div>
                               {item.description && (
                                 <div className="text-[11px] text-slate-500 mt-0.5 line-clamp-2">
                                   {item.description}
