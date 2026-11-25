@@ -1013,7 +1013,7 @@ class MonitoringController extends Controller
                 if (isset($ans['passed']) && $ans['passed'] === false) {
                     $hasIssue = true;
                 }
-                if (isset($ans['jawaban']) && in_array(strtolower($ans['jawaban']), ['tidak', 'rendah', 'tinggi', 'false', 'expired', 'putus', 'rusak', 'macet', 'terhalang'])) {
+                if (isset($ans['jawaban']) && in_array(strtolower($ans['jawaban']), ['tidak', 'rendah', 'tinggi', 'false', 'expired', 'putus', 'rusak', 'macet', 'terhalang', 'kurang', 'habis', 'kosong'])) {
                     $hasIssue = true;
                 }
             }
@@ -1031,6 +1031,13 @@ class MonitoringController extends Controller
             }
 
             $facility->status = ($resultStatus === 'Pass') ? 'Good' : 'Needs Attention';
+
+            // Khusus P3K atau Consumable yang mengalami kekurangan/kerusakan -> masukkan ke antrean refill
+            $specs = $facility->specifications ?? [];
+            if ($hasIssue || $currentExpiryStatus === 'KADALUARSA') {
+                $specs['is_refill_queue'] = true;
+            }
+            $facility->specifications = $specs;
         } else {
             // Jalur B: Kondisi check (MAX Score: OK=0, Minor=1, Kritis=2)
             $maxScore = 0;
@@ -1169,8 +1176,15 @@ class MonitoringController extends Controller
             'new_expired_at' => $validated['new_expired_at'],
             'vendor_name' => $validated['vendor_name'] ?? 'Vendor Rekanan',
             'seal_number' => $validated['seal_number'] ?? null,
-            'notes' => $validated['notes'] ?? 'Pengisian / pergantian media tabung baru',
+            'notes' => $validated['notes'] ?? ($facility->category === 'p3k' ? 'Restock / pengisian ulang item kotak P3K' : 'Pengisian / pergantian media tabung baru'),
         ]);
+
+        $specs = $facility->specifications ?? [];
+        $specs['is_refill_queue'] = false;
+        $specs['inspection_status_label'] = $facility->category === 'p3k' 
+            ? "Refill & Restock P3K Selesai (" . now()->format('d/m/Y') . ")"
+            : "Refill Media Selesai (" . now()->format('d/m/Y') . ")";
+        $facility->specifications = $specs;
 
         $facility->status = 'Good';
         $facility->last_inspected_at = now()->toDateString();
@@ -1574,6 +1588,11 @@ class MonitoringController extends Controller
                 $specs['gps_accuracy'] = $request->filled('accuracy') ? "±{$request->accuracy}m" : "±3m";
             }
 
+            // Jika ada parameter yang gagal/kurang/habis pada fasilitas consumable (P3K atau APAR), tandai antrean refill
+            if (!$allPassed && in_array($category, ['apar', 'p3k'])) {
+                $specs['is_refill_queue'] = true;
+            }
+
             $facility->specifications = $specs;
             $facility->last_inspected_at = now()->toDateString();
             $facility->status = $allPassed ? 'Good' : 'Needs Attention';
@@ -1706,10 +1725,17 @@ class MonitoringController extends Controller
      */
     public function getRefillSummary(Request $request)
     {
-        $facilities = SafetyFacility::with(['location', 'consumableCycle', 'refillHistories'])
-            ->where('category', 'apar')
-            ->where('status_aktif', true)
-            ->get();
+        $category = $request->query('category');
+        $query = SafetyFacility::with(['location', 'consumableCycle', 'refillHistories'])
+            ->where('status_aktif', true);
+
+        if ($category && in_array($category, ['apar', 'p3k'])) {
+            $query->where('category', $category);
+        } else {
+            $query->whereIn('category', ['apar', 'p3k']);
+        }
+
+        $facilities = $query->get();
 
         $refillList = $facilities->filter(function ($item) {
             $specs = $item->specifications ?? [];
@@ -1728,13 +1754,17 @@ class MonitoringController extends Controller
             return $b->id <=> $a->id;
         })->values();
 
-        // Breakdown by media type and capacity
+        // Breakdown by media type/capacity for APAR, or box type for P3K
         $breakdown = [];
         foreach ($refillList as $item) {
             $specs = $item->specifications ?? [];
-            $media = $specs['type'] ?? 'Dry Chemical Powder';
-            $cap = $specs['capacity'] ?? '3 Kg';
-            $key = $media . ' - ' . $cap;
+            if ($item->category === 'p3k') {
+                $key = $specs['box_type'] ?? 'Kotak P3K Standar';
+            } else {
+                $media = $specs['type'] ?? 'Dry Chemical Powder';
+                $cap = $specs['capacity'] ?? '3 Kg';
+                $key = $media . ' - ' . $cap;
+            }
             $breakdown[$key] = ($breakdown[$key] ?? 0) + 1;
         }
 

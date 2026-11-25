@@ -79,13 +79,13 @@ export function RefillQueueModal({ isOpen, onClose, onSelectFacilityForRefill }:
             </div>
             <div>
               <h2 className="text-base sm:text-lg font-black text-slate-900 tracking-tight flex items-center gap-2">
-                <span>Daftar Antrean Pengisian Ulang (Refill) APAR</span>
+                <span>Daftar Antrean Refill & Restock Fasilitas</span>
                 <span className="bg-amber-100 text-amber-800 text-xs px-2.5 py-0.5 rounded-full font-bold">
                   {data?.total_refill_needed || 0} Unit
                 </span>
               </h2>
               <p className="text-xs text-slate-500 font-medium">
-                Monitoring tabung APAR kadaluarsa / siap kirim ke vendor rekanan PT Widatra Bhakti
+                Monitoring tabung APAR & kotak P3K kadaluarsa atau butuh restock isi ulang
               </p>
             </div>
           </div>
@@ -112,7 +112,7 @@ export function RefillQueueModal({ isOpen, onClose, onSelectFacilityForRefill }:
           {loading ? (
             <div className="py-20 text-center space-y-3">
               <div className="w-10 h-10 border-4 border-amber-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
-              <p className="text-xs font-bold text-slate-600">Memuat data 27 antrean refill tabung...</p>
+              <p className="text-xs font-bold text-slate-600">Memuat data antrean refill & restock...</p>
             </div>
           ) : (
             <>
@@ -210,10 +210,10 @@ export function RefillQueueModal({ isOpen, onClose, onSelectFacilityForRefill }:
                             </td>
                             <td className="px-4 py-3">
                               <span className="font-semibold text-slate-800 block">
-                                {specs.type || "Dry Chemical Powder"}
+                                {item.category === 'p3k' ? (specs.box_type || "Kotak P3K Standar") : (specs.type || "Dry Chemical Powder")}
                               </span>
                               <span className="text-slate-500 text-[11px]">
-                                Kapasitas: <strong>{specs.capacity || "3 Kg"}</strong>
+                                {item.category === 'p3k' ? `Kategori: ${item.nama_item || 'Kotak P3K'}` : `Kapasitas: ${specs.capacity || "3 Kg"}`}
                               </span>
                             </td>
                             <td className="px-4 py-3">

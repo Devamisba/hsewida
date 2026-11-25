@@ -51,7 +51,7 @@ interface CategoryInspectionConfig {
   badge: string;
   isConsumable: boolean;
   params: {
-    id: "tbg" | "slg" | "nozz" | "sgl" | "lev";
+    id: "tbg" | "slg" | "nozz" | "sgl" | "lev" | string;
     num: number;
     title: string;
     desc: string;
@@ -89,15 +89,31 @@ const CATEGORY_CONFIG: Record<string, CategoryInspectionConfig> = {
   },
   p3k: {
     title: "Pemeriksaan Kotak P3K",
-    subtitle: "Pemeriksaan fisik & kelengkapan Kotak P3K",
+    subtitle: "Pemeriksaan kelengkapan 21 item standar Kotak P3K",
     badge: "Kotak P3K",
     isConsumable: true,
     params: [
-      { id: "tbg", num: 1, title: "Fisik Kotak P3K", desc: "Kondisi kotak bersih, kokoh & tidak rusak", passLabel: "Baik", failLabel: "Rusak" },
-      { id: "slg", num: 2, title: "Kerapian Tata Letak", desc: "Obat & alat tertata rapi sesuai sekat", passLabel: "Rapi", failLabel: "Berantakan" },
-      { id: "nozz", num: 3, title: "Kelengkapan Isi & Obat", desc: "Sesuai daftar standar item P3K pabrik", passLabel: "Lengkap", failLabel: "Kurang" },
-      { id: "sgl", num: 4, title: "Masa Kadaluarsa Obat", desc: "Seluruh obat & antiseptik belum expired", passLabel: "Aman", failLabel: "Expired" },
-      { id: "lev", num: 5, title: "Akses & Kunci Kotak", desc: "Mudah dijangkau darurat & kunci tersedia", passLabel: "Siap", failLabel: "Terhalang" },
+      { id: "p3k_kasa_steril", num: 1, title: "Kasa Steril", desc: "Standar: 20 Pcs (Steril, belum terbuka, bersih)", passLabel: "Lengkap", failLabel: "Kurang" },
+      { id: "p3k_perban_5cm", num: 2, title: "Perban (Lebar 5 cm)", desc: "Standar: 2 Roll (Lebar 5 cm, gulungan utuh)", passLabel: "Lengkap", failLabel: "Kurang" },
+      { id: "p3k_perban_10cm", num: 3, title: "Perban (Lebar 10 cm)", desc: "Standar: 2 Roll (Lebar 10 cm, gulungan utuh)", passLabel: "Lengkap", failLabel: "Kurang" },
+      { id: "p3k_plester_roll", num: 4, title: "Plaster Roll (Lebar 1,25 cm)", desc: "Standar: 2 Roll (Lebar 1,25 cm, perekat baik)", passLabel: "Lengkap", failLabel: "Kurang" },
+      { id: "p3k_plester_cepat", num: 5, title: "Plester Cepat", desc: "Standar: 10 Pcs (Plester cepat siap pakai)", passLabel: "Lengkap", failLabel: "Kurang" },
+      { id: "p3k_kapas_25g", num: 6, title: "Kapas (25 gram)", desc: "Standar: 1 Roll (Kapas putih 25 gram utuh)", passLabel: "Lengkap", failLabel: "Kurang" },
+      { id: "p3k_mittela", num: 7, title: "Kain Segitiga / Mittela", desc: "Standar: 1 Pcs (Kain segitiga pembalut bersih)", passLabel: "Lengkap", failLabel: "Kurang" },
+      { id: "p3k_gunting", num: 8, title: "Gunting", desc: "Standar: 1 Pcs (Gunting perban tajam & bersih)", passLabel: "Lengkap", failLabel: "Kurang" },
+      { id: "p3k_peniti", num: 9, title: "Peniti", desc: "Standar: 12 Pcs (Peniti pengait utuh & tidak berkarat)", passLabel: "Lengkap", failLabel: "Kurang" },
+      { id: "p3k_handscone", num: 10, title: "Handscone", desc: "Standar: 2 Pasang (Sarung tangan medis bersih)", passLabel: "Lengkap", failLabel: "Kurang" },
+      { id: "p3k_masker", num: 11, title: "Masker", desc: "Standar: 2 Pcs (Masker medis 3 ply)", passLabel: "Lengkap", failLabel: "Kurang" },
+      { id: "p3k_pinset", num: 12, title: "Pinset", desc: "Standar: 1 Pcs (Pinset penjepit steril & presisi)", passLabel: "Lengkap", failLabel: "Kurang" },
+      { id: "p3k_senter", num: 13, title: "Lampu Senter", desc: "Standar: 1 Pcs (Lampu senter baterai aktif)", passLabel: "Lengkap", failLabel: "Kurang" },
+      { id: "p3k_cuci_mata", num: 14, title: "Gelas Cuci Mata", desc: "Standar: 1 Pcs (Gelas cuci mata bersih & higienis)", passLabel: "Lengkap", failLabel: "Kurang" },
+      { id: "p3k_kantong_plastik", num: 15, title: "Kantong Plastik Bersih", desc: "Standar: 1 Pcs (Kantong plastik pembungkus limbah)", passLabel: "Lengkap", failLabel: "Kurang" },
+      { id: "p3k_aquades", num: 16, title: "Aquades (100 ml lar. Saline)", desc: "Standar: 1 Pcs (Larutan saline 100 ml belum expired)", passLabel: "Lengkap", failLabel: "Kurang" },
+      { id: "p3k_povidon_iodin", num: 17, title: "Povidon Iodin (60 ml)", desc: "Standar: 1 Botol (Povidon iodin 60 ml belum expired)", passLabel: "Lengkap", failLabel: "Kurang" },
+      { id: "p3k_alkohol", num: 18, title: "Alkohol 70%", desc: "Standar: 1 Botol (Alkohol 70% isi penuh)", passLabel: "Lengkap", failLabel: "Kurang" },
+      { id: "p3k_panduan", num: 19, title: "Buku Panduan P3K", desc: "Standar: 1 Pcs (Buku panduan P3K di tempat kerja)", passLabel: "Lengkap", failLabel: "Kurang" },
+      { id: "p3k_catatan", num: 20, title: "Buku Catatan", desc: "Standar: 1 Pcs (Buku catatan pemakaian obat P3K)", passLabel: "Lengkap", failLabel: "Kurang" },
+      { id: "p3k_daftar_isi", num: 21, title: "Daftar Isi Kotak P3K", desc: "Standar: 1 Pcs (Daftar lembar isi kotak P3K terpasang)", passLabel: "Lengkap", failLabel: "Kurang" },
     ],
   },
   assembly_point: {

@@ -742,10 +742,10 @@ export function FacilityDetailActionModal({
                     </div>
                     <div className="min-w-0">
                       <div className="font-bold text-xs text-emerald-900">
-                        Catat Refill Media
+                        {facility.category === 'p3k' ? 'Catat Refill / Restock P3K' : 'Catat Refill Media'}
                       </div>
                       <p className="text-[11px] text-emerald-700 truncate">
-                        Pengisian ulang & perpanjangan masa
+                        {facility.category === 'p3k' ? 'Isi ulang obat & perpanjangan masa kadaluarsa' : 'Pengisian ulang & perpanjangan masa'}
                       </p>
                     </div>
                   </div>
