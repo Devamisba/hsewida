@@ -2676,9 +2676,6 @@ export default function MasterDataPage() {
                                   {item.description}
                                 </div>
                               )}
-                              <div className="text-[10px] text-slate-400 font-mono mt-0.5">
-                                code: {item.param_code}
-                              </div>
                             </td>
                             <td className="py-3 px-4">
                               <span className="inline-flex items-center gap-1 font-bold text-[11px] px-2.5 py-1 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-lg">
