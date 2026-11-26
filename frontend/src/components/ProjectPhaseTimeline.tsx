@@ -103,7 +103,7 @@ export function resolveProjectPhases(item: any): ProjectPhase[] {
           extension_phase: typeof c.extension_phase === 'number' ? c.extension_phase : ((item.extensionPhase || 0) + 1),
           start_date: c.start_date || c.startDate || "-",
           end_date: c.end_date || c.endDate || "-",
-          status: c.status || "Menunggu Review",
+          status: c.status || "Menunggu Approval",
         });
       }
     });

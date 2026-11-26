@@ -395,7 +395,7 @@ export default function MyRequestsPage() {
                 )}
               >
                 <Hourglass size={13} className={statusFilter === "PENDING" ? "text-white" : "text-amber-600"} />
-                <span>Menunggu Review</span>
+                <span>Menunggu Approval</span>
                 <span className={cn(
                   "px-1.5 py-0.2 rounded-full text-[10px] font-mono font-bold",
                   statusFilter === "PENDING" ? "bg-white/20 text-white" : "bg-amber-50 text-amber-700 border border-amber-200"

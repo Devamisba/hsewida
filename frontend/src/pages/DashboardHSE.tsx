@@ -194,10 +194,10 @@ export default function DashboardHSEPage() {
           {/* Section 1: Work Permit Metrics - 4 Cards */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
             <MetricCard 
-              title="Menunggu Review" 
+              title="Menunggu Approval" 
               value={dashboardData.pendingReviewCount || 0} 
               icon={Clock} 
-              color="error"
+              color="warning"
             />
             <MetricCard 
               title="Pekerjaan Aktif (Total)" 
