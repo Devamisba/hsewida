@@ -209,7 +209,7 @@ export default function DashboardHSEPage() {
               title="Aktif (Risiko Tinggi)" 
               value={dashboardData.activeHighRiskCount || 0} 
               icon={ShieldAlert} 
-              color="warning" 
+              color="error" 
             />
             <MetricCard 
               title="Vendor Aktif" 
