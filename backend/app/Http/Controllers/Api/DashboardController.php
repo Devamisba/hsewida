@@ -332,11 +332,66 @@ class DashboardController extends Controller
             ->orderBy('id', 'desc')
             ->get();
 
+        $activePermits = WorkPermit::with(['vendor', 'workers'])
+            ->where('status', 'Disetujui')
+            ->where('start_date', '<=', $today)
+            ->where('end_date', '>=', $today)
+            ->get();
+
         $activeWorkers = PermitWorker::whereHas('workPermit', function ($q) use ($today) {
             $q->where('status', 'Disetujui')
               ->where('start_date', '<=', $today)
               ->where('end_date', '>=', $today);
         })->with('workPermit.vendor')->get();
+
+        // Kelompokkan izin kerja dan pekerja per vendor yang berkegiatan hari ini
+        $vendorsGrouped = [];
+        foreach ($activePermits as $permit) {
+            $vendorId = $permit->vendor_id ? (string) $permit->vendor_id : ('pic_' . md5($permit->pic_name ?? 'unknown'));
+            $vendorName = $permit->vendor ? $permit->vendor->company_name : ($permit->pic_name ?: 'Vendor Eksternal');
+
+            if (!isset($vendorsGrouped[$vendorId])) {
+                $vendorsGrouped[$vendorId] = [
+                    'vendor_id' => $vendorId,
+                    'vendor_name' => $vendorName,
+                    'total_pekerja' => 0,
+                    'pekerjaan' => [],
+                    'permits' => [],
+                    'workers' => [],
+                    'status' => 'IN AREA',
+                ];
+            }
+
+            $workerCount = $permit->workers->count() > 0 ? $permit->workers->count() : ($permit->total_workers ?: 0);
+            $vendorsGrouped[$vendorId]['total_pekerja'] += $workerCount;
+
+            if ($permit->job_title && !in_array($permit->job_title, $vendorsGrouped[$vendorId]['pekerjaan'])) {
+                $vendorsGrouped[$vendorId]['pekerjaan'][] = $permit->job_title;
+            }
+            if ($permit->permit_number && !in_array($permit->permit_number, $vendorsGrouped[$vendorId]['permits'])) {
+                $vendorsGrouped[$vendorId]['permits'][] = $permit->permit_number;
+            }
+
+            foreach ($permit->workers as $w) {
+                $vendorsGrouped[$vendorId]['workers'][] = [
+                    'nama' => $w->worker_name,
+                    'jabatan' => $w->position ?: 'Pekerja',
+                    'status' => 'In Area',
+                ];
+            }
+        }
+
+        $activeVendorsList = array_values(array_map(function ($item) {
+            return [
+                'vendor_id' => $item['vendor_id'],
+                'nama' => $item['vendor_name'],
+                'total_pekerja' => $item['total_pekerja'],
+                'pekerjaan' => implode(', ', $item['pekerjaan']),
+                'permits' => $item['permits'],
+                'workers' => $item['workers'],
+                'status' => $item['status'],
+            ];
+        }, $vendorsGrouped));
 
         return response()->json([
             'success' => true,
@@ -350,7 +405,9 @@ class DashboardController extends Controller
                     'mulai' => $p->start_date->format('Y-m-d'),
                     'statusHSE' => 'Disetujui HSE',
                 ]),
-                'activeWorkersCount' => $activeWorkers->count() ?: 15,
+                'activeVendorsCount' => count($activeVendorsList),
+                'activeVendors' => $activeVendorsList,
+                'activeWorkersCount' => $activeWorkers->count(),
                 'registeredVendorsCount' => Vendor::count(),
                 'activeWorkers' => $activeWorkers->map(fn($w) => [
                     'nama' => $w->worker_name,

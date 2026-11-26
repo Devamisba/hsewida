@@ -1,20 +1,60 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { Header } from "@/components/Header";
-import { Clock, Users, Building, FileCheck, CheckCircle2, ChevronRight, Contact } from "lucide-react";
+import { Clock, Users, Building, Building2, FileCheck, CheckCircle2, ChevronRight, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { api } from "@/services/api";
 
 export default function DashboardGAPage() {
   const [loading, setLoading] = useState(true);
+  const [expandedVendors, setExpandedVendors] = useState<Record<string, boolean>>({});
   const [dashboardData, setDashboardData] = useState<any>({
     pendingValidationCount: 0,
     pendingValidation: [],
+    activeVendorsCount: 0,
+    activeVendors: [],
     activeWorkersCount: 0,
     registeredVendorsCount: 0,
     activeWorkers: [],
   });
   const navigate = useNavigate();
+
+  const toggleExpandVendor = (vendorName: string) => {
+    setExpandedVendors(prev => ({
+      ...prev,
+      [vendorName]: !prev[vendorName]
+    }));
+  };
+
+  const activeVendorsList = useMemo(() => {
+    if (dashboardData.activeVendors && Array.isArray(dashboardData.activeVendors) && dashboardData.activeVendors.length > 0) {
+      return dashboardData.activeVendors;
+    }
+
+    if (dashboardData.activeWorkers && Array.isArray(dashboardData.activeWorkers) && dashboardData.activeWorkers.length > 0) {
+      const groups: Record<string, any> = {};
+      dashboardData.activeWorkers.forEach((w: any) => {
+        const k = w.kontraktor || 'Vendor Eksternal';
+        if (!groups[k]) {
+          groups[k] = {
+            nama: k,
+            total_pekerja: 0,
+            status: 'IN AREA',
+            pekerjaan: '',
+            workers: []
+          };
+        }
+        groups[k].total_pekerja += 1;
+        groups[k].workers.push({
+          nama: w.nama,
+          jabatan: w.jabatan
+        });
+      });
+      return Object.values(groups);
+    }
+
+    return [];
+  }, [dashboardData]);
 
   useEffect(() => {
     const fetchDashboard = async () => {
@@ -140,36 +180,84 @@ export default function DashboardGAPage() {
               </div>
             </div>
 
-            {/* Kanan: Pekerja Eksternal Area */}
+            {/* Kanan: Monitor Vendor (Hari Ini) */}
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden flex flex-col">
               <div className="p-4 md:p-5 border-b border-info-container bg-info-container/10 flex justify-between items-center">
                 <h3 className="text-base font-bold text-gray-900 flex items-center gap-2">
-                  <Contact size={18} className="text-info" />
-                  Monitor Pekerja Pihak Ketiga (Hari Ini)
+                  <Building2 size={18} className="text-info" />
+                  Monitor Vendor (Hari Ini)
                 </h3>
+                {activeVendorsList.length > 0 && (
+                  <span className="bg-blue-100 text-blue-800 text-xs px-2.5 py-0.5 rounded-full font-bold">
+                    {activeVendorsList.length} Vendor Aktif
+                  </span>
+                )}
               </div>
               <div className="p-0">
-                {dashboardData.activeWorkers && dashboardData.activeWorkers.length > 0 ? (
+                {activeVendorsList.length > 0 ? (
                   <ul className="divide-y divide-gray-100">
-                    {dashboardData.activeWorkers.map((pekerja: any, i: number) => (
-                      <li key={i} className="p-4 hover:bg-gray-50/50 transition-colors flex justify-between items-center">
-                        <div>
-                          <p className="text-sm font-bold text-gray-900">{pekerja.nama} <span className="text-xs font-normal text-gray-500">({pekerja.jabatan})</span></p>
-                          <p className="text-xs text-gray-500 mt-1">{pekerja.kontraktor}</p>
-                        </div>
-                        <div>
-                          <span className="bg-success/10 text-success border border-success/20 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase flex items-center gap-1">
-                            <CheckCircle2 size={12} /> {pekerja.status || 'In Area'}
-                          </span>
-                        </div>
-                      </li>
-                    ))}
+                    {activeVendorsList.map((vendor: any, i: number) => {
+                      const isExpanded = !!expandedVendors[vendor.nama];
+                      const hasWorkerList = vendor.workers && vendor.workers.length > 0;
+
+                      return (
+                        <li key={i} className="p-4 hover:bg-gray-50/50 transition-colors">
+                          <div className="flex justify-between items-start gap-3">
+                            <div className="min-w-0 flex-1">
+                              <p className="text-sm font-bold text-gray-900 truncate">
+                                {vendor.nama}
+                              </p>
+                              <p className="text-xs text-gray-600 font-medium mt-0.5">
+                                Pekerja : <span className="font-bold text-gray-900">{vendor.total_pekerja}</span>
+                              </p>
+                              {vendor.pekerjaan && (
+                                <p className="text-[11px] text-gray-500 mt-0.5 truncate">
+                                  Pekerjaan: {vendor.pekerjaan}
+                                </p>
+                              )}
+                            </div>
+                            <div className="flex flex-col items-end gap-1.5 shrink-0">
+                              <span className="bg-success/10 text-success border border-success/20 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase flex items-center gap-1">
+                                <CheckCircle2 size={12} /> {vendor.status || 'IN AREA'}
+                              </span>
+                              {hasWorkerList && (
+                                <button
+                                  type="button"
+                                  onClick={() => toggleExpandVendor(vendor.nama)}
+                                  className="text-[11px] text-blue-600 hover:text-blue-800 font-semibold inline-flex items-center gap-0.5 cursor-pointer mt-0.5"
+                                >
+                                  <span>{isExpanded ? "Tutup Rincian" : "Lihat Rincian"}</span>
+                                  <ChevronDown size={12} className={cn("transition-transform", isExpanded && "rotate-180")} />
+                                </button>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Accordion Rincian Nama Pekerja */}
+                          {isExpanded && hasWorkerList && (
+                            <div className="mt-3 pt-3 border-t border-gray-100 bg-slate-50/70 p-3 rounded-xl animate-in fade-in">
+                              <p className="text-[11px] font-bold text-gray-600 uppercase tracking-wider mb-2">
+                                Rincian Nama Pekerja ({vendor.workers.length} Orang):
+                              </p>
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                                {vendor.workers.map((w: any, idx: number) => (
+                                  <div key={idx} className="bg-white p-2 rounded-lg border border-slate-200/80 flex items-center justify-between">
+                                    <span className="font-semibold text-gray-800 truncate">{w.nama}</span>
+                                    <span className="text-[10px] text-gray-500 shrink-0 ml-1">({w.jabatan || 'Pekerja'})</span>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </li>
+                      );
+                    })}
                   </ul>
                 ) : (
                   <div className="p-8 text-center text-gray-500">
-                    <Users size={32} className="mx-auto mb-2 opacity-20" />
-                    <p className="text-sm font-medium text-gray-800">Tidak ada pekerja eksternal di area hari ini.</p>
-                    <p className="text-xs text-gray-400 mt-0.5">Daftar nama pekerja akan aktif saat permit disetujui dan tanggal kerja dimulai.</p>
+                    <Building2 size={32} className="mx-auto mb-2 opacity-20" />
+                    <p className="text-sm font-medium text-gray-800">Tidak ada vendor berkegiatan di area hari ini.</p>
+                    <p className="text-xs text-gray-400 mt-0.5">Daftar vendor akan aktif saat izin kerja disetujui dan tanggal kerja dimulai.</p>
                   </div>
                 )}
               </div>
