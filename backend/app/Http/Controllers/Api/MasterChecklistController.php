@@ -65,12 +65,30 @@ class MasterChecklistController extends Controller
         $validated['title'] = trim(preg_replace('/^\d+[\.\s\-]+/', '', $validated['title']));
 
         if (empty($validated['param_code'])) {
-            $validated['param_code'] = 'p_' . Str::slug(substr($validated['title'], 0, 15), '_') . '_' . rand(10, 99);
+            $catPrefix = match($cat) {
+                'emergency_door' => 'door',
+                'assembly_point' => 'assembly',
+                'safety_mirror' => 'mirror',
+                'p3k' => 'p3k',
+                'hydrant' => 'hydrant',
+                default => 'p',
+            };
+            $slug = Str::slug($validated['title'], '_');
+            $validated['param_code'] = substr($catPrefix . '_' . $slug, 0, 45);
         }
 
         if (empty($validated['badge_code'])) {
-            $cleaned = preg_replace('/^[0-9]+\.\s*/', '', $validated['title']);
-            $validated['badge_code'] = substr(trim($cleaned), 0, 4);
+            $cleaned = trim(preg_replace('/^[0-9]+\.\s*/', '', $validated['title']));
+            $words = preg_split('/\s+/', $cleaned);
+            if (count($words) === 1) {
+                $validated['badge_code'] = strtoupper(substr($words[0], 0, 5));
+            } else {
+                $initials = '';
+                foreach ($words as $w) {
+                    if (!empty($w)) $initials .= strtoupper($w[0]);
+                }
+                $validated['badge_code'] = substr($initials, 0, 5) ?: strtoupper(substr($cleaned, 0, 4));
+            }
         }
 
         if (empty($validated['pass_label'])) {
@@ -116,8 +134,8 @@ class MasterChecklistController extends Controller
         $validated = $request->validate([
             'facility_category' => 'sometimes|required|string|max:50',
             'title' => 'sometimes|required|string|max:150',
-            'param_code' => 'sometimes|required|string|max:50',
-            'badge_code' => 'sometimes|required|string|max:20',
+            'param_code' => 'nullable|string|max:50',
+            'badge_code' => 'nullable|string|max:20',
             'description' => 'nullable|string',
             'pass_label' => 'sometimes|required|string|max:50',
             'fail_label' => 'sometimes|required|string|max:50',
@@ -136,6 +154,13 @@ class MasterChecklistController extends Controller
         // Bersihkan prefix nomor urut dari judul jika ada
         if (isset($validated['title'])) {
             $validated['title'] = trim(preg_replace('/^\d+[\.\s\-]+/', '', $validated['title']));
+        }
+
+        if (empty($validated['param_code'])) {
+            $validated['param_code'] = $template->param_code ?: ('p_' . Str::slug($validated['title'] ?? $template->title, '_'));
+        }
+        if (empty($validated['badge_code'])) {
+            $validated['badge_code'] = $template->badge_code ?: strtoupper(substr($validated['title'] ?? $template->title, 0, 4));
         }
 
         $oldCategory = $template->facility_category;

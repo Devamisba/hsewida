@@ -556,7 +556,8 @@ export default function MasterDataPage() {
         fail_label: "Rusak",
         is_critical: false,
         is_active: true,
-        sort_order: checklists.length + 1
+        sort_order: checklists.length + 1,
+        allow_edit_code: false
       });
     } else {
       setFormData({});
@@ -609,7 +610,8 @@ export default function MasterDataPage() {
         fail_label: item.fail_label || "Rusak",
         is_critical: !!item.is_critical,
         is_active: item.is_active !== false,
-        sort_order: Number(item.sort_order) || 1
+        sort_order: Number(item.sort_order) || 1,
+        allow_edit_code: false
       });
     } else {
       setFormData({ ...item });
@@ -708,11 +710,17 @@ export default function MasterDataPage() {
           showFeedback("success", `Vendor rekanan "${formData.company_name}" berhasil didaftarkan.`);
         }
       } else if (modalType === "checklist_item") {
+        const rawTitle = (formData.title || "").replace(/^\d+[\.\s\-]+/, "").trim();
+        const autoSlug = rawTitle.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '').slice(0, 30);
+        const cat = formData.facility_category || checklistCategory;
+        const catPrefix = cat === 'emergency_door' ? 'door' : cat === 'assembly_point' ? 'assembly' : cat === 'safety_mirror' ? 'mirror' : cat;
+        const autoParamCode = (formData.param_code || "").trim() || (autoSlug ? `${catPrefix}_${autoSlug}` : `p_${Date.now()}`);
+
         const payload = {
-          facility_category: formData.facility_category || checklistCategory,
-          param_code: (formData.param_code || "").trim(),
-          badge_code: (formData.badge_code || "").trim() || null,
-          title: (formData.title || "").replace(/^\d+[\.\s\-]+/, "").trim(),
+          facility_category: cat,
+          param_code: autoParamCode,
+          badge_code: (formData.badge_code || "").trim() || (rawTitle.slice(0, 5).toUpperCase()) || null,
+          title: rawTitle,
           description: (formData.description || "").trim() || null,
           pass_label: (formData.pass_label || "Baik").trim(),
           fail_label: (formData.fail_label || "Rusak").trim(),
@@ -3407,40 +3415,85 @@ export default function MasterDataPage() {
                       type="text"
                       placeholder="Contoh: Fisik Tabung, Selang (Hose), Panic Bar, Isi Kotak P3K"
                       value={formData.title || ""}
-                      onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                      onChange={(e) => {
+                        const newTitle = e.target.value;
+                        const clean = newTitle.trim().replace(/^\d+[\.\s\-]+/, '');
+                        const slug = clean.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '').slice(0, 30);
+                        const cat = formData.facility_category || checklistCategory;
+                        const catPrefix = cat === 'emergency_door' ? 'door' : cat === 'assembly_point' ? 'assembly' : cat === 'safety_mirror' ? 'mirror' : cat;
+                        
+                        const updates: any = { title: newTitle };
+                        
+                        // Auto-generate param_code & badge_code jika menambah baru atau belum dikunci manual
+                        if (!editingItem && !formData.allow_edit_code) {
+                          updates.param_code = slug ? `${catPrefix}_${slug}` : '';
+                          
+                          const words = clean.split(/\s+/).filter(Boolean);
+                          if (words.length === 1) {
+                            updates.badge_code = words[0].slice(0, 5).toUpperCase();
+                          } else if (words.length > 1) {
+                            updates.badge_code = words.map(w => w[0]).join('').slice(0, 5).toUpperCase();
+                          } else {
+                            updates.badge_code = '';
+                          }
+                        }
+                        
+                        setFormData({ ...formData, ...updates });
+                      }}
                       className="w-full p-2.5 border border-slate-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500"
                     />
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-xs font-bold text-slate-700 uppercase mb-1">
-                        Kode Unik Parameter (param_code) *
-                      </label>
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="block text-xs font-bold text-slate-700 uppercase">
+                          Kode Sistem (param_code)
+                        </label>
+                        <span className="text-[10px] bg-slate-100 text-slate-500 font-bold px-1.5 py-0.5 rounded border border-slate-200">
+                          Otomatis Sistem
+                        </span>
+                      </div>
                       <input
-                        required
                         type="text"
-                        placeholder="tbg, slg, nozz, panic_bar"
+                        readOnly={!formData.allow_edit_code}
+                        placeholder="Otomatis diisi sistem..."
                         value={formData.param_code || ""}
                         onChange={(e) => setFormData({ ...formData, param_code: e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, '') })}
-                        className="w-full p-2.5 border border-slate-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500 font-mono"
+                        className={`w-full p-2.5 border rounded-xl text-sm outline-none font-mono ${
+                          formData.allow_edit_code 
+                            ? 'border-blue-400 bg-white text-slate-900 focus:ring-2 focus:ring-blue-500' 
+                            : 'border-slate-200 bg-slate-50 text-slate-500 cursor-not-allowed select-none'
+                        }`}
                       />
-                      <span className="text-[10px] text-slate-400 mt-1 block">Huruf kecil, angka & underscore tanpa spasi.</span>
+                      <div className="flex items-center justify-between mt-1">
+                        <span className="text-[10px] text-slate-400">Dibuat otomatis dari nama parameter</span>
+                        <button
+                          type="button"
+                          onClick={() => setFormData({ ...formData, allow_edit_code: !formData.allow_edit_code })}
+                          className="text-[10px] text-blue-600 hover:text-blue-800 font-bold underline cursor-pointer"
+                        >
+                          {formData.allow_edit_code ? "Kunci Otomatis" : "Ubah Manual"}
+                        </button>
+                      </div>
                     </div>
 
                     <div>
-                      <label className="block text-xs font-bold text-slate-700 uppercase mb-1">
-                        Kode Singkat / Badge (badge_code)
-                      </label>
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="block text-xs font-bold text-slate-700 uppercase">
+                          Kode Singkat / Badge (badge_code)
+                        </label>
+                        <span className="text-[10px] text-slate-400">Maks. 6 Huruf</span>
+                      </div>
                       <input
                         type="text"
                         maxLength={6}
-                        placeholder="TBG, SLG, BAR, EXP"
+                        placeholder="Contoh: PANIC, GLOVE"
                         value={formData.badge_code || ""}
                         onChange={(e) => setFormData({ ...formData, badge_code: e.target.value.toUpperCase() })}
                         className="w-full p-2.5 border border-slate-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500 font-mono font-bold"
                       />
-                      <span className="text-[10px] text-slate-400 mt-1 block">Maksimal 6 huruf kapital (tampil pada badge riwayat).</span>
+                      <span className="text-[10px] text-slate-400 mt-1 block">Label singkat yang tampil di tabel & riwayat.</span>
                     </div>
                   </div>
 
